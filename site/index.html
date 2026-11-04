@@ -39,13 +39,23 @@ th{color:var(--muted);font-weight:500}
 .err{background:rgba(229,72,77,.12);color:var(--bad);border:1px solid var(--bad);padding:12px;border-radius:10px;font-size:14px}
 .chart{width:100%;height:auto;display:block}
 .chart text{fill:var(--text);font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0}
+.tile{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.tile b{display:block;font-size:18px;word-break:break-all}
+.tile span{color:var(--muted);font-size:12px}
+.find{list-style:none;padding:0;margin:8px 0}
+.find li{padding:4px 0}
+.radar{width:100%;max-width:300px;display:block;margin:0 auto}
+.radar .g{fill:none;stroke:var(--line)}
+.radar .s{fill:rgba(79,140,255,.25);stroke:var(--accent);stroke-width:2}
+.radar text{fill:var(--text);font-size:11px}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 </style>
 </head>
 <body>
 <header><h1>🔍 网络测绘 · 网站溯源 · 证书检测</h1></header>
 <nav>
-  <button class="tab on" data-t="dom">🌐 域名测绘</button>
+  <button class="tab on" data-t="dom">🧭 域名综合分析</button>
   <button class="tab" data-t="ip">📍 IP 测绘</button>
   <button class="tab" data-t="asn">🛰️ ASN 测绘</button>
   <button class="tab" data-t="vpn">🛡️ VPN 检测</button>
@@ -77,6 +87,7 @@ const orgOf = i => (i || '').match(/O=([^,]+)/)?.[1] || i || '未知';
 const list = (a, n = 40) => a.length ? a.slice(0, n).map(x => pill(x)).join(' ') + (a.length > n ? note(`… 共 ${a.length} 项`) : '') : note('无');
 const fmtDate = ms => ms ? new Date(ms).toISOString().slice(0, 10) : '—';
 const dayDiff = ms => Math.floor((ms - Date.now()) / 864e5);
+const getR = (r, k) => r.find(x => x[0] === k)?.[1] || [];
 
 // 每个区块独立渲染：某个数据源失败只影响该区块
 function sec(title) {
@@ -105,17 +116,27 @@ async function http(url, opt = {}, ms = 8000) {
   } finally { clearTimeout(tm); }
 }
 const first = ps => Promise.any(ps).catch(es => { throw new Error((es.errors || []).map(e => e.message).join('；') || '全部失败'); });
-async function cached(key, ttl, fn) {
+
+// 缓存 + 并发去重：同一个请求同时只发一次，已完成的结果按 TTL 缓存在 sessionStorage
+const inflight = new Map();
+function cached(key, ttl, fn) {
   try {
     const h = sessionStorage.getItem(key);
-    if (h) { const o = JSON.parse(h); if (Date.now() - o.t < ttl) return o.v; }
+    if (h) { const o = JSON.parse(h); if (Date.now() - o.t < ttl) return Promise.resolve(o.v); }
   } catch {}
-  const v = await fn();
-  try { sessionStorage.setItem(key, JSON.stringify({t: Date.now(), v})); } catch {}
-  return v;
+  if (inflight.has(key)) return inflight.get(key);
+  const p = (async () => {
+    try {
+      const v = await fn();
+      try { sessionStorage.setItem(key, JSON.stringify({t: Date.now(), v})); } catch {}
+      return v;
+    } finally { inflight.delete(key); }
+  })();
+  inflight.set(key, p);
+  return p;
 }
 
-/* ---------- DNS over HTTPS（DNSSEC 标志需 do=1） ---------- */
+/* ---------- DNS over HTTPS（带 do=1 以获取 DNSSEC 的 AD 标志） ---------- */
 const DOH = ['https://dns.alidns.com/resolve', 'https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve', 'https://doh.pub/resolve'];
 const T = {A: 1, NS: 2, CNAME: 5, MX: 15, TXT: 16, AAAA: 28, CAA: 257, HTTPS: 65};
 const dns = (n, type) => cached(`d${type}:${n}`, 3600e3, () =>
@@ -134,7 +155,7 @@ const geo = ip => cached(`geo:${ip || 'me'}`, 3600e3, () => first([
   }),
 ]));
 
-/* ---------- 测绘类数据源（均无需 Key） ---------- */
+/* ---------- 其他测绘数据源（均无需 Key） ---------- */
 const hackertarget = (path, q) => cached(`ht:${path}:${q}`, 6 * 3600e3, async () => {
   const c = new AbortController(), tm = setTimeout(() => c.abort(), 10000);
   try {
@@ -193,7 +214,7 @@ function timelineSvg(nb, na) {
     <text x="${x}" y="66" text-anchor="middle">今天</text></svg>`;
 }
 
-/* ---------- 域名测绘 ---------- */
+/* ---------- 域名分析：渲染函数（供综合分析与证书页共用） ---------- */
 const CDN_RE = [
   [/cloudflare/i, 'Cloudflare'], [/akamai|edgekey|edgesuite/i, 'Akamai'], [/fastly/i, 'Fastly'],
   [/cloudfront/i, 'Amazon CloudFront'], [/alicdn|aliyun|alidns|kunlun/i, '阿里云'],
@@ -201,123 +222,284 @@ const CDN_RE = [
   [/azureedge|trafficmanager|azure/i, 'Azure'], [/edgecast|edgio|limelight/i, 'Edgio / Limelight'],
   [/github/i, 'GitHub Pages'], [/vercel|netlify/i, 'Vercel / Netlify'],
 ];
+const cdnHits = (cn, ns, orgs) => {
+  const hay = [...cn, ...ns, ...orgs].join(' ');
+  return [...new Set(CDN_RE.filter(([re]) => re.test(hay)).map(x => x[1]))];
+};
+const regInfo = rd => {
+  if (!rd) return null;
+  const ev = a => (rd.events || []).find(e => e.eventAction === a)?.eventDate;
+  const c = ev('registration');
+  return {created: c?.slice(0, 10) || '—', exp: ev('expiration')?.slice(0, 10) || '—', age: c ? Math.floor((Date.now() - Date.parse(c)) / 864e5) : null, rd};
+};
+const mailScore = (mail) => {
+  const dm = (mail[0] || []).find(x => /^v=DMARC1/i.test(x));
+  const mt = (mail[1] || []).find(x => /^v=STSv1/i.test(x));
+  const tr = (mail[2] || []).find(x => /^v=TLSRPTv1/i.test(x));
+  return {dm, mt, tr};
+};
 
+function renderCert(cs) {
+  if (!cs || !cs.length) return note('证书日志中没有该域名的记录。');
+  const ce = cs.find(valid) || cs[0];
+  const nb = Date.parse(ce.not_before), na = Date.parse(ce.not_after);
+  const left = dayDiff(na);
+  const st = left < 0 ? ['已过期', 'bad'] : left <= 14 ? [`${left} 天后到期，请尽快续期`, 'bad'] : left <= 30 ? [`${left} 天后到期`, 'warn'] : [`有效，剩余 ${left} 天`, 'ok'];
+  const dates = [...new Set(cs.map(c => Date.parse(c.not_before)))].sort((a, b) => a - b);
+  const gaps = dates.slice(1).map((d, i) => (d - dates[i]) / 864e5);
+  const avg = gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+  const byYear = {}, issuers = {};
+  cs.forEach(c => {
+    const y = (c.not_before || '').slice(0, 4);
+    byYear[y] = (byYear[y] || 0) + 1;
+    const o = orgOf(c.issuer_name); issuers[o] = (issuers[o] || 0) + 1;
+  });
+  return `<p>${pill(st[0], st[1])} ${valid(ce) ? '' : pill('最新证书未生效或已失效', 'bad')}</p>` +
+    kv({
+      '签发机构': orgOf(ce.issuer_name),
+      '签发日期': fmtDate(nb),
+      '到期日期': fmtDate(na),
+      '有效期': `${Math.round((na - nb) / 864e5)} 天`,
+      '续期平均间隔': avg ? `约 ${avg} 天` : '数据不足',
+      '历史证书数量': cs.length,
+    }) +
+    `<h3>有效期进度</h3>` + timelineSvg(nb, na) +
+    `<h3>每年签发数量（续期节奏）</h3>` + bars(Object.entries(byYear).sort((a, b) => a[0] - b[0]).slice(-10), '#e0a526') +
+    `<h3>签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 6));
+}
+
+// DNSSEC（a 为 A 记录的原始 JSON）、CAA（c）、HTTPS 记录（h）
+function renderDnsSec(a, c, h) {
+  const dnssec = a === null ? pill('查询失败', 'no') : a.AD ? pill('已验证（DNSSEC 签名有效）', 'ok') : pill('未验证（未启用或解析器未返回）', 'warn');
+  const caa = c ? recs(c, 257).map(x => {
+    const m = x.match(/^(\d+)\s+(\w+)\s+"?([^"]*)"?$/);
+    return m ? [m[2], m[3], m[1] === '128' ? '严格（critical）' : '普通'] : [x, '', ''];
+  }) : null;
+  const https = h ? recs(h, 65) : null;
+  const alpn = https?.map(x => x.match(/alpn="([^"]+)"/)?.[1]).find(Boolean) || '';
+  const ech = https ? https.some(x => /(^|\s)ech=/.test(x)) : false;
+  return `<p>${dnssec}</p>` +
+    `<h3>CAA（允许签发证书的 CA）</h3>` +
+    (caa === null ? note('查询失败') : caa.length ? tbl(['标签', '值', '级别'], caa) : `<p>${pill('未设置 CAA：任何 CA 都可以为该域名签发证书', 'warn')}</p>`) +
+    `<h3>HTTPS 记录（新一代协议支持）</h3>` +
+    (https === null ? note('查询失败') : !https.length ? note('未发布 HTTPS 记录') : kv({
+      '应用层协议（ALPN）': alpn || '—',
+      'HTTP/3（QUIC）': /h3/.test(alpn) ? '支持' : '未发现',
+      'ECH（加密 SNI）': ech ? '支持' : '未发现',
+    })) +
+    note('DNSSEC 的“已验证”由解析器给出，不同解析器结果可能不同。CAA 与 HTTPS 记录都是公开的 DNS 配置。');
+}
+
+function renderDnsRows(rows) {
+  const out2 = [];
+  rows.forEach(([k, v]) => {
+    if (v === null) out2.push([k, '查询失败']);
+    else if (!v.length) out2.push([k, '无记录']);
+    else v.forEach(x => out2.push([k, x]));
+  });
+  return tbl(['类型', '值'], out2);
+}
+
+function renderConn(ms) {
+  const ok = ms.filter(x => x !== null);
+  if (!ok.length) return `<p>${pill('无法连接（DNS 故障、被墙或站点不可达）', 'bad')}</p>`;
+  const avg = Math.round(ok.reduce((a, b) => a + b, 0) / ok.length), min = Math.min(...ok);
+  return `<p>${pill(`可连接 ${ok.length}/3 次`, ok.length === 3 ? 'ok' : 'warn')}</p>` +
+    kv({'最快一次': min + ' ms', '平均耗时': avg + ' ms', '各次耗时': ms.map(x => x === null ? '失败' : x + ' ms').join(' · ')}) +
+    bars(ms.map((x, i) => ['第 ' + (i + 1) + ' 次', x ?? 0]), '#4f8cff') +
+    note('浏览器只能测到整体耗时（含 DNS、TCP、TLS 与服务器响应），无法拆分。收到任何 HTTP 响应（包括 404）都算可连接。');
+}
+async function probeAll(t) {
+  const probe = async i => {
+    const s = performance.now();
+    try {
+      await fetch(`https://${t}/favicon.ico?_=${Date.now()}${i}`, {mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(8000)});
+      return Math.round(performance.now() - s);
+    } catch { return null; }
+  };
+  return Promise.all([0, 1, 2].map(probe));
+}
+
+function renderMail(txt, mail) {
+  const spf = txt.find(x => /^v=spf1/i.test(x));
+  const {dm, mt, tr} = mailScore(mail);
+  const spfPol = spf ? (spf.match(/[-~?+]all/)?.[0] || '无 all 结尾') : '未配置';
+  const spfLv = spfPol === '-all' ? 'ok' : spfPol === '~all' ? 'warn' : 'bad';
+  const dPol = dm ? (dm.match(/p=(\w+)/)?.[1] || '—') : '未配置';
+  const dLv = dPol === 'reject' ? 'ok' : dPol === 'quarantine' ? 'warn' : 'bad';
+  const rows = [
+    ['SPF', spfPol, '声明哪些服务器可以代表本域名发信（-all 最严格）'],
+    ['DMARC', dPol === '未配置' ? dPol : 'p=' + dPol, '收到伪造发件人邮件时的处理策略（reject 最严格）'],
+    ['MTA-STS', mt ? '已启用' : '未配置', '强制邮件服务器之间使用 TLS 加密传输'],
+    ['TLS-RPT', tr ? '已启用' : '未配置', '接收邮件加密失败的报告'],
+  ];
+  const score = [spf, dm, mt, tr].filter(Boolean).length;
+  return `<p>${pill(`邮件安全项 ${score}/4 已配置`, score >= 3 ? 'ok' : score >= 2 ? 'warn' : 'bad')}</p>` +
+    tbl(['项目', '状态', '说明'], rows) + note('数据来自公开 DNS 记录，不涉及邮件内容。');
+}
+
+function renderReg(ri, t) {
+  if (!ri) return note('注册信息查询失败（rdap.org 可能被拦截）。');
+  const reg = (ri.rd.entities || []).find(e => (e.roles || []).includes('registrar'));
+  return kv({
+    注册商: vcFn(reg) || '—',
+    注册时间: ri.created,
+    到期时间: ri.exp,
+    域名年龄: ri.age === null ? '—' : `${ri.age} 天（约 ${(ri.age / 365).toFixed(1)} 年）`,
+    状态: (ri.rd.status || []).join('，') || '—',
+    域名服务器: (ri.rd.nameservers || []).map(n => n.ldhName).join('，') || '—',
+  }) + (ri.age !== null && ri.age < 180 ? `<p>${pill('注册不足半年，需谨慎对待', 'warn')}</p>` : '');
+}
+
+function subsOf(t, cs, hs) {
+  const fromCert = new Set(), fromHT = new Set(hs || []);
+  (cs || []).forEach(c => (c.name_value || '').split('\n').forEach(n => {
+    const x = n.replace(/^\*\./, '').toLowerCase();
+    if (x === t || x.endsWith('.' + t)) fromCert.add(x);
+  }));
+  return {fromCert, fromHT, all: new Set([...fromCert, ...fromHT])};
+}
+
+/* ---------- 域名综合分析：并行查询 + 进度 + 结论 ---------- */
 function dom(t) {
-  const types = ['A', 'AAAA', 'NS', 'MX', 'TXT', 'CNAME'];
-  const dnsP = Promise.all(types.map(k => dns(t, T[k]).then(j => [k, recs(j, T[k])]).catch(() => [k, null])));
-  const getR = (r, k) => r.find(x => x[0] === k)?.[1] || [];
-  const aP = dnsP.then(r => getR(r, 'A'));
+  let total = 0, done = 0;
+  const sumId = sec('一键分析结论');
+  const upd = () => {
+    const el = document.getElementById(sumId);
+    if (el) el.innerHTML = `<p class="muted">并行查询中… ${done}/${total}</p>`;
+  };
+  const tk = p => { total++; upd(); return p.then(v => (done++, upd(), v), () => (done++, upd(), null)); };
 
-  fill(sec('DNS 记录'), (async () => {
-    const rows = [];
-    (await dnsP).forEach(([k, v]) => {
-      if (v === null) rows.push([k, '查询失败']);
-      else if (!v.length) rows.push([k, '无记录']);
-      else v.forEach(x => rows.push([k, x]));
-    });
-    return tbl(['类型', '值'], rows);
-  })());
+  // 所有数据源同时发起（不等待彼此）
+  const dnsP = tk(Promise.all(['A', 'AAAA', 'NS', 'MX', 'TXT', 'CNAME'].map(k =>
+    dns(t, T[k]).then(j => [k, recs(j, T[k])]).catch(() => [k, null]))).then(r => r));
+  const aP = dnsP.then(r => getR(r || [], 'A'));
+  const caaP = tk(dns(t, T.CAA).catch(() => null));
+  const httpsP = tk(dns(t, T.HTTPS).catch(() => null));
+  const dnssecP = tk(dns(t, T.A).catch(() => null));
+  const geosP = tk(aP.then(ips => Promise.all(ips.slice(0, 5).map(ip => geo(ip).catch(() => null)))));
+  const certsP = tk(certs(t).catch(() => []));
+  const rdapP = tk(rdap(t).then(j => regInfo(j)).catch(() => null));
+  const subP = tk(htSub(t).catch(() => null));
+  const revP = tk(aP.then(ips => ips[0]
+    ? Promise.all([htRev(ips[0]).catch(() => []), usQuery(`page.ip:${ips[0]}`).catch(() => [])])
+    : [[], []]));
+  const mailP = tk(Promise.all(['_dmarc.', '_mta-sts.', '_smtp._tls.'].map(p =>
+    dns(p + t, T.TXT).then(j => recs(j, T.TXT)).catch(() => null))));
+  const connP = tk(probeAll(t));
 
-  fill(sec('IP 归属（A 记录）'), (async () => {
-    const ips = await aP;
+  // 各区块：各自渲染，互不阻塞
+  fill(sec('DNS 记录'), dnsP.then(r => renderDnsRows(r || [])));
+  fill(sec('IP 归属（A 记录）'), Promise.all([aP, geosP]).then(([ips, gs]) => {
     if (!ips.length) return note('无 A 记录');
-    const rows = await Promise.all(ips.slice(0, 5).map(async ip => {
-      const g = await geo(ip).catch(() => null);
+    const rows = ips.slice(0, 5).map((ip, i) => {
+      const g = gs[i];
       return [ip, g ? `${g.country || '—'} ${g.city || ''}` : '查询失败', g?.asn ? 'AS' + g.asn : '—', g?.org || '—'];
-    }));
+    });
     return tbl(['IP', '地理位置', 'ASN', '运营商'], rows) + note('同一域名解析到多个 IP 时，可能使用了 CDN、负载均衡或多地部署。');
-  })());
-
-  fill(sec('CDN / 托管平台识别'), (async () => {
-    const r = await dnsP;
-    const cn = getR(r, 'CNAME'), ns = getR(r, 'NS');
-    const gs = await Promise.all((await aP).slice(0, 3).map(ip => geo(ip).catch(() => null)));
-    const orgs = gs.filter(Boolean).map(g => g.org || '').filter(Boolean);
-    const hay = [...cn, ...ns, ...orgs].join(' ');
-    const hits = [...new Set(CDN_RE.filter(([re]) => re.test(hay)).map(x => x[1]))];
+  }));
+  fill(sec('CDN / 托管平台识别'), Promise.all([dnsP, geosP]).then(([r, gs]) => {
+    const cn = getR(r || [], 'CNAME'), ns = getR(r || [], 'NS');
+    const orgs = (gs || []).filter(Boolean).map(g => g.org || '').filter(Boolean);
+    const hits = cdnHits(cn, ns, orgs);
     return `<p>${hits.length ? hits.map(h => pill(h, 'ok')).join(' ') : pill('未识别到已知 CDN 或托管平台', 'no')}</p>` +
       kv({'CNAME 链': cn.join('，') || '无', 'NS 服务器': ns.join('，') || '无', 'IP 运营商': orgs.join('，') || '—'}) +
       note('根据 CNAME、NS 与 IP 运营商名称中的关键字推断，仅供参考。');
-  })());
-
-  fill(sec('连通性与延迟（你的网络视角）'), (async () => {
-    const probe = async i => {
-      const s = performance.now();
-      try {
-        await fetch(`https://${t}/favicon.ico?_=${Date.now()}${i}`, {mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(8000)});
-        return Math.round(performance.now() - s);
-      } catch { return null; }
-    };
-    const ms = [];
-    for (let i = 0; i < 3; i++) ms.push(await probe(i));
-    const ok = ms.filter(x => x !== null);
-    if (!ok.length) return `<p>${pill('无法连接（DNS 故障、被墙或站点不可达）', 'bad')}</p>`;
-    const avg = Math.round(ok.reduce((a, b) => a + b, 0) / ok.length), min = Math.min(...ok);
-    return `<p>${pill(`可连接 ${ok.length}/3 次`, ok.length === 3 ? 'ok' : 'warn')}</p>` +
-      kv({'最快一次': min + ' ms', '平均耗时': avg + ' ms', '各次耗时': ms.map(x => x === null ? '失败' : x + ' ms').join(' · ')}) +
-      bars(ms.map((x, i) => ['第 ' + (i + 1) + ' 次', x ?? 0]), '#4f8cff') +
-      note('浏览器只能测到整体耗时（含 DNS、TCP、TLS 与服务器响应），无法拆分。收到任何 HTTP 响应（包括 404）都算可连接。');
-  })());
-
-  fill(sec('邮件安全（SPF / DMARC / MTA-STS）'), (async () => {
-    const txt = getR(await dnsP, 'TXT');
-    const spf = txt.find(x => /^v=spf1/i.test(x));
-    const q = n => dns(n, T.TXT).then(j => recs(j, T.TXT)).catch(() => null);
-    const [dm, mt, tr] = await Promise.all([q('_dmarc.' + t), q('_mta-sts.' + t), q('_smtp._tls.' + t)]);
-    const dmarc = dm && dm.find(x => /^v=DMARC1/i.test(x));
-    const mta = mt && mt.find(x => /^v=STSv1/i.test(x));
-    const tlsr = tr && tr.find(x => /^v=TLSRPTv1/i.test(x));
-    const spfPol = spf ? (spf.match(/[-~?+]all/)?.[0] || '无 all 结尾') : '未配置';
-    const spfLv = spfPol === '-all' ? 'ok' : spfPol === '~all' ? 'warn' : 'bad';
-    const dPol = dmarc ? (dmarc.match(/p=(\w+)/)?.[1] || '—') : '未配置';
-    const dLv = dPol === 'reject' ? 'ok' : dPol === 'quarantine' ? 'warn' : 'bad';
-    const rows = [
-      ['SPF', spfPol, '声明哪些服务器可以代表本域名发信（-all 最严格）'],
-      ['DMARC', dPol, '收到伪造发件人邮件时的处理策略（reject 最严格）'],
-      ['MTA-STS', mta ? '已启用' : '未配置', '强制邮件服务器之间使用 TLS 加密传输'],
-      ['TLS-RPT', tlsr ? '已启用' : '未配置', '接收邮件加密失败的报告'],
-    ];
-    const score = [spfLv, dLv, mta ? 'ok' : 'bad', tlsr ? 'ok' : 'bad'].filter(x => x === 'ok').length;
-    return `<p>${pill(`邮件安全项 ${score}/4 达标`, score >= 3 ? 'ok' : score >= 2 ? 'warn' : 'bad')}</p>` +
-      tbl(['项目', '状态', '说明'], rows) + note('数据来自公开 DNS 记录，不涉及邮件内容。');
-  })());
-
-  fill(sec('注册信息（RDAP）'), (async () => {
-    const j = await rdap(t);
-    const ev = a => (j.events || []).find(e => e.eventAction === a)?.eventDate?.slice(0, 10);
-    const reg = (j.entities || []).find(e => (e.roles || []).includes('registrar'));
-    const created = ev('registration'), age = created ? Math.floor((Date.now() - Date.parse(created)) / 86400e3) : null;
-    return kv({
-      注册商: vcFn(reg) || '—',
-      注册时间: created || '—',
-      到期时间: ev('expiration') || '—',
-      域名年龄: age === null ? '—' : `${age} 天（约 ${(age / 365).toFixed(1)} 年）`,
-      状态: (j.status || []).join('，') || '—',
-      域名服务器: (j.nameservers || []).map(n => n.ldhName).join('，') || '—',
-    }) + (age !== null && age < 180 ? `<p>${pill('注册不足半年，需谨慎对待', 'warn')}</p>` : '');
-  })());
-
-  fill(sec('子域名（证书日志 + HackerTarget）'), (async () => {
-    const [cs, hs] = await Promise.all([certs(t).catch(() => []), htSub(t).catch(() => null)]);
-    const fromCert = new Set(), fromHT = new Set(hs || []);
-    cs.forEach(c => (c.name_value || '').split('\n').forEach(n => {
-      const x = n.replace(/^\*\./, '').toLowerCase();
-      if (x === t || x.endsWith('.' + t)) fromCert.add(x);
-    }));
-    const all = new Set([...fromCert, ...fromHT]);
-    return kv({'子域名总数': all.size, '证书日志发现': fromCert.size, 'HackerTarget 发现': hs ? fromHT.size : '不可用', '证书总数': cs.length}) +
-      `<h3>子域名（前 60）</h3>` + tbl(['子域名', '来源'], [...all].sort().slice(0, 60).map(s => [s, (fromCert.has(s) ? '证书 ' : '') + (fromHT.has(s) ? 'HT' : '')]));
-  })());
-
-  fill(sec('同 IP 上的其他站点'), (async () => {
-    const ips = await aP;
-    if (!ips.length) return note('无 A 记录');
-    const ip = ips[0];
-    const [hr, us] = await Promise.all([htRev(ip).catch(() => []), usQuery(`page.ip:${ip}`).catch(() => [])]);
-    const all = [...new Set([...hr, ...us])].filter(d => d !== t);
-    return kv({'检测 IP': ip, '站点数量': all.length, '来源': `HackerTarget ${hr.length} · urlscan ${us.length}`}) +
+  }));
+  fill(sec('连通性与延迟（你的网络视角）'), connP.then(ms => renderConn(ms || [null, null, null])));
+  fill(sec('邮件安全（SPF / DMARC / MTA-STS）'), Promise.all([dnsP, mailP]).then(([r, m]) =>
+    renderMail(getR(r || [], 'TXT'), m || [null, null, null])));
+  fill(sec('DNS 安全（DNSSEC / CAA / HTTPS 记录）'), Promise.all([dnssecP, caaP, httpsP]).then(([a, c, h]) => renderDnsSec(a, c, h)));
+  fill(sec('证书申请与到期（证书透明日志）'), certsP.then(renderCert));
+  fill(sec('注册信息（RDAP）'), rdapP.then(ri => renderReg(ri, t)));
+  fill(sec('子域名（证书日志 + HackerTarget）'), Promise.all([certsP, subP]).then(([cs, hs]) => {
+    const s = subsOf(t, cs || [], hs);
+    return kv({'子域名总数': s.all.size, '证书日志发现': s.fromCert.size, 'HackerTarget 发现': hs ? s.fromHT.size : '不可用', '证书总数': (cs || []).length}) +
+      `<h3>子域名（前 60）</h3>` + tbl(['子域名', '来源'], [...s.all].sort().slice(0, 60).map(x => [x, (s.fromCert.has(x) ? '证书 ' : '') + (s.fromHT.has(x) ? 'HT' : '')]));
+  }));
+  fill(sec('同 IP 上的其他站点'), revP.then(([hr, us]) => {
+    const all = [...new Set([...(hr || []), ...(us || [])])].filter(d => d !== t);
+    return kv({'站点数量': all.length, '来源': `HackerTarget ${(hr || []).length} · urlscan ${(us || []).length}`}) +
       `<p>${list(all, 60)}</p>` + note('共享 IP 的站点越多，通常说明是共享主机或 CDN；仅供参考。');
-  })());
+  }));
+
+  // 结论：等全部数据到齐后汇总
+  fill(sumId, Promise.all([dnsP, caaP, httpsP, dnssecP, geosP, certsP, rdapP, subP, revP, mailP, connP]).then(V => summaryHtml(t, V)));
+}
+
+function summaryHtml(t, V) {
+  const [r0, caaJ, httpsJ, adJ, geos, cs0, ri, hs, rev, mail0, conn0] = V;
+  const r = r0 || [], cs = cs0 || [], mail = mail0 || [null, null, null], conn = conn0 || [null, null, null];
+  const items = [];
+  const add = (lv, text) => items.push([lv, text]);
+
+  const connOk = conn.filter(x => x !== null).length;
+  if (!connOk) add('bad', '站点当前无法连接（DNS 故障、被墙或站点不可达）');
+  else if (connOk < 3) add('warn', `连通不稳定（${connOk}/3 次成功）`);
+  else add('ok', '站点可正常连接');
+
+  const aRec = getR(r, 'A');
+  if (!aRec.length) add('warn', '没有 A 记录，域名未指向 IPv4 地址');
+
+  const cert = cs.find(valid) || cs[0];
+  const left = cert ? dayDiff(Date.parse(cert.not_after)) : null;
+  if (left === null) add('warn', '未找到证书签发记录');
+  else if (left < 0) add('bad', '证书已过期');
+  else if (left <= 14) add('bad', `证书 ${left} 天后到期，需立即续期`);
+  else if (left <= 30) add('warn', `证书 ${left} 天后到期`);
+  else add('ok', `证书有效，剩余 ${left} 天`);
+
+  if (ri && ri.age !== null) {
+    if (ri.age < 180) add('warn', `域名注册不足半年（${ri.age} 天）`);
+    else if (ri.age >= 1095) add('ok', `域名注册超过 ${Math.floor(ri.age / 365)} 年`);
+  }
+
+  const ad = adJ ? !!adJ.AD : null;
+  if (ad === true) add('ok', 'DNSSEC 已验证');
+  else if (ad === false) add('warn', 'DNSSEC 未验证（可能未启用）');
+
+  const caaRec = caaJ ? recs(caaJ, 257) : null;
+  if (caaRec) add(caaRec.length ? 'ok' : 'warn', caaRec.length ? '已设置 CAA，限制了证书签发机构' : '未设置 CAA，任何 CA 都可签发证书');
+
+  const httpsRec = httpsJ ? recs(httpsJ, 65) : null;
+  if (httpsRec) {
+    const alpn = httpsRec.map(x => x.match(/alpn="([^"]+)"/)?.[1]).find(Boolean) || '';
+    if (/h3/.test(alpn)) add('ok', '支持 HTTP/3');
+    if (httpsRec.some(x => /(^|\s)ech=/.test(x))) add('ok', '支持 ECH 加密 SNI');
+  }
+
+  const mx = getR(r, 'MX'), txt = getR(r, 'TXT');
+  const spf = txt.find(x => /^v=spf1/i.test(x));
+  const {dm, mt, tr} = mailScore(mail);
+  if (mx.length) {
+    if (!spf) add('bad', '有邮件服务但未配置 SPF');
+    if (!dm) add('bad', '有邮件服务但未配置 DMARC');
+    else {
+      const p = dm.match(/p=(\w+)/)?.[1];
+      if (p === 'reject') add('ok', 'DMARC 策略为 reject');
+      else add('warn', `DMARC 策略为 ${p || '未知'}，伪造邮件未被拦截`);
+    }
+  }
+
+  const cdn = cdnHits(getR(r, 'CNAME'), getR(r, 'NS'), (geos || []).filter(Boolean).map(g => g.org || ''));
+  if (cdn.length) add('ok', `使用 ${cdn.join('、')} 提供加速或防护`);
+
+  const s = subsOf(t, cs, hs);
+  const verdict = items.some(x => x[0] === 'bad') ? ['存在风险项', 'bad'] : items.some(x => x[0] === 'warn') ? ['有需关注项', 'warn'] : ['整体良好', 'ok'];
+  const tiles = [
+    ['子域名', s.all.size],
+    ['IP 数量', aRec.length],
+    ['CDN / 托管', cdn[0] || '无'],
+    ['证书剩余', left === null ? '—' : left + ' 天'],
+    ['注册年龄', ri?.age == null ? '—' : Math.floor(ri.age / 365) + ' 年'],
+    ['DNSSEC', ad === true ? '已验证' : ad === false ? '未验证' : '—'],
+    ['连通', connOk + '/3'],
+    ['邮件安全', [spf, dm, mt, tr].filter(Boolean).length + '/4'],
+  ];
+  return `<p class="verdict">${pill(verdict[0], verdict[1])}</p>` +
+    `<div class="tiles">${tiles.map(([k, v]) => `<div class="tile"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('')}</div>` +
+    `<ul class="find">${items.map(([lv, tx]) => `<li>${pill(lv === 'ok' ? '正常' : lv === 'warn' ? '注意' : '风险', lv)} ${esc(tx)}</li>`).join('')}</ul>` +
+    note('结论由公开数据自动判断，仅供参考；下方各区块为原始数据明细。');
 }
 
 /* ---------- IP 测绘 ---------- */
@@ -481,90 +663,37 @@ function vpnView() {
   out.insertAdjacentHTML('beforeend', '<button class="btn" id="re">🔄 重新检测</button>');
 }
 
-/* ---------- 证书与加密 ---------- */
-// 证书申请与到期：来自证书透明日志（crt.sh / certspotter）
-function sslCertSec(t) {
-  return (async () => {
-    const cs = await certs(t);
-    if (!cs.length) return note('证书日志中没有该域名的记录。');
-    const ce = cs.find(valid) || cs[0];
-    const nb = Date.parse(ce.not_before), na = Date.parse(ce.not_after);
-    const left = dayDiff(na);
-    const st = left < 0 ? ['已过期', 'bad'] : left <= 14 ? [`${left} 天后到期，请尽快续期`, 'bad'] : left <= 30 ? [`${left} 天后到期`, 'warn'] : [`有效，剩余 ${left} 天`, 'ok'];
-    const dates = [...new Set(cs.map(c => Date.parse(c.not_before)))].sort((a, b) => a - b);
-    const gaps = dates.slice(1).map((d, i) => (d - dates[i]) / 864e5);
-    const avg = gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
-    const byYear = {}, issuers = {};
-    cs.forEach(c => {
-      const y = (c.not_before || '').slice(0, 4);
-      byYear[y] = (byYear[y] || 0) + 1;
-      const o = orgOf(c.issuer_name); issuers[o] = (issuers[o] || 0) + 1;
-    });
-    return `<p>${pill(st[0], st[1])} ${valid(ce) ? '' : pill('最新证书未生效或已失效', 'bad')}</p>` +
-      kv({
-        '签发机构': orgOf(ce.issuer_name),
-        '签发日期': fmtDate(nb),
-        '到期日期': fmtDate(na),
-        '有效期': `${Math.round((na - nb) / 864e5)} 天`,
-        '续期平均间隔': avg ? `约 ${avg} 天` : '数据不足',
-        '历史证书数量': cs.length,
-      }) +
-      `<h3>有效期进度</h3>` + timelineSvg(nb, na) +
-      `<h3>每年签发数量（续期节奏）</h3>` + bars(Object.entries(byYear).sort((a, b) => a[0] - b[0]).slice(-10), '#e0a526') +
-      `<h3>签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 6));
-  })();
-}
-
-// DNS 层加密策略：DNSSEC、CAA（允许签发证书的 CA）、HTTPS 记录（HTTP/3、ECH）
-function dnsSecSec(t) {
-  return (async () => {
-    const [a, c, h] = await Promise.all([dns(t, T.A), dns(t, T.CAA), dns(t, T.HTTPS)].map(p => p.catch(() => null)));
-    const dnssec = a === null ? pill('查询失败', 'no') : a.AD ? pill('已验证（DNSSEC 签名有效）', 'ok') : pill('未验证（未启用或解析器未返回）', 'warn');
-    const caa = c ? recs(c, T.CAA).map(x => {
-      const m = x.match(/^(\d+)\s+(\w+)\s+"?([^"]*)"?$/);
-      return m ? [m[2], m[3], m[1] === '128' ? '严格（critical）' : '普通'] : [x, '', ''];
-    }) : null;
-    const https = h ? recs(h, T.HTTPS) : null;
-    const alpn = https?.map(x => x.match(/alpn="([^"]+)"/)?.[1]).find(Boolean) || '';
-    const ech = https ? https.some(x => /(^|\s)ech=/.test(x)) : false;
-    return `<p>${dnssec}</p>` +
-      `<h3>CAA（允许签发证书的 CA）</h3>` +
-      (caa === null ? note('查询失败') : caa.length ? tbl(['标签', '值', '级别'], caa) : `<p>${pill('未设置 CAA：任何 CA 都可以为该域名签发证书', 'warn')}</p>`) +
-      `<h3>HTTPS 记录（新一代协议支持）</h3>` +
-      (https === null ? note('查询失败') : !https.length ? note('未发布 HTTPS 记录') : kv({
-        '应用层协议（ALPN）': alpn || '—',
-        'HTTP/3（QUIC）': /h3/.test(alpn) ? '支持' : '未发现',
-        'ECH（加密 SNI）': ech ? '支持' : '未发现',
-      })) +
-      note('DNSSEC 的“已验证”由解析器给出，不同解析器结果可能不同。CAA 与 HTTPS 记录都是公开的 DNS 配置。');
-  })();
-}
-
-const SSL_GLOSSARY = '<dl class="kv">' + [
-  ['证书', '网站的身份凭证，由 CA（证书颁发机构）签发，证明域名确实属于该服务器，并附带用于加密的公钥。'],
-  ['签发 / 到期', '证书有效期的起止时间。到期后浏览器会报错，因此需要定期续期。Let\'s Encrypt 证书有效期约 90 天，常配合自动续期。'],
-  ['CA', '如 Let\'s Encrypt、DigiCert、Sectigo。它在验证你确实控制该域名后签发证书。'],
-  ['CAA', '域名上的 DNS 记录，声明“只允许哪家 CA 签发证书”，可防止其他 CA 被误用签发证书。'],
-  ['DNSSEC', '给 DNS 记录加数字签名，防止解析结果被篡改或投毒。'],
-  ['HTTPS 记录', '写在 DNS 里的新记录，告知浏览器支持的协议（如 HTTP/3）以及是否启用 ECH。'],
-  ['ECH（加密 SNI）', '加密 TLS 握手中的域名字段，避免中间人或运营商看到你访问的具体网站。'],
-  ['TLS 协议与密码套件', '客户端与服务器建立加密通道的规则与算法组合。TLS 1.2 和 1.3 为现行标准，1.3 更快更安全。'],
-  ['前向保密（ECDHE / DHE）', '即使服务器私钥将来泄露，过去的通信也无法被解密。'],
-  ['证书透明日志（CT）', '公开记录所有已签发证书的日志。本页用它查找证书历史和子域名。'],
-].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
-
+/* ---------- 证书与加密（独立页） ---------- */
 function sslView(t) {
-  fill(sec('证书申请与到期（证书透明日志）'), sslCertSec(t));
-  fill(sec('DNS 层加密策略（DNSSEC / CAA / HTTPS 记录）'), dnsSecSec(t));
+  fill(sec('证书申请与到期（证书透明日志）'), certs(t).catch(() => []).then(renderCert));
+  fill(sec('DNS 层加密策略（DNSSEC / CAA / HTTPS 记录）'),
+    Promise.all([dns(t, T.A), dns(t, T.CAA), dns(t, T.HTTPS)].map(p => p.catch(() => null)))
+      .then(([a, c, h]) => renderDnsSec(a, c, h)));
   fill(sec('TLS 协议与密码套件'),
     `<p class="muted">浏览器无法读取其他网站的 TLS 协议版本与密码套件，这部分需要服务端探测。</p>` +
     `<p><a href="https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(t)}" target="_blank" rel="noopener">在 SSL Labs 打开该域名的完整 TLS 测试 ↗</a></p>`);
-  fill(sec('术语速查'), SSL_GLOSSARY);
+  fill(sec('术语速查'), '<dl class="kv">' + [
+    ['证书', '网站的身份凭证，由 CA（证书颁发机构）签发，证明域名确实属于该服务器，并附带用于加密的公钥。'],
+    ['签发 / 到期', '证书有效期的起止时间。到期后浏览器会报错，因此需要定期续期。Let\'s Encrypt 证书有效期约 90 天，常配合自动续期。'],
+    ['CA', '如 Let\'s Encrypt、DigiCert、Sectigo。它在验证你确实控制该域名后签发证书。'],
+    ['CAA', '域名上的 DNS 记录，声明“只允许哪家 CA 签发证书”，可防止其他 CA 被误用签发证书。'],
+    ['DNSSEC', '给 DNS 记录加数字签名，防止解析结果被篡改或投毒。'],
+    ['HTTPS 记录', '写在 DNS 里的新记录，告知浏览器支持的协议（如 HTTP/3）以及是否启用 ECH。'],
+    ['ECH（加密 SNI）', '加密 TLS 握手中的域名字段，避免中间人或运营商看到你访问的具体网站。'],
+    ['TLS 协议与密码套件', '客户端与服务器建立加密通道的规则与算法组合。TLS 1.2 和 1.3 为现行标准，1.3 更快更安全。'],
+    ['前向保密（ECDHE / DHE）', '即使服务器私钥将来泄露，过去的通信也无法被解密。'],
+    ['证书透明日志（CT）', '公开记录所有已签发证书的日志。本页用它查找证书历史和子域名。'],
+  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>');
 }
 
 function about() {
   fill(sec('关于'),
     '<p>本工具为纯前端网页，没有自建服务器，也不包含任何 API Key。</p>' +
+    '<h3>综合分析的工作方式</h3>' +
+    '<ul><li>输入域名后，所有数据源同时发起请求，互不等待，页面显示并行进度</li>' +
+    '<li>同一个请求只发一次，结果缓存在浏览器中，重复查询更快</li>' +
+    '<li>各区块独立显示，某个数据源失败不影响其他结果</li>' +
+    '<li>结论由公开数据自动判断，属于启发式结果</li></ul>' +
     '<h3>数据来源（均为公开、免 Key 接口）</h3>' +
     '<ul><li>DNS 记录、DNSSEC、CAA、HTTPS 记录、SPF / DMARC / MTA-STS：DNS over HTTPS（阿里 DNS、Cloudflare、Google、DNSPod）</li>' +
     '<li>IP 归属：ipapi.co、ipinfo.io 互为备份</li>' +
