@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IP / 域名溯源 · 国内优先版</title>
+<title>IP / 域名溯源 · 网络测绘增强版</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8fafc;color:#1e293b;padding:2rem 1rem;line-height:1.6}
-.container{max-width:920px;margin:0 auto}
+.container{max-width:980px;margin:0 auto}
 h1{font-size:1.5rem;font-weight:700;color:#0f172a;margin-bottom:.25rem}
 .sub{font-size:.85rem;color:#64748b;margin-bottom:1.5rem;line-height:1.7}
 .sub code{background:#e2e8f0;padding:.1rem .35rem;border-radius:4px;font-size:.78rem;color:#475569}
@@ -39,20 +39,20 @@ details pre{margin-top:.4rem;font-size:.75rem;color:#64748b}
 </head>
 <body>
 <div class="container">
-<h1>🔍 IP / 域名溯源 · 国内优先</h1>
+<h1>🔍 IP / 域名溯源 · 网络测绘增强版</h1>
 <p class="sub">
-优先国内数据源 · 字段中文化 ·
-<span style="color:#3b82f6">IP 溯源</span> ·
-<span style="color:#8b5cf6">域名溯源</span> ·
+全模块默认可用 · 无密钥 ·
+<span style="color:#3b82f6">IP 测绘</span> ·
+<span style="color:#8b5cf6">域名 / 证书测绘</span> ·
 <span style="color:#ec4899">隐私自检</span>
 </p>
 
 <div class="query-bar">
-<input id="qi" type="text" placeholder="输入 IP 或域名，例如 58.30.0.0 或 example.cn" autocomplete="off" />
+<input id="qi" type="text" placeholder="输入 IP 或域名，例如 8.8.8.8 或 example.com" autocomplete="off" />
 <button id="qb" onclick="run()">查询</button>
 </div>
 
-<div id="out"><p class="empty">输入 IP 或域名开始查询；留空直接点“查询”运行隐私自检</p></div>
+<div id="out"><p class="empty">输入 IP 或域名开始查询；留空运行隐私自检</p></div>
 </div>
 
 <script>
@@ -66,203 +66,296 @@ function card(title,tagHtml,body=""){return`<div class="card"><div class="card-h
 function rawJson(o){return`<details><summary>原始数据</summary><pre>${esc(JSON.stringify(o,null,2))}</pre></details>`}
 async function fetchT(url,opt={},ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{return await fetch(url,{...opt,signal:c.signal})}finally{clearTimeout(t)}}
 
-/* ================= IP 溯源（国内优先） ================= */
+/* ================= IP 测绘 ================= */
 
-// 1. ip9.com.cn — 国内 IP 归属地，免费不限次
-async function mIp9(q){
-if(!isIP(q))return{skip:true,reason:"ip9.com.cn 仅支持 IP"};
-const res=await fetchT(`https://ip9.com.cn/get?ip=${encodeURIComponent(q)}`);
+// 1. tcp.lc IP 查询（CORS，60/min, 1000/day）
+async function mTcpIp(q){
+if(!isIP(q)&&!isDomain(q))return{skip:true};
+const res=await fetchT(`https://tcp.lc/api/v2/ip/${encodeURIComponent(q)}`);
 if(!res.ok)throw new Error(`HTTP ${res.status}`);
 const d=await res.json();
-if(d.ret!==200||!d.data)return`<pre>未查询到该 IP 的归属地信息</pre>`;
-const x=d.data;
+if(d.code!==200)return`<pre>${esc(d.msg||"查询失败")}</pre>`;
+const x=d.data||{};
 return`<pre><strong>IP</strong> ${esc(x.ip??"—")}
-<strong>国家/地区</strong> ${esc(x.country??"—")} (${esc(x.country_code??"—")})
-<strong>省份</strong> ${esc(x.prov??"—")}
-<strong>城市</strong> ${esc(x.city??"—")} ${esc(x.city_short_code??"")}
-<strong>区县</strong> ${esc(x.area??"—")}
+<strong>国家/地区</strong> ${esc(x.country??"—")} ${esc(x.country_code??"")}
+<strong>省份</strong> ${esc(x.province??"—")}
+<strong>城市</strong> ${esc(x.city??"—")}
 <strong>运营商</strong> ${esc(x.isp??"—")}
-<strong>经纬度</strong> ${esc(x.lng??"—")}, ${esc(x.lat??"—")}</pre>${rawJson(d)}`
+<strong>ASN</strong> ${esc(x.asn??"—")} ${esc(x.as_name??"")}
+<strong>经纬度</strong> ${esc(x.latitude??"—")}, ${esc(x.longitude??"—")}</pre>${rawJson(d)}`
 }
 
-// 2. ip.sb — 备用地理源（中文化字段）
+// 2. ip.sb 备用
 async function mIpSb(q){
-if(!isIP(q))return{skip:true,reason:"ip.sb 仅支持 IP"};
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
 const res=await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
 if(!res.ok)throw new Error(`HTTP ${res.status}`);
 const d=await res.json();
-return`<pre><strong>IP</strong> ${esc(d.ip??"—")}
-<strong>国家</strong> ${esc(d.country??"—")}
+return`<pre><strong>国家</strong> ${esc(d.country??"—")}
 <strong>城市</strong> ${esc(d.city??"—")}
 <strong>运营商</strong> ${esc(d.isp??"—")}
 <strong>ASN</strong> ${esc(d.asn??"—")}</pre>${rawJson(d)}`
 }
 
-// 3. ContrastAPI — 威胁情报/信誉（无密钥）
-async function mContrast(q){
-if(!isIP(q))return{skip:true,reason:"ContrastAPI 仅支持 IP"};
-const res=await fetchT(`https://api.contrastcyber.com/v1/threat-report/${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>威胁情报服务返回 HTTP ${res.status}</pre>`;
+// 3. Shodan InternetDB
+async function mInternetDB(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://internetdb.shodan.io/${encodeURIComponent(q)}`);
+if(res.status===404)return`<pre>该 IP 暂无 InternetDB 记录</pre>`;
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
 const d=await res.json();
-const abuse=d.abuseipdb||{};
-return`<pre><strong>AbuseIPDB 滥用评分</strong> ${esc(abuse.abuse_score??"—")}
-<strong>举报总数</strong> ${esc(abuse.total_reports??"—")}
-<strong>最近举报</strong> ${esc(abuse.last_reported_at??"—")}</pre>${rawJson(d)}`
+return`<pre><strong>开放端口</strong> ${esc(d.ports?.join(", ")||"—")}
+<strong>主机名</strong> ${esc(d.hostnames?.join(", ")||"—")}
+<strong>标签</strong> ${esc(d.tags?.join(", ")||"—")}
+<strong>CPE</strong> ${esc(d.cpes?.join(", ")||"—")}
+<strong>已知漏洞</strong> ${esc(d.vulns?.join(", ")||"—")}</pre>${rawJson(d)}`
 }
 
-/* ================= 域名溯源（国内优先） ================= */
+// 4. 反向 DNS
+async function mReverseDns(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://myip.helpmek.com/api/v1/reverse-dns?ip=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>反向 DNS 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+return`<pre><strong>PTR 主机名</strong> ${esc(d.hostname??d.ptr??d.result??"—")}</pre>${rawJson(d)}`
+}
 
-// 4. TCPLab Whois — 无需 Key，每分钟 10 次
+// 5. 反向 IP（同服域名）
+async function mReverseIp(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://api.hackertarget.com/reverseiplookup/?q=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>反向 IP 返回 HTTP ${res.status}</pre>`;
+const text=await res.text();
+if(text.includes("error")||text.includes("API count exceeded"))return`<pre>${esc(text)}</pre>`;
+return`<pre><strong>同 IP 绑定的域名</strong>
+${esc(text.trim()||"未发现")}</pre>`
+}
+
+// 6. ContrastAPI
+async function mContrast(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://api.contrastapi.com/v1/threat-report/${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>威胁情报返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+const abuse=d.abuseipdb||{};
+return`<pre><strong>AbuseIPDB 评分</strong> ${esc(abuse.abuse_score??"—")}
+<strong>举报总数</strong> ${esc(abuse.total_reports??"—")}</pre>${rawJson(d)}`
+}
+
+// 7. Feodo Tracker C2 比对
+async function mFeodo(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT("https://feodotracker.abuse.ch/downloads/ipblocklist.json");
+if(!res.ok)return`<pre>Feodo Tracker 返回 HTTP ${res.status}</pre>`;
+const list=await res.json();
+const hit=list.find(x=>x.ip_address===q);
+if(hit)return`<pre>${tag("⚠️ 该 IP 出现在 Feodo C2 黑名单中","warn")}
+<strong>恶意家族</strong> ${esc(hit.malware??"—")}
+<strong>首次发现</strong> ${esc(hit.first_seen??"—")}
+<strong>最近在线</strong> ${esc(hit.last_online??"—")}
+<strong>端口</strong> ${esc(hit.port??"—")}</pre>`;
+return`<pre>✅ 未在 Feodo Tracker C2 黑名单中发现</pre>`
+}
+
+/* ================= 域名 / 证书测绘 ================= */
+
+// 8. tcp.lc Whois
 async function mTcpWhois(q){
-if(!isDomain(q))return{skip:true,reason:"Whois 查询仅支持域名"};
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
 const res=await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>Whois 查询返回 HTTP ${res.status}</pre>`;
+if(!res.ok)return`<pre>Whois 返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
 const dates=d.dates||{};
-return`<pre><strong>是否已注册</strong> ${d.isRegistered?"是":"否"}
+return`<pre><strong>是否注册</strong> ${d.isRegistered?"是":"否"}
 <strong>注册商</strong> ${esc(d.registrar?.name??"—")}
 <strong>创建时间</strong> ${esc(dates.created?.slice(0,10)??"—")}
 <strong>到期时间</strong> ${esc(dates.expires?.slice(0,10)??"—")}
-<strong>DNS 服务器</strong> ${esc((d.nameservers||[]).map(n=>n.name).join(", ")||"—")}</pre>${rawJson(d)}`
+<strong>DNS</strong> ${esc((d.nameservers||[]).map(n=>n.name).join(", ")||"—")}</pre>${rawJson(d)}`
 }
 
-// 5. RDAP — 国际域名补充
+// 9. tcp.lc DNS（A / MX / NS / TXT）
+async function mTcpDns(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT("https://tcp.lc/api/v2/dns/query",{
+method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({domain:q,type:"A"})
+});
+if(!res.ok)return`<pre>DNS 查询返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(d.code!==200)return`<pre>${esc(d.msg||"查询失败")}</pre>`;
+const ans=(d.data?.answers||[]).map(a=>`${a.type} ${a.name} → ${a.data}`).join("\n")||"—";
+return`<pre><strong>A 记录</strong>
+${esc(ans)}</pre>${rawJson(d)}`
+}
+
+// 10. Google DoH（MX / NS / TXT 综合）
+async function mDohMulti(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const types={A:1,AAAA:28,MX:15,NS:2,TXT:16};
+let out="";
+for(const [name,type] of Object.entries(types)){
+try{
+const res=await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=${type}`);
+const d=await res.json();
+const ans=(d.Answer||[]).map(a=>`${a.data}`).join("; ")||"—";
+out+=`<strong>${name}</strong> ${esc(ans)}\n`;
+}catch(e){out+=`<strong>${name}</strong> 查询失败\n`}
+}
+return`<pre>${out}</pre>`
+}
+
+// 11. SPF / DMARC（从 TXT 解析）
+async function mMailSecurity(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=TXT`);
+const d=await res.json();
+const txts=(d.Answer||[]).map(a=>a.data).join(" ");
+const spf=txts.match(/v=spf1[^"]+/)?.[0]||"—";
+let dmarc="—";
+try{
+const r=await fetchT(`https://dns.google/resolve?name=_dmarc.${encodeURIComponent(q)}&type=TXT`);
+const dd=await r.json();
+dmarc=(dd.Answer||[]).map(a=>a.data).join(" ")||"—";
+}catch(e){}
+return`<pre><strong>SPF</strong> ${esc(spf)}
+<strong>DMARC</strong> ${esc(dmarc)}</pre>`
+}
+
+// 12. tcp.lc ICP
+async function mTcpIcp(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT(`https://tcp.lc/api/v2/icp/query?domain=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>ICP 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(d.code!==200||!d.data)return`<pre>未查询到 ICP 备案（或当日额度已用尽）</pre>`;
+return`<pre><strong>备案号</strong> ${esc(d.data.icp_code??d.data.icp??"—")}
+<strong>主办单位</strong> ${esc(d.data.unit_name??d.data.unit??"—")}
+<strong>性质</strong> ${esc(d.data.unit_nature??d.data.type??"—")}
+<strong>审核时间</strong> ${esc(d.data.update_time??d.data.time??"—")}</pre>${rawJson(d)}`
+}
+
+// 13. crt.sh 子域名枚举
+async function mCrtSh(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT(`https://crt.sh/?q=%25.${encodeURIComponent(q)}&output=json`);
+if(!res.ok)return`<pre>crt.sh 返回 HTTP ${res.status}（可能过载，请稍后）</pre>`;
+const list=await res.json();
+const subs=[...new Set(list.map(x=>x.name_value).join("\n").split("\n").filter(Boolean))];
+return`<pre><strong>证书透明日志中的子域名</strong> ${subs.length} 个
+${esc(subs.slice(0,30).join("\n"))}
+${subs.length>30?"…（仅显示前 30 个）":""}</pre>`
+}
+
+// 14. tcp.lc SSL 证书
+async function mTcpSsl(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT("https://tcp.lc/api/v2/tls/check",{
+method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({domain:q})
+});
+if(!res.ok)return`<pre>SSL 检测返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(d.code!==200)return`<pre>${esc(d.msg||"检测失败")}</pre>`;
+const x=d.data||{};
+return`<pre><strong>是否有效</strong> ${x.valid?"是":"否"}
+<strong>到期时间</strong> ${esc(x.expires_at??x.not_after??"—")}
+<strong>签发机构</strong> ${esc(x.issuer??"—")}
+<strong>SAN</strong> ${esc((x.san||[]).join(", ")||"—")}
+<strong>TLS / HTTP2</strong> ${esc(x.tls_version??"—")} / ${x.http2?"是":"否"}</pre>${rawJson(d)}`
+}
+
+// 15. HTTP 安全头（AlertKick）
+async function mHttpHeaders(q){
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
+const res=await fetchT(`https://alertkick.com/api/tools/security-headers?url=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>安全头检测返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+return`<pre>${esc(JSON.stringify(d,null,2).slice(0,800))}</pre>${rawJson(d)}`
+}
+
+// 16. RDAP（补充）
 async function mRdap(q){
-if(!isDomain(q))return{skip:true,reason:"RDAP 仅支持域名"};
+if(!isDomain(q))return{skip:true,reason:"仅支持域名"};
 const res=await fetchT(`https://rdap.org/domain/${encodeURIComponent(q)}`);
 if(res.status===404)return`<pre>暂无 RDAP 数据</pre>`;
 if(!res.ok)return`<pre>RDAP 返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
 const events=(d.events||[]).map(e=>`${e.eventAction}: ${e.eventDate?.slice(0,10)??""}`).join("\n");
-const registrar=(d.entities||[]).find(e=>e.roles?.includes("registrar"))?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3]||"—";
-return`<pre><strong>注册商</strong> ${esc(registrar)}
-<strong>关键日期</strong>
+return`<pre><strong>关键日期</strong>
 ${esc(events||"—")}</pre>${rawJson(d)}`
 }
 
-// 6. 接口盒子 · 反向 DNS — IP 反查域名
-async function mRevDns(q){
-if(!isIP(q))return{skip:true,reason:"反向 DNS 仅支持 IP"};
-const res=await fetchT(`https://cn.apihz.cn/api/ip/fdns.php?ip=${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>反向 DNS 返回 HTTP ${res.status}</pre>`;
-const d=await res.json();
-if(d.code!==200||!d.data)return`<pre>未查询到该 IP 的历史绑定域名</pre>`;
-const domains=Array.isArray(d.data)?d.data.join("\n"):d.data;
-return`<pre><strong>历史绑定域名</strong>
-${esc(domains)}</pre>${rawJson(d)}`
-}
-
-// 7. 接口盒子 · ICP 备案（需注册获取 ID/Key，此处使用公共测试凭证，频次受限）
-async function mIcp(q){
-if(!isDomain(q))return{skip:true,reason:"ICP 备案查询仅支持域名"};
-// 公共测试凭证：id=88888888, key=88888888
-const res=await fetchT(`https://cn.apihz.cn/api/wangzhan/icp.php?id=88888888&key=88888888&domain=${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>ICP 查询返回 HTTP ${res.status}</pre>`;
-const d=await res.json();
-if(d.code!==200)return`<pre>未查询到备案信息（公共凭证频次可能已用尽，建议注册获取独享 Key）</pre>`;
-return`<pre><strong>备案号</strong> ${esc(d.icp??"—")}
-<strong>主办单位</strong> ${esc(d.unit??"—")}
-<strong>主体性质</strong> ${esc(d.type??"—")}
-<strong>审核时间</strong> ${esc(d.time??"—")}</pre>${rawJson(d)}`
-}
-
-/* ================= 隐私自检（中文化） ================= */
-
+/* ================= 隐私自检 ================= */
 async function pExitCompare(){
-const results={};
-try{const a=await fetchT("https://api.ip.sb/ip");results.ipSb=await a.text()}catch{results.ipSb="获取失败"}
-try{const b=await fetchT("https://api.ipify.org?format=json");results.ipify=(await b.json()).ip}catch{results.ipify="获取失败"}
-const ok=results.ipSb===results.ipify&&results.ipSb!=="获取失败"&&results.ipify!=="获取失败";
-return`<pre><strong>ip.sb 看到的出口 IP</strong> ${esc(results.ipSb)}
-<strong>ipify 看到的出口 IP</strong> ${esc(results.ipify)}
-${ok?"✅ 出口一致，未检测到分流":tag("⚠️ 出口不一致，可能存在分流或代理","warn")}</pre>`
+const r={};
+try{r.ipSb=await(await fetchT("https://api.ip.sb/ip")).text()}catch{r.ipSb="失败"}
+try{r.ipify=(await(await fetchT("https://api.ipify.org?format=json")).json()).ip}catch{r.ipify="失败"}
+const ok=r.ipSb===r.ipify&&r.ipSb!=="失败";
+return`<pre><strong>ip.sb</strong> ${esc(r.ipSb)}
+<strong>ipify</strong> ${esc(r.ipify)}
+${ok?"✅ 出口一致":tag("⚠️ 出口不一致","warn")}</pre>`
 }
-
 async function pWebRTC(){
 return new Promise(resolve=>{
 const ips=new Set();
 const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
 pc.createDataChannel("");
-pc.onicecandidate=e=>{
-if(!e.candidate)return;
-const m=e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}|([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}/i);
-if(m)ips.add(m[0]);
-};
+pc.onicecandidate=e=>{if(!e.candidate)return;const m=e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);if(m)ips.add(m[0])};
 pc.createOffer().then(o=>pc.setLocalDescription(o));
-setTimeout(()=>{
-pc.close();const list=[...ips];
-resolve(`<pre><strong>WebRTC 获取到的地址</strong>
-${list.length?esc(list.join("\n")):"无（浏览器可能已阻止 WebRTC）"}
-${list.length?tag("⚠️ 若这些地址与实际出口不符，说明 WebRTC 泄露了真实网络","warn"):""}</pre>`);
-},3000);
+setTimeout(()=>{pc.close();const l=[...ips];resolve(`<pre><strong>WebRTC 地址</strong>
+${l.length?esc(l.join("\n")):"未获取到（可能已阻止）"}
+${l.length?tag("⚠️ 若与出口 IP 不符，可能存在 WebRTC 泄露","warn"):""}</pre>`)},3000);
 });
 }
-
-async function pTimeLang(ipGeo){
-const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-const lang=navigator.language;
-let geoCountry="—",geoCity="—";
-if(ipGeo){geoCountry=ipGeo.country||ipGeo.country_code||"—";geoCity=ipGeo.city||"—"}
-let hint="";
-if(geoCountry!=="—"&&geoCountry!=="中国"&&geoCountry!=="China"){
-hint=`<br>${tag("⚠️ 当前查询的 IP 不在中国境内，浏览器时区/语言为 "+tz+" / "+lang,"warn")}`;
-}
-return`<pre><strong>浏览器时区</strong> ${esc(tz)}
-<strong>浏览器语言</strong> ${esc(lang)}
-<strong>查询 IP 的国家</strong> ${esc(geoCountry)}
-<strong>查询 IP 的城市</strong> ${esc(geoCity)}${hint}</pre>`
-}
-
 async function pFingerprint(){
 const canvas=document.createElement("canvas");
 const gl=canvas.getContext("webgl")||canvas.getContext("experimental-webgl");
-let webglInfo="—";
-if(gl){const dbg=gl.getExtension("WEBGL_debug_renderer_info");if(dbg)webglInfo=gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)}
-const parts=[navigator.userAgent,navigator.language,screen.width+"x"+screen.height,screen.colorDepth,Intl.DateTimeFormat().resolvedOptions().timeZone,navigator.hardwareConcurrency||"—",navigator.deviceMemory||"—",webglInfo].join("|");
-let hash=0;for(let i=0;i<parts.length;i++){hash=((hash<<5)-hash)+parts.charCodeAt(i);hash|=0}
-const fp=Math.abs(hash).toString(16);
-const key="fp_last_"+location.hostname;
-const last=localStorage.getItem(key);
-localStorage.setItem(key,fp);
-const changed=last&&last!==fp;
+let webgl="—";if(gl){const d=gl.getExtension("WEBGL_debug_renderer_info");if(d)webgl=gl.getParameter(d.UNMASKED_RENDERER_WEBGL)}
+const parts=[navigator.userAgent,navigator.language,screen.width+"x"+screen.height,Intl.DateTimeFormat().resolvedOptions().timeZone,navigator.hardwareConcurrency,webgl].join("|");
+let h=0;for(let i=0;i<parts.length;i++){h=((h<<5)-h)+parts.charCodeAt(i);h|=0}
+const fp=Math.abs(h).toString(16);
+const key="fp_"+location.hostname,last=localStorage.getItem(key);localStorage.setItem(key,fp);
 return`<pre><strong>指纹 ID</strong> ${esc(fp)}
-<strong>WebGL 渲染器</strong> ${esc(webglInfo)}
+<strong>WebGL</strong> ${esc(webgl)}
 <strong>CPU 线程</strong> ${esc(navigator.hardwareConcurrency??"—")}
-<strong>设备内存</strong> ${esc(navigator.deviceMemory??"—")} GB
-<strong>上次访问指纹</strong> ${last?esc(last):"首次访问"}
-${changed?tag("⚠️ 指纹已发生变化","warn"):last?"✅ 指纹未变化":""}</pre>`
+<strong>上次</strong> ${last?esc(last):"首次"}
+${last&&last!==fp?tag("⚠️ 指纹已变化","warn"):last?"✅ 未变化":""}</pre>`
 }
 
 /* ================= 主流程 ================= */
-function throttle(fn,ms){let last=0;return async(...a)=>{const w=Math.max(0,last+ms-Date.now());if(w>0)await new Promise(r=>setTimeout(r,w));last=Date.now();return fn(...a)}}
-const whoisThrottled=throttle(mTcpWhois,6500); // 每分钟 10 次 ≈ 6 秒一次
+function throttle(fn,ms){let l=0;return async(...a)=>{const w=Math.max(0,l+ms-Date.now());if(w>0)await new Promise(r=>setTimeout(r,w));l=Date.now();return fn(...a)}}
+const whoisThrottle=throttle(mTcpWhois,6500);
+const sslThrottle=throttle(mTcpSsl,6500);
 
 async function run(){
 const q=$in.value.trim();
 $btn.disabled=true;$out.innerHTML="";
-const hasQuery=q.length>0;
-const ipOnly=hasQuery&&isIP(q);
-const domOnly=hasQuery&&isDomain(q);
-
-let ipGeo=null;
-if(ipOnly){try{const r=await fetchT(`https://ip9.com.cn/get?ip=${encodeURIComponent(q)}`);if(r.ok){const j=await r.json();if(j.ret===200)ipGeo=j.data}}catch(e){}}
+const has=q.length>0,ipOnly=has&&isIP(q),domOnly=has&&isDomain(q);
 
 const sections=[
-{name:"IP 溯源",color:"#3b82f6",tasks:[
-{title:"ip9.com.cn · 国内归属地",fn:()=>mIp9(q),skip:!ipOnly},
+{name:"IP 测绘",color:"#3b82f6",tasks:[
+{title:"tcp.lc · 归属 / ASN / 运营商",fn:()=>mTcpIp(q),skip:!ipOnly},
 {title:"ip.sb · 备用地理",fn:()=>mIpSb(q),skip:!ipOnly},
-{title:"ContrastAPI · 威胁情报",fn:()=>mContrast(q),skip:!ipOnly},
-{title:"接口盒子 · 反向 DNS（域名反查）",fn:()=>mRevDns(q),skip:!ipOnly},
+{title:"Shodan InternetDB · 端口 / CVE",fn:()=>mInternetDB(q),skip:!ipOnly},
+{title:"反向 DNS · PTR 记录",fn:()=>mReverseDns(q),skip:!ipOnly},
+{title:"反向 IP · 同服域名",fn:()=>mReverseIp(q),skip:!ipOnly},
+{title:"ContrastAPI · 威胁评分",fn:()=>mContrast(q),skip:!ipOnly},
+{title:"Feodo Tracker · C2 比对",fn:()=>mFeodo(q),skip:!ipOnly},
 ]},
-{name:"域名溯源",color:"#8b5cf6",tasks:[
-{title:"TCPLab Whois · 注册信息",fn:()=>whoisThrottled(q),skip:!domOnly},
+{name:"域名 / 证书测绘",color:"#8b5cf6",tasks:[
+{title:"tcp.lc Whois · 注册信息",fn:()=>whoisThrottle(q),skip:!domOnly},
+{title:"DNS A 记录",fn:()=>mTcpDns(q),skip:!domOnly},
+{title:"DNS 综合 · A/AAAA/MX/NS/TXT",fn:()=>mDohMulti(q),skip:!domOnly},
+{title:"邮件安全 · SPF / DMARC",fn:()=>mMailSecurity(q),skip:!domOnly},
+{title:"crt.sh · 子域名枚举",fn:()=>mCrtSh(q),skip:!domOnly},
+{title:"tcp.lc SSL · 证书详情",fn:()=>sslThrottle(q),skip:!domOnly},
+{title:"HTTP 安全头",fn:()=>mHttpHeaders(q),skip:!domOnly},
+{title:"tcp.lc ICP · 备案",fn:()=>mTcpIcp(q),skip:!domOnly},
 {title:"RDAP · 国际域名补充",fn:()=>mRdap(q),skip:!domOnly},
-{title:"接口盒子 · ICP 备案",fn:()=>mIcp(q),skip:!domOnly},
 ]},
 {name:"隐私自检",color:"#ec4899",tasks:[
 {title:"出口 IP 对比",fn:()=>pExitCompare(),skip:false},
 {title:"WebRTC 泄露检测",fn:()=>pWebRTC(),skip:false},
-{title:"时区 / 语言一致性",fn:()=>pTimeLang(ipGeo),skip:false},
 {title:"浏览器指纹",fn:()=>pFingerprint(),skip:false},
 ]}
 ];
@@ -272,8 +365,7 @@ $out.insertAdjacentHTML("beforeend",`<div class="section"><div class="section-ti
 const secEl=$out.lastElementChild;
 for(const t of sec.tasks){
 if(t.skip)continue;
-if(!hasQuery&&sec.name!=="隐私自检")continue;
-
+if(!has&&sec.name!=="隐私自检")continue;
 secEl.insertAdjacentHTML("beforeend",card(t.title,tag("查询中…","load")));
 const el=secEl.lastElementChild;
 try{
@@ -283,14 +375,12 @@ if(r&&r.skip){h.innerHTML=`<span class="card-title">${t.title}</span>${tag("跳�
 else{h.innerHTML=`<span class="card-title">${t.title}</span>${tag("完成","ok")}`;el.insertAdjacentHTML("beforeend",r)}
 }catch(e){
 el.querySelector(".card-header").innerHTML=`<span class="card-title">${t.title}</span>${tag("失败","err")}`;
-const msg=e.name==="AbortError"?"请求超时（12s）":e.message;
-el.insertAdjacentHTML("beforeend",`<pre>${esc(msg)}</pre>`);
+el.insertAdjacentHTML("beforeend",`<pre>${esc(e.name==="AbortError"?"请求超时（12s）":e.message)}</pre>`);
 }
 }
 }
 $btn.disabled=false;
 }
-
 $in.addEventListener("keydown",e=>{if(e.key==="Enter"&&!$btn.disabled)run()});
 </script>
 </body>
