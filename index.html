@@ -74,6 +74,32 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .about-card code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.75rem;color:#334155}
 .relation-box{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:.8rem;color:#6b21a8}
 .relation-box strong{color:#7c3aed}
+
+/* ============ SSL 可视化组件 ============ */
+.ssl-visual{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
+.ssl-ring{width:90px;height:90px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--s) * 1%),#e2e8f0 0);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .8s ease}
+.ssl-ring::before{content:'';position:absolute;inset:8px;background:#fff;border-radius:50%}
+.ssl-ring-inner{position:relative;z-index:1;text-align:center}
+.ssl-ring-num{font-size:1.4rem;font-weight:700;line-height:1}
+.ssl-ring-label{font-size:.65rem;color:#64748b;margin-top:2px;font-weight:600}
+.ssl-timeline{width:100%}
+.ssl-timeline-bar{height:14px;background:#e2e8f0;border-radius:7px;position:relative;overflow:hidden}
+.ssl-timeline-fill{height:100%;background:var(--tcolor);border-radius:7px 0 0 7px;transition:width .8s ease}
+.ssl-timeline-now{position:absolute;top:-3px;bottom:-3px;width:3px;background:#0f172a;border-radius:2px;box-shadow:0 0 0 2px #fff}
+.ssl-timeline-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.72rem;color:#64748b;margin-top:.35rem;flex-wrap:wrap}
+.ssl-timeline-labels strong{color:#0f172a}
+.ssl-section-title{font-size:.74rem;font-weight:700;color:#475569;margin:.75rem 0 .35rem;display:flex;align-items:center;gap:.3rem}
+.tls-ladder{display:flex;gap:.35rem;margin:.4rem 0 .5rem;flex-wrap:wrap}
+.tls-step{flex:1;min-width:70px;padding:.45rem .2rem;text-align:center;border-radius:6px;font-size:.72rem;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1.5px solid transparent;transition:all .3s}
+.tls-step.usable{background:#eff6ff;color:#3b82f6}
+.tls-step.active{background:#3b82f6;color:#fff;border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(59,130,246,.15);transform:translateY(-1px)}
+.tls-step.active::after{content:' ✓'}
+.tls-step.deprecated{background:#fef2f2;color:#dc2626;text-decoration:line-through;opacity:.75}
+.cipher-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin:.4rem 0}
+.cipher-tag{padding:.22rem .55rem;background:#f3e8ff;color:#7c3aed;border-radius:20px;font-size:.7rem;font-weight:600}
+.cipher-name{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.74rem;color:#334155;margin:.3rem 0}
+.ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6}
+
 @media(max-width:600px){.header-inner{padding:.75rem .75rem .4rem}.header h1{font-size:1rem}.query-bar{flex-direction:column}.query-bar button{width:100%}main{padding:1rem .75rem 2rem}.score-circle{width:110px;height:110px}.score-num{font-size:1.7rem}}
 </style>
 </head>
@@ -104,7 +130,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-cert">
-    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 深度检测、CDN 特征、广告联盟信号、用户视角广告检测</p></div>
+    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 深度检测（评分 · 有效期 · 协议 · 算法）、CDN 特征、广告联盟信号、用户视角广告检测</p></div>
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
@@ -137,7 +163,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
         <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
         <li><code>Google DoH</code>：DNS 综合解析（正反向）</li>
         <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>Domainee</code>：SSL 深度检测（协议/套件/颁发机构/剩余天数/安全评分）</li>
+        <li><code>Domainee</code>：SSL 深度检测（协议/套件/颁发机构/有效期/安全评分）</li>
         <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分，CORS 已启用</li>
         <li><code>PhishDestroy</code>：恶意域名风险评分 0–100，无密钥、CORS Ready</li>
         <li><code>OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
@@ -181,9 +207,10 @@ const KEY_CN = {
   name_servers:"DNS 服务器（列表）", nameservers:"DNS 服务器（列表）", status:"状态",
   isRegistered:"是否已注册", created:"创建时间", expires:"到期时间",
   issuer:"颁发者（CA）", subject:"证书主体", valid_from:"生效时间", valid_to:"到期时间",
-  not_before:"生效时间", not_after:"到期时间", san:"备用名称 SAN（列表）",
-  serial:"序列号", valid:"是否有效", altNames:"备用名称（列表）",
-  protocol:"协商协议", cipher:"加密套件", version:"版本", O:"组织名称", C:"国家代码", CN:"通用名称",
+  not_before:"生效时间", not_after:"到期时间", validFrom:"生效时间", validTo:"到期时间",
+  san:"备用名称 SAN（列表）", altNames:"备用名称（列表）",
+  serial:"序列号", valid:"是否有效", protocol:"协商协议", cipher:"加密套件",
+  version:"版本", O:"组织名称", C:"国家代码", CN:"通用名称",
   daysUntilExpiry:"剩余有效天数", authorized:"是否授权（证书链验证）", expired:"是否已过期",
   answers:"解析结果（列表）", Answer:"解析结果（列表）", Question:"查询问题",
   type:"记录类型", name:"名称", data:"数据", ttl:"TTL（缓存秒数）",
@@ -534,6 +561,123 @@ ${esc(events || "—")}
 <em>（registration=注册，expiration=到期，last changed=最近变更）</em></pre>${rawJson(d)}`;
 }
 
+/* ============ SSL 图形化组件 ============ */
+function renderSslVisual(d) {
+  const fromRaw = d.validFrom || d.notBefore || d.valid_from;
+  const toRaw = d.validTo || d.notAfter || d.valid_to;
+  const from = fromRaw ? new Date(fromRaw) : null;
+  const to = toRaw ? new Date(toRaw) : null;
+  const now = new Date();
+  const fromStr = from && !isNaN(from) ? from.toISOString().slice(0, 10) : "—";
+  const toStr = to && !isNaN(to) ? to.toISOString().slice(0, 10) : "—";
+
+  let pct = 0;
+  let daysLeft = (typeof d.daysUntilExpiry === "number") ? d.daysUntilExpiry : null;
+  if (from && to && !isNaN(from) && !isNaN(to)) {
+    const totalMs = Math.max(1, to - from);
+    const elapsedMs = Math.max(0, Math.min(totalMs, now - from));
+    pct = (elapsedMs / totalMs) * 100;
+    if (daysLeft === null) daysLeft = Math.ceil((to - now) / 86400000);
+  }
+  const tcolor = daysLeft === null ? "#94a3b8"
+    : daysLeft <= 0 ? "#94a3b8"
+    : daysLeft <= 7 ? "#ef4444"
+    : daysLeft <= 30 ? "#f59e0b"
+    : "#10b981";
+  const daysLabel = daysLeft === null ? "—" : daysLeft <= 0 ? "已过期" : `剩余 ${daysLeft} 天`;
+
+  const prot = String(d.protocol || d.tls_version || "").toUpperCase();
+  const is13 = prot.includes("1.3");
+  const is12 = prot.includes("1.2") && !is13;
+
+  const cipherName = String(d.cipher?.name || "").toUpperCase();
+  let score = 0;
+  const valid = (d.authorized !== false) && (d.expired !== true);
+  if (valid) score += 60;
+  if (is13) score += 20;
+  else if (is12) score += 10;
+  if (daysLeft !== null && daysLeft > 30) score += 10;
+  if (cipherName.includes("GCM") || cipherName.includes("CHACHA20")) score += 10;
+  score = Math.min(100, score);
+  const sColor = score >= 80 ? "#10b981" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444";
+  const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
+
+  const tlsHTML = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"].map((v, i) => {
+    const isCurrent = (i === 3 && is13) || (i === 2 && is12);
+    const isDeprecated = i <= 1;
+    const isUsable = (i === 2 && (is12 || is13)) || (i === 3 && is13);
+    let cls = "tls-step";
+    if (isCurrent) cls += " active";
+    else if (isDeprecated) cls += " deprecated";
+    else if (isUsable) cls += " usable";
+    return `<div class="${cls}">${v}</div>`;
+  }).join("");
+
+  const tags = [];
+  if (/AES[-_]?256|AES256/i.test(cipherName)) tags.push("AES-256");
+  else if (/AES[-_]?128|AES128/i.test(cipherName)) tags.push("AES-128");
+  if (/CHACHA20/i.test(cipherName)) tags.push("ChaCha20");
+  if (/GCM/i.test(cipherName)) tags.push("GCM 模式");
+  else if (/CBC/i.test(cipherName)) tags.push("CBC 模式（较旧）");
+  if (/SHA384/i.test(cipherName)) tags.push("SHA384");
+  else if (/SHA256/i.test(cipherName)) tags.push("SHA256");
+  else if (/SHA1/i.test(cipherName)) tags.push("SHA1（不安全）");
+  if (/ECDHE/i.test(cipherName)) tags.push("ECDHE 密钥交换");
+  else if (/DHE/i.test(cipherName)) tags.push("DHE 密钥交换");
+  if (/\bRSA\b/i.test(cipherName)) tags.push("RSA 签名");
+  else if (/ECDSA/i.test(cipherName)) tags.push("ECDSA 签名");
+  const cipherTags = tags.length
+    ? tags.map(t => `<span class="cipher-tag">${t}</span>`).join("")
+    : `<span class="cipher-tag">${esc(cipherName || "—")}</span>`;
+
+  const protoHint = is13
+    ? "最新协议，安全性最高，支持前向保密"
+    : is12
+      ? "主流协议，安全性良好，已禁用弱加密"
+      : prot
+        ? "协议已过时，存在已知安全风险，建议升级"
+        : "无法识别协议版本";
+
+  return `
+    <div class="ssl-visual">
+      <div class="ssl-ring" style="--s:${score};--c:${sColor};">
+        <div class="ssl-ring-inner">
+          <div class="ssl-ring-num" style="color:${sColor}">${score}</div>
+          <div class="ssl-ring-label">等级 ${grade}</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:240px;">
+        <div class="ssl-section-title">📅 证书有效期</div>
+        <div class="ssl-timeline">
+          <div class="ssl-timeline-bar">
+            <div class="ssl-timeline-fill" style="width:${pct.toFixed(1)}%;--tcolor:${tcolor};"></div>
+            <div class="ssl-timeline-now" style="left:${pct.toFixed(1)}%;"></div>
+          </div>
+          <div class="ssl-timeline-labels">
+            <span>生效 <strong>${esc(fromStr)}</strong></span>
+            <span style="color:${tcolor};font-weight:700;">${esc(daysLabel)}</span>
+            <span>到期 <strong>${esc(toStr)}</strong></span>
+          </div>
+        </div>
+        <div class="ssl-note">进度条灰色部分为已过去的时间，彩色部分为剩余有效期；颜色越红表示越接近过期。</div>
+      </div>
+    </div>
+
+    <div class="ssl-section-title">🔒 加密协议（TLS）</div>
+    <div class="tls-ladder">${tlsHTML}</div>
+    <div class="ssl-note">
+      当前协商：<strong style="color:#3b82f6;">${esc(d.protocol || d.tls_version || "—")}</strong> — ${esc(protoHint)}
+    </div>
+
+    <div class="ssl-section-title">🔑 加密算法套件</div>
+    <div class="cipher-name">${esc(d.cipher?.name || d.cipher || "—")}</div>
+    <div class="cipher-tags">${cipherTags}</div>
+    <div class="ssl-note">
+      加密套件决定了「密钥交换 + 批量加密 + 消息认证」三部分的组合方式。包含 GCM / CHACHA20 表示使用 AEAD 认证加密，抗篡改能力更强；CBC / SHA1 属于旧式组合，安全性较弱。
+    </div>
+  `;
+}
+
 /* ============ SSL 深度检测 ============ */
 async function mSslDomainee(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
@@ -546,37 +690,35 @@ async function mSslDomainee(q) {
   state.sslInvalid = d.expired || !d.authorized;
   state.sslDaysLeft = d.daysUntilExpiry;
   state.sslProtocol = d.protocol;
+  state.sslFrom = d.validFrom || d.notBefore;
+  state.sslTo = d.validTo || d.notAfter;
+  state.sslCipher = d.cipher?.name;
 
-  let score = 0;
-  if (d.authorized && !d.expired) score += 60;
-  if (d.protocol === "TLSv1.3") score += 20;
-  else if (d.protocol === "TLSv1.2") score += 10;
-  if ((d.daysUntilExpiry ?? 0) > 30) score += 10;
-  const cipherName = String(d.cipher?.name || "").toUpperCase();
-  if (cipherName.includes("GCM") || cipherName.includes("CHACHA20")) score += 10;
-  score = Math.min(100, score);
-  state.sslScore = score;
-
-  const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
+  const issuerOrg = d.issuer?.O || d.issuer?.CN || d.issuer || "—";
+  const issuerCountry = d.issuer?.C ? `（${d.issuer.C}）` : "";
   const expireHint = d.daysUntilExpiry <= 0
     ? "⚠️ 已过期"
     : d.daysUntilExpiry <= 30
       ? `⚠️ ${d.daysUntilExpiry} 天后过期`
       : `✅ ${d.daysUntilExpiry} 天后过期`;
 
-  const issuerOrg = d.issuer?.O || d.issuer?.CN || d.issuer || "—";
-  const issuerCountry = d.issuer?.C ? `（${d.issuer.C}）` : "";
+  const validFromStr = (d.validFrom || d.notBefore || "").slice(0, 10) || "—";
+  const validToStr = (d.validTo || d.notAfter || "").slice(0, 10) || "—";
 
-  return `<pre>
-<strong>安全评分</strong> ${score} / 100 <em>（等级 ${grade}：A≥90 / B≥75 / C≥60 / D&lt;60）</em>
+  return `
+    <pre>
 <strong>是否有效</strong> ${d.authorized && !d.expired ? "✅ 有效（证书链验证通过且未过期）" : "❌ 无效"}
-<strong>剩余有效期</strong> ${expireHint} <em>（到期日 ${esc(d.validTo?.slice(0, 10) ?? "—")}）</em>
-<strong>协商协议</strong> ${esc(d.protocol ?? "—")} <em>（TLS 1.2 / TLS 1.3）</em>
-<strong>加密套件</strong> ${esc(d.cipher?.name ?? "—")} <em>（${esc(d.cipher?.version ?? "")}）</em>
+<strong>生效时间</strong> ${esc(validFromStr)} <em>（证书开始生效的日期）</em>
+<strong>到期时间</strong> ${esc(validToStr)} <em>（证书失效的日期）</em>
+<strong>剩余有效期</strong> ${expireHint} <em>（距离到期的天数）</em>
+<strong>协商协议</strong> ${esc(d.protocol ?? "—")} <em>（TLS 协议版本）</em>
+<strong>加密套件</strong> ${esc(d.cipher?.name ?? "—")} <em>（批量加密与认证算法组合）</em>
 <strong>颁发机构</strong> ${esc(issuerOrg)} ${issuerCountry} <em>（证书颁发机构 CA）</em>
-<strong>证书主体</strong> ${esc(d.subject?.CN ?? "—")}
-<strong>备用名称</strong> ${esc((d.altNames || []).join(", ") || "—")}
-</pre>${rawJson(d)}`;
+<strong>证书主体</strong> ${esc(d.subject?.CN ?? "—")} <em>（证书绑定的域名）</em>
+<strong>备用名称</strong> ${esc((d.altNames || []).join(", ") || "—")} <em>（证书可用的其他域名）</em>
+</pre>
+    ${renderSslVisual(d)}
+    ${rawJson(d)}`;
 }
 
 async function mTcpSsl(q) {
@@ -591,14 +733,30 @@ async function mTcpSsl(q) {
   const x = d.data || {};
   if (x.valid === false) state.sslInvalid = true;
   else if (x.valid === true && state.sslInvalid === undefined) state.sslInvalid = false;
-  return `<pre>
+  if (!state.sslProtocol && x.tls_version) state.sslProtocol = x.tls_version;
+  if (!state.sslTo && (x.expires_at || x.not_after)) state.sslTo = x.expires_at || x.not_after;
+
+  const altVisual = {
+    protocol: x.tls_version,
+    validTo: x.expires_at || x.not_after,
+    authorized: x.valid !== false,
+    expired: x.valid === false,
+    cipher: { name: "" },
+    altNames: x.san || [],
+    issuer: { CN: x.issuer },
+  };
+
+  return `
+    <pre>
 <strong>是否有效</strong> ${x.valid ? "✅ 有效（交叉验证）" : "❌ 无效"}
-<strong>到期时间</strong> ${esc(x.expires_at ?? x.not_after ?? "—")}
-<strong>颁发机构</strong> ${esc(x.issuer ?? "—")}
+<strong>到期时间</strong> ${esc((x.expires_at || x.not_after || "").slice(0, 10) || "—")} <em>（证书失效日期）</em>
+<strong>颁发机构</strong> ${esc(x.issuer ?? "—")} <em>（证书颁发机构 CA）</em>
 <strong>SAN</strong> ${esc((x.san || []).join(", ") || "—")} <em>（证书覆盖的域名列表）</em>
-<strong>TLS 版本</strong> ${esc(x.tls_version ?? "—")} <em>（1.2 / 1.3 等）</em>
+<strong>TLS 版本</strong> ${esc(x.tls_version ?? "—")} <em>（协议版本，1.2 / 1.3）</em>
 <strong>HTTP/2</strong> ${x.http2 ? "是" : "否"} <em>（是否支持 HTTP/2 协议）</em>
-</pre>${rawJson(d)}`;
+</pre>
+    ${renderSslVisual(altVisual)}
+    ${rawJson(d)}`;
 }
 
 /* ============ CDN / 广告联盟 ============ */
@@ -761,12 +919,13 @@ ${signals.map(s => "• " + s).join("\n")}
 
     btn.onclick = async () => {
       if (started) {
-        // 重新检测时重置状态
         window.open = origOpen;
         if (checkTimer) clearInterval(checkTimer);
         frame.src = "about:blank";
         resultBox.innerHTML = "";
         status.textContent = "";
+        popupAttempts = 0;
+        adInterventions = 0;
       }
       started = true;
       btn.disabled = true;
@@ -1064,9 +1223,10 @@ function calcDomainQuality() {
   }
   const pulse = state.otxPulseCount || 0;
   if (pulse > 0) { const p = Math.min(20, pulse * 5); score -= p; issues.push({ pts: -p, text: `OTX 关联 ${pulse} 个威胁 Pulse` }); }
-  if (typeof state.sslScore === "number") {
-    if (state.sslScore < 60) { score -= 25; issues.push({ pts: -25, text: `SSL 安全评分 ${state.sslScore}（等级 D）` }); }
-    else if (state.sslScore < 80) { score -= 10; issues.push({ pts: -10, text: `SSL 安全评分 ${state.sslScore}（等级 C）` }); }
+  const sslScore = state.sslScore ?? computeSslScoreFromState();
+  if (typeof sslScore === "number") {
+    if (sslScore < 60) { score -= 25; issues.push({ pts: -25, text: `SSL 安全评分 ${sslScore}（等级 D）` }); }
+    else if (sslScore < 80) { score -= 10; issues.push({ pts: -10, text: `SSL 安全评分 ${sslScore}（等级 C）` }); }
   } else if (state.sslInvalid) {
     score -= 25; issues.push({ pts: -25, text: "SSL 证书无效或已过期" });
   }
@@ -1076,6 +1236,17 @@ function calcDomainQuality() {
   if (state.adHits?.length) { score -= 5; issues.push({ pts: -5, text: `检测到广告联盟信号：${state.adHits.join("、")}` }); }
   if (state.userAdHit) { score -= 5; issues.push({ pts: -5, text: "用户视角检测到广告行为（弹窗/重型广告干预）" }); }
   return { score: Math.max(0, score), issues };
+}
+
+function computeSslScoreFromState() {
+  if (typeof state.sslScore === "number") return state.sslScore;
+  let s = 0;
+  if (state.sslInvalid === false) s += 60;
+  const prot = String(state.sslProtocol || "").toUpperCase();
+  if (prot.includes("1.3")) s += 20;
+  else if (prot.includes("1.2")) s += 10;
+  if ((state.sslDaysLeft ?? 0) > 30) s += 10;
+  return s || undefined;
 }
 
 function scoreColor(score) {
@@ -1093,7 +1264,8 @@ function calcRadarScores() {
   if (detectVpnHit()) anonymity = 30;
   else if (state.checkip?.risk >= 70) anonymity = 60;
   let cert = 70;
-  if (typeof state.sslScore === "number") cert = state.sslScore;
+  const sslScore = computeSslScoreFromState();
+  if (typeof sslScore === "number") cert = sslScore;
   else if (state.sslInvalid === true) cert = 0;
   else if (state.sslInvalid === false) cert = 100;
   let exposure = 100;
@@ -1242,9 +1414,14 @@ function buildProfileText() {
       lines.push(`【解析 IP】共 ${state.relatedIps.length} 个`);
       state.relatedIps.slice(0, 5).forEach(ip => lines.push(`  • ${ip}`));
     }
-    if (typeof state.sslScore === "number") {
-      const grade = state.sslScore >= 90 ? "A" : state.sslScore >= 75 ? "B" : state.sslScore >= 60 ? "C" : "D";
-      lines.push(`【SSL 安全】评分 ${state.sslScore}/100（等级 ${grade}）· 协议 ${state.sslProtocol || "—"} · 剩余 ${state.sslDaysLeft ?? "—"} 天`);
+    const sslScore = computeSslScoreFromState();
+    if (typeof sslScore === "number") {
+      const grade = sslScore >= 90 ? "A" : sslScore >= 75 ? "B" : sslScore >= 60 ? "C" : "D";
+      lines.push(`【SSL 安全】评分 ${sslScore}/100（等级 ${grade}）· 协议 ${state.sslProtocol || "—"} · 剩余 ${state.sslDaysLeft ?? "—"} 天`);
+      if (state.sslFrom || state.sslTo) {
+        lines.push(`  生效 ${(state.sslFrom || "").slice(0, 10) || "—"} → 到期 ${(state.sslTo || "").slice(0, 10) || "—"}`);
+      }
+      if (state.sslCipher) lines.push(`  加密套件：${state.sslCipher}`);
     }
     if (state.cdnHits?.length) lines.push(`【CDN 信号】${state.cdnHits.join("；")}`);
     if (state.adHits?.length) lines.push(`【广告联盟】⚠️ ${state.adHits.join("、")}，该站点大概率存在商业广告展示`);
@@ -1381,7 +1558,7 @@ async function runQuery() {
   setEmpty("profile", "正在生成质量评分与画像…");
 
   const certTasks = domOnly ? [
-    { title: "Domainee · SSL 深度检测", fn: () => mSslDomainee(q) },
+    { title: "Domainee · SSL 深度检测（评分 / 有效期 / 协议 / 算法）", fn: () => mSslDomainee(q) },
     { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
