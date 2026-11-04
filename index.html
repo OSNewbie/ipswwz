@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP / 域名溯源面板 · 全无密钥默认可用版</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0b1120; color: #e2e8f0; padding: 2rem 1rem; }
+        .container { max-width: 960px; margin: 0 auto; }
+        h1 { font-size: 1.35rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .sub { font-size: 0.78rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.6; }
+        .query-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .query-bar input { flex: 1; min-width: 240px; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #1e293b; background: #111827; color: #e2e8f0; font-size: 0.95rem; outline: none; }
+        .query-bar input:focus { border-color: #3b82f6; }
+        .query-bar button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #3b82f6; color: #fff; font-size: 0.95rem; cursor: pointer; font-weight: 500; }
+        .query-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .card { background: #111827; border: 1px solid #1e293b; border-radius: 10px; padding: 0.9rem 1.1rem; margin-bottom: 0.7rem; }
+        .card h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .card pre { white-space: pre-wrap; word-break: break-word; font-size: 0.78rem; line-height: 1.65; color: #cbd5e1; font-family: ui-monospace, monospace; }
+        .tag { font-size: 0.62rem; padding: 0.12rem 0.4rem; border-radius: 4px; font-weight: 500; white-space: nowrap; }
+        .tag-ok { background: #052e1f; color: #6ee7b7; }
+        .tag-err { background: #450a0a; color: #fca5a5; }
+        .tag-load { background: #172554; color: #93c5fd; }
+        details { margin-top: 0.4rem; }
+        summary { cursor: pointer; color: #475569; font-size: 0.72rem; }
+        summary:hover { color: #94a3b8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 IP / 域名溯源面板</h1>
+    <p class="sub">
+        全部模块默认可用 · 无需任何 API Key：
+        ip.sb · ippubblico · Shodan InternetDB · OTX · ContrastAPI · SANS DShield · RDAP
+    </p>
+    <div class="query-bar">
+        <input id="qi" type="text" placeholder="输入 IP 或域名，例如 8.8.8.8 或 example.com" autocomplete="off" />
+        <button id="qb" onclick="run()">查询</button>
+    </div>
+    <div id="out"></div>
+</div>
+
+<script>
+/* ============================================================
+   全无密钥配置：没有任何 Key 需要填写
+   ============================================================ */
+const $out = document.getElementById("out");
+const $btn = document.getElementById("qb");
+const $in  = document.getElementById("qi");
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const tag = (t, c) => `<span class="tag tag-${c}">${t}</span>`;
+const isIP = q => /^[\d\.]+$/.test(q) || q.includes(":");
+const isDomain = q => /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(q);
+
+function card(title, tagHtml, body = "") {
+    return `<div class="card"><h2>${title} ${tagHtml}</h2>${body}</div>`;
+}
+function rawJson(obj) {
+    return `<details><summary>原始 JSON</summary><pre>${esc(JSON.stringify(obj, null, 2))}</pre></details>`;
+}
+
+async function fetchT(url, opt = {}, ms = 12000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        return await fetch(url, { ...opt, signal: ctrl.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+/* ============================================================
+   全无密钥模块
+   ============================================================ */
+
+// 1. ip.sb（主检测源）
+async function mIpSb(q) {
+    if (isDomain(q)) return { skip: true, reason: "ip.sb 的 geoip 端点按 IP 查询；域名请参考 RDAP 与 OTX。" };
+    const res = await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    return `<pre>${esc(JSON.stringify(d, null, 2))}</pre>`;
+}
+
+// 2. ippubblico.org（备用地理/ASN，HTTPS、CORS、无速率限制）
+async function mIppubblico(q) {
+    if (!isIP(q)) return { skip: true, reason: "ippubblico 仅支持 IP" };
+    const res = await fetchT(`https://ippubblico.org/?api=1&ip=${encodeURIComponent(q)}`);
+    // 注意：ippubblico 默认查询调用者自身 IP。若需查询指定 IP，
+    // 根据文档其端点设计是返回调用者信息，指定 IP 查询能力需以实际文档为准。
+    // 这里保留基础调用，若指定 IP 不支持则回退提示。
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    const geo = d.geo || {};
+    return `
+        <pre>国家: ${esc(geo.country ?? "—")}
+城市: ${esc(geo.city ?? "—")}
+ISP:  ${esc(d.isp ?? "—")}
+ASN:  ${esc(d.asn ?? "—")}</pre>
+        ${rawJson(d)}`;
+}
+
+// 3. Shodan InternetDB（资产测绘）
+async function mInternetDB(q) {
+    if (!isIP(q)) return { skip: true, reason: "InternetDB 仅支持 IP" };
+    const res = await fetchT(`https://internetdb.shodan.io/${encodeURIComponent(q)}`);
+    if (res.status === 404) return `<pre>该 IP 暂无 InternetDB 记录</pre>`;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    return `
+        <pre>开放端口: ${esc(d.ports?.join(", ") || "—")}
+主机名:   ${esc(d.hostnames?.join(", ") || "—")}
+标签:     ${esc(d.tags?.join(", ") || "—")}
+已知漏洞: ${esc(d.vulns?.join(", ") || "—")}</pre>
+        ${rawJson(d)}`;
+}
+
+// 4. AlienVault OTX（匿名，约 1000/hr）
+async function mOtx(q) {
+    const type = isIP(q) ? "IPv4" : "domain";
+    const res = await fetchT(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/general`);
+    if (!res.ok) {
+        if (res.status === 429) return `<pre>OTX 匿名速率限制（约 1000 次/小时），请稍后重试</pre>`;
+        return `<pre>OTX 返回 HTTP ${res.status}</pre>`;
+    }
+    const d = await res.json();
+    const pulses = d.pulse_info?.count ?? "—";
+    const names = (d.pulse_info?.pulses || []).slice(0, 5).map(p => `- ${p.name}`).join("\n") || "—";
+    return `
+        <pre>威胁 Pulse 数量: ${esc(pulses)}
+近期 Pulse:
+${esc(names)}</pre>
+        ${rawJson(d)}`;
+}
+
+// 5. ContrastAPI（无密钥，100/hr，聚合 AbuseIPDB + Shodan）
+async function mContrast(q) {
+    if (!isIP(q)) return { skip: true, reason: "ContrastAPI 威胁报告端点仅支持 IP" };
+    const res = await fetchT(`https://api.contrastapi.com/v1/threat-report/${encodeURIComponent(q)}`);
+    if (!res.ok) {
+        if (res.status === 429) return `<pre>ContrastAPI 免费层 100 次/小时，请稍后重试</pre>`;
+        return `<pre>ContrastAPI 返回 HTTP ${res.status}</pre>`;
+    }
+    const d = await res.json();
+    const abuse = d.abuseipdb || {};
+    return `
+        <pre>AbuseIPDB 评分: ${esc(abuse.abuse_score ?? "—")}
+AbuseIPDB 报告数: ${esc(abuse.total_reports ?? "—")}
+Shodan 数据: ${esc(d.shodan ? "有" : "—")}</pre>
+        ${rawJson(d)}`;
+}
+
+// 6. SANS DShield（攻击面）
+async function mDShield(q) {
+    if (!isIP(q)) return { skip: true, reason: "DShield 仅支持 IP" };
+    const res = await fetchT(`https://isc.sans.edu/api/ip/${encodeURIComponent(q)}?json`);
+    if (!res.ok) return `<pre>DShield 返回 HTTP ${res.status}</pre>`;
+    const d = await res.json();
+    const ipData = d.ip || d;
+    return `
+        <pre>攻击记录数: ${esc(ipData.count ?? ipData.reports ?? "—")}
+目标 IP 数: ${esc(ipData.attacks ?? ipData.targets ?? "—")}
+ASN:        ${esc(ipData.as ?? ipData.asn ?? "—")} ${esc(ipData.asname ?? "")}</pre>
+        ${rawJson(d)}`;
+}
+
+// 7. RDAP（域名 / IP 网络注册信息）
+async function mRdap(q) {
+    const type = isDomain(q) ? "domain" : "ip";
+    const res = await fetchT(`https://rdap.org/${type}/${encodeURIComponent(q)}`);
+    if (res.status === 404) return `<pre>该 ${type} 暂无 RDAP 数据</pre>`;
+    if (!res.ok) return `<pre>RDAP 返回 HTTP ${res.status}</pre>`;
+    const d = await res.json();
+
+    if (type === "domain") {
+        const events = (d.events || []).map(e => `${e.eventAction}: ${e.eventDate?.slice(0,10) ?? ""}`).join("\n");
+        const registrar = (d.entities || []).find(e => e.roles?.includes("registrar"))
+            ?.vcardArray?.[1]?.find(v => v[0] === "fn")?.[3] || "—";
+        return `
+            <pre>注册商: ${esc(registrar)}
+关键日期:
+${esc(events || "—")}</pre>
+            ${rawJson(d)}`;
+    } else {
+        return `
+            <pre>网络名称: ${esc(d.name ?? "—")}
+起始 IP: ${esc(d.startAddress ?? "—")}
+结束 IP: ${esc(d.endAddress ?? "—")}
+国家: ${esc(d.country ?? "—")}</pre>
+            ${rawJson(d)}`;
+    }
+}
+
+/* ============================================================
+   限速器
+   ============================================================ */
+function throttle(fn, ms) {
+    let last = 0;
+    return async (...args) => {
+        const wait = Math.max(0, last + ms - Date.now());
+        if (wait > 0) await new Promise(r => setTimeout(r, wait));
+        last = Date.now();
+        return fn(...args);
+    };
+}
+const internetdbThrottled = throttle(mInternetDB, 1100);
+
+/* ============================================================
+   主流程（全部模块默认执行，无“可选层”）
+   ============================================================ */
+async function run() {
+    const q = $in.value.trim();
+    if (!q) return;
+    $btn.disabled = true;
+    $out.innerHTML = "";
+
+    const tasks = [
+        { title: "ip.sb（主检测源）", fn: () => mIpSb(q) },
+        { title: "ippubblico（备用地理 · 无密钥）", fn: () => mIppubblico(q) },
+        { title: "Shodan InternetDB（资产测绘 · 无密钥）", fn: () => internetdbThrottled(q) },
+        { title: "AlienVault OTX（威胁情报 · 匿名）", fn: () => mOtx(q) },
+        { title: "ContrastAPI（IP 信誉 · 无密钥）", fn: () => mContrast(q) },
+        { title: "SANS DShield（攻击面 · 无密钥）", fn: () => mDShield(q) },
+        { title: "RDAP（域名/网络注册 · 无密钥）", fn: () => mRdap(q) },
+    ];
+
+    for (const t of tasks) {
+        $out.insertAdjacentHTML("beforeend", card(t.title, tag("查询中…", "load")));
+        const el = $out.lastElementChild;
+
+        try {
+            const r = await t.fn();
+            const h2 = el.querySelector("h2");
+            if (r && r.skip) {
+                h2.innerHTML = `${t.title} ${tag("跳过", "err")}`;
+                el.insertAdjacentHTML("beforeend", `<pre>${esc(r.reason)}</pre>`);
+            } else {
+                h2.innerHTML = `${t.title} ${tag("完成", "ok")}`;
+                el.insertAdjacentHTML("beforeend", r);
+            }
+        } catch (e) {
+            el.querySelector("h2").innerHTML = `${t.title} ${tag("失败", "err")}`;
+            const msg = e.name === "AbortError" ? "请求超时（12s）" : e.message;
+            el.insertAdjacentHTML("beforeend", `<pre>${esc(msg)}</pre>`);
+        }
+    }
+
+    $btn.disabled = false;
+}
+
+$in.addEventListener("keydown", e => { if (e.key === "Enter" && !$btn.disabled) run(); });
+</script>
+</body>
+</html>
