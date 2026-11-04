@@ -1,275 +1,372 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP / 域名溯源面板</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: #f8fafc; color: #1e293b; padding: 2rem 1rem; line-height: 1.6;
-        }
-        .container { max-width: 880px; margin: 0 auto; }
-
-        /* 顶部 */
-        h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
-        .sub { font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.7; }
-        .sub code { background: #e2e8f0; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.78rem; color: #475569; }
-
-        /* 查询栏 */
-        .query-bar { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; }
-        .query-bar input {
-            flex: 1; padding: 0.8rem 1rem; border-radius: 10px;
-            border: 1px solid #e2e8f0; background: #fff; color: #0f172a;
-            font-size: 1rem; outline: none; transition: border-color 0.15s;
-        }
-        .query-bar input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-        .query-bar input::placeholder { color: #94a3b8; }
-        .query-bar button {
-            padding: 0.8rem 1.6rem; border: none; border-radius: 10px;
-            background: #3b82f6; color: #fff; font-size: 1rem; font-weight: 600;
-            cursor: pointer; transition: background 0.15s; white-space: nowrap;
-        }
-        .query-bar button:hover:not(:disabled) { background: #2563eb; }
-        .query-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* 卡片 */
-        .card {
-            background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
-            padding: 1rem 1.25rem; margin-bottom: 0.75rem;
-            transition: box-shadow 0.15s;
-        }
-        .card:hover { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-        .card-title { font-size: 0.9rem; font-weight: 650; color: #0f172a; }
-
-        /* 标签 */
-        .tag { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 20px; white-space: nowrap; }
-        .tag-ok { background: #ecfdf5; color: #059669; }
-        .tag-err { background: #fef2f2; color: #dc2626; }
-        .tag-load { background: #eff6ff; color: #3b82f6; }
-        .tag-skip { background: #f1f5f9; color: #64748b; }
-
-        /* 内容 */
-        .card pre {
-            white-space: pre-wrap; word-break: break-word;
-            font-size: 0.82rem; line-height: 1.7; color: #334155;
-            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-        }
-        .card pre strong { color: #0f172a; font-weight: 600; }
-
-        /* 原始数据折叠 */
-        details { margin-top: 0.6rem; border-top: 1px solid #f1f5f9; padding-top: 0.5rem; }
-        summary { cursor: pointer; color: #94a3b8; font-size: 0.75rem; user-select: none; }
-        summary:hover { color: #64748b; }
-        details pre { margin-top: 0.4rem; font-size: 0.75rem; color: #64748b; }
-
-        /* 空状态 */
-        .empty { text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 2rem 0; }
-
-        @media (max-width: 600px) {
-            body { padding: 1.25rem 0.75rem; }
-            h1 { font-size: 1.25rem; }
-            .query-bar { flex-direction: column; }
-            .query-bar button { width: 100%; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP / 域名溯源与隐私自检面板</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8fafc;color:#1e293b;padding:2rem 1rem;line-height:1.6}
+.container{max-width:920px;margin:0 auto}
+h1{font-size:1.5rem;font-weight:700;color:#0f172a;margin-bottom:.25rem}
+.sub{font-size:.85rem;color:#64748b;margin-bottom:1.5rem;line-height:1.7}
+.sub code{background:#e2e8f0;padding:.1rem .35rem;border-radius:4px;font-size:.78rem;color:#475569}
+.query-bar{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.query-bar input{flex:1;min-width:240px;padding:.8rem 1rem;border-radius:10px;border:1px solid #e2e8f0;background:#fff;color:#0f172a;font-size:1rem;outline:none}
+.query-bar input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.query-bar button{padding:.8rem 1.6rem;border:none;border-radius:10px;background:#3b82f6;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.query-bar button:disabled{opacity:.5;cursor:not-allowed}
+.section{margin-bottom:1.5rem}
+.section-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.6rem;padding-left:.25rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.7rem}
+.card-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+.card-title{font-size:.9rem;font-weight:650;color:#0f172a}
+.tag{font-size:.7rem;font-weight:600;padding:.15rem .5rem;border-radius:20px;white-space:nowrap}
+.tag-ok{background:#ecfdf5;color:#059669}
+.tag-err{background:#fef2f2;color:#dc2626}
+.tag-load{background:#eff6ff;color:#3b82f6}
+.tag-skip{background:#f1f5f9;color:#64748b}
+.tag-warn{background:#fffbeb;color:#d97706}
+.card pre{white-space:pre-wrap;word-break:break-word;font-size:.82rem;line-height:1.7;color:#334155;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.card pre strong{color:#0f172a;font-weight:600}
+details{margin-top:.6rem;border-top:1px solid #f1f5f9;padding-top:.5rem}
+summary{cursor:pointer;color:#94a3b8;font-size:.75rem}
+summary:hover{color:#64748b}
+details pre{margin-top:.4rem;font-size:.75rem;color:#64748b}
+.empty{text-align:center;color:#94a3b8;font-size:.85rem;padding:2rem 0}
+@media(max-width:600px){body{padding:1.25rem .75rem}h1{font-size:1.25rem}.query-bar{flex-direction:column}.query-bar button{width:100%}}
+</style>
 </head>
 <body>
 <div class="container">
-    <h1>🔍 IP / 域名溯源面板</h1>
-    <p class="sub">
-        全模块默认可用 · 无需 API Key · 数据源：
-        <code>ip.sb</code> <code>ippubblico</code> <code>InternetDB</code>
-        <code>OTX</code> <code>ContrastAPI</code> <code>DShield</code> <code>RDAP</code>
-    </p>
+<h1>🔍 IP / 域名溯源 · 隐私自检</h1>
+<p class="sub">
+全模块默认可用 · 无需 API Key ·
+<span style="color:#3b82f6">IP 溯源</span> ·
+<span style="color:#8b5cf6">域名溯源</span> ·
+<span style="color:#ec4899">隐私泄露检测</span>
+</p>
 
-    <div class="query-bar">
-        <input id="qi" type="text" placeholder="输入 IP 或域名，例如 8.8.8.8 或 example.com" autocomplete="off" />
-        <button id="qb" onclick="run()">查询</button>
-    </div>
+<div class="query-bar">
+<input id="qi" type="text" placeholder="输入 IP 或域名，例如 8.8.8.8 或 example.com" autocomplete="off" />
+<button id="qb" onclick="run()">查询</button>
+</div>
 
-    <div id="out">
-        <p class="empty">输入一个 IP 或域名开始查询</p>
-    </div>
+<div id="out"><p class="empty">输入 IP 或域名开始查询；留空直接点“查询”可运行隐私自检</p></div>
 </div>
 
 <script>
-const $out = document.getElementById("out");
-const $btn = document.getElementById("qb");
-const $in  = document.getElementById("qi");
+const $out=document.getElementById("out"),$btn=document.getElementById("qb"),$in=document.getElementById("qi");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tag=(t,c)=>`<span class="tag tag-${c}">${t}</span>`;
+const isIP=q=>/^[\d\.]+$/.test(q)||q.includes(":");
+const isDomain=q=>/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(q);
 
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
-const tag = (t, c) => `<span class="tag tag-${c}">${t}</span>`;
-const isIP = q => /^[\d\.]+$/.test(q) || q.includes(":");
-const isDomain = q => /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(q);
+function card(title,tagHtml,body=""){return`<div class="card"><div class="card-header"><span class="card-title">${title}</span>${tagHtml}</div>${body}</div>`}
+function rawJson(o){return`<details><summary>原始 JSON</summary><pre>${esc(JSON.stringify(o,null,2))}</pre></details>`}
+async function fetchT(url,opt={},ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{return await fetch(url,{...opt,signal:c.signal})}finally{clearTimeout(t)}}
 
-function card(title, tagHtml, body = "") {
-    return `<div class="card"><div class="card-header"><span class="card-title">${title}</span>${tagHtml}</div>${body}</div>`;
-}
-function rawJson(obj) {
-    return `<details><summary>原始 JSON</summary><pre>${esc(JSON.stringify(obj, null, 2))}</pre></details>`;
-}
-async function fetchT(url, opt = {}, ms = 12000) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), ms);
-    try { return await fetch(url, { ...opt, signal: ctrl.signal }); }
-    finally { clearTimeout(timer); }
-}
-
-/* ---------- 各模块 ---------- */
-
-async function mIpSb(q) {
-    if (isDomain(q)) return { skip: true, reason: "ip.sb 按 IP 查询；域名请参考 RDAP 与 OTX。" };
-    const res = await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const d = await res.json();
-    return `<pre><strong>IP</strong> ${esc(d.ip ?? "—")}
-<strong>国家</strong> ${esc(d.country ?? "—")}
-<strong>城市</strong> ${esc(d.city ?? "—")}
-<strong>ISP</strong> ${esc(d.isp ?? "—")}
-<strong>ASN</strong> ${esc(d.asn ?? "—")}</pre>${rawJson(d)}`;
+/* ================= IP 溯源 ================= */
+async function mIpSb(q){
+if(isDomain(q))return{skip:true,reason:"ip.sb 的 geoip 端点按 IP 查询"};
+const res=await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+return`<pre><strong>IP</strong> ${esc(d.ip??"—")}
+<strong>国家</strong> ${esc(d.country??"—")}
+<strong>城市</strong> ${esc(d.city??"—")}
+<strong>ISP</strong> ${esc(d.isp??"—")}
+<strong>ASN</strong> ${esc(d.asn??"—")}</pre>${rawJson(d)}`
 }
 
-async function mIppubblico(q) {
-    if (!isIP(q)) return { skip: true, reason: "ippubblico 仅支持 IP" };
-    const res = await fetchT(`https://ippubblico.org/?api=1&ip=${encodeURIComponent(q)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const d = await res.json();
-    const geo = d.geo || {};
-    return `<pre><strong>国家</strong> ${esc(geo.country ?? "—")}
-<strong>城市</strong> ${esc(geo.city ?? "—")}
-<strong>ISP</strong> ${esc(d.isp ?? "—")}
-<strong>ASN</strong> ${esc(d.asn ?? "—")}</pre>${rawJson(d)}`;
+async function mIpwhois(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://ipwho.is/${encodeURIComponent(q)}`);
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+if(d.success===false)return`<pre>ipwho.is 无此 IP 数据</pre>`;
+return`<pre><strong>国家</strong> ${esc(d.country??"—")} (${esc(d.country_code??"—")})
+<strong>地区</strong> ${esc(d.region??"—")}
+<strong>城市</strong> ${esc(d.city??"—")}
+<strong>ASN</strong> ${esc(d.connection?.asn??"—")} ${esc(d.connection?.org??"")}
+<strong>时区</strong> ${esc(d.timezone?.id??"—")}</pre>${rawJson(d)}`
 }
 
-async function mInternetDB(q) {
-    if (!isIP(q)) return { skip: true, reason: "InternetDB 仅支持 IP" };
-    const res = await fetchT(`https://internetdb.shodan.io/${encodeURIComponent(q)}`);
-    if (res.status === 404) return `<pre>该 IP 暂无 InternetDB 记录</pre>`;
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const d = await res.json();
-    return `<pre><strong>开放端口</strong> ${esc(d.ports?.join(", ") || "—")}
-<strong>主机名</strong> ${esc(d.hostnames?.join(", ") || "—")}
-<strong>标签</strong> ${esc(d.tags?.join(", ") || "—")}
-<strong>已知漏洞</strong> ${esc(d.vulns?.join(", ") || "—")}</pre>${rawJson(d)}`;
+async function mGeojs(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://get.geojs.io/v1/ip/geo/${encodeURIComponent(q)}.json`);
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+return`<pre><strong>国家</strong> ${esc(d.country??"—")} (${esc(d.country_code??"—")})
+<strong>城市</strong> ${esc(d.city??"—")}
+<strong>ASN</strong> ${esc(d.asn??"—")} ${esc(d.organization_name??"")}
+<strong>时区</strong> ${esc(d.timezone??"—")}</pre>${rawJson(d)}`
 }
 
-async function mOtx(q) {
-    const type = isIP(q) ? "IPv4" : "domain";
-    const res = await fetchT(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/general`);
-    if (!res.ok) {
-        if (res.status === 429) return `<pre>OTX 匿名速率限制（约 1000 次/小时），请稍后重试</pre>`;
-        return `<pre>OTX 返回 HTTP ${res.status}</pre>`;
-    }
-    const d = await res.json();
-    const pulses = d.pulse_info?.count ?? "—";
-    const names = (d.pulse_info?.pulses || []).slice(0, 5).map(p => `- ${p.name}`).join("\n") || "—";
-    return `<pre><strong>威胁 Pulse 数量</strong> ${esc(pulses)}
+async function mInternetDB(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://internetdb.shodan.io/${encodeURIComponent(q)}`);
+if(res.status===404)return`<pre>该 IP 暂无 InternetDB 记录</pre>`;
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+return`<pre><strong>开放端口</strong> ${esc(d.ports?.join(", ")||"—")}
+<strong>主机名</strong> ${esc(d.hostnames?.join(", ")||"—")}
+<strong>已知漏洞</strong> ${esc(d.vulns?.join(", ")||"—")}</pre>${rawJson(d)}`
+}
+
+async function mOtx(q){
+const type=isIP(q)?"IPv4":"domain";
+const res=await fetchT(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/general`);
+if(!res.ok)return`<pre>OTX 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+const pulses=d.pulse_info?.count??"—";
+const names=(d.pulse_info?.pulses||[]).slice(0,5).map(p=>`- ${p.name}`).join("\n")||"—";
+return`<pre><strong>威胁 Pulse 数量</strong> ${esc(pulses)}
 <strong>近期 Pulse</strong>
-${esc(names)}</pre>${rawJson(d)}`;
+${esc(names)}</pre>${rawJson(d)}`
 }
 
-async function mContrast(q) {
-    if (!isIP(q)) return { skip: true, reason: "ContrastAPI 仅支持 IP" };
-    const res = await fetchT(`https://api.contrastapi.com/v1/threat-report/${encodeURIComponent(q)}`);
-    if (!res.ok) {
-        if (res.status === 429) return `<pre>ContrastAPI 免费层 100 次/小时，请稍后重试</pre>`;
-        return `<pre>ContrastAPI 返回 HTTP ${res.status}</pre>`;
-    }
-    const d = await res.json();
-    const abuse = d.abuseipdb || {};
-    return `<pre><strong>AbuseIPDB 评分</strong> ${esc(abuse.abuse_score ?? "—")}
-<strong>AbuseIPDB 报告数</strong> ${esc(abuse.total_reports ?? "—")}
-<strong>Shodan 数据</strong> ${esc(d.shodan ? "有" : "—")}</pre>${rawJson(d)}`;
+async function mContrast(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://api.contrastapi.com/v1/threat-report/${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>ContrastAPI 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+const abuse=d.abuseipdb||{};
+return`<pre><strong>AbuseIPDB 评分</strong> ${esc(abuse.abuse_score??"—")}
+<strong>AbuseIPDB 报告数</strong> ${esc(abuse.total_reports??"—")}</pre>${rawJson(d)}`
 }
 
-async function mDShield(q) {
-    if (!isIP(q)) return { skip: true, reason: "DShield 仅支持 IP" };
-    const res = await fetchT(`https://isc.sans.edu/api/ip/${encodeURIComponent(q)}?json`);
-    if (!res.ok) return `<pre>DShield 返回 HTTP ${res.status}</pre>`;
-    const d = await res.json();
-    const ipData = d.ip || d;
-    return `<pre><strong>攻击记录数</strong> ${esc(ipData.count ?? ipData.reports ?? "—")}
-<strong>目标 IP 数</strong> ${esc(ipData.attacks ?? ipData.targets ?? "—")}
-<strong>ASN</strong> ${esc(ipData.as ?? ipData.asn ?? "—")} ${esc(ipData.asname ?? "")}</pre>${rawJson(d)}`;
+async function mDShield(q){
+if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
+const res=await fetchT(`https://isc.sans.edu/api/ip/${encodeURIComponent(q)}?json`);
+if(!res.ok)return`<pre>DShield 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+const x=d.ip||d;
+return`<pre><strong>攻击记录数</strong> ${esc(x.count??x.reports??"—")}
+<strong>目标 IP 数</strong> ${esc(x.attacks??x.targets??"—")}
+<strong>ASN</strong> ${esc(x.as??x.asn??"—")} ${esc(x.asname??"")}</pre>${rawJson(d)}`
 }
 
-async function mRdap(q) {
-    const type = isDomain(q) ? "domain" : "ip";
-    const res = await fetchT(`https://rdap.org/${type}/${encodeURIComponent(q)}`);
-    if (res.status === 404) return `<pre>该 ${type} 暂无 RDAP 数据</pre>`;
-    if (!res.ok) return `<pre>RDAP 返回 HTTP ${res.status}</pre>`;
-    const d = await res.json();
-
-    if (type === "domain") {
-        const events = (d.events || []).map(e => `${e.eventAction}: ${e.eventDate?.slice(0,10) ?? ""}`).join("\n");
-        const registrar = (d.entities || []).find(e => e.roles?.includes("registrar"))
-            ?.vcardArray?.[1]?.find(v => v[0] === "fn")?.[3] || "—";
-        return `<pre><strong>注册商</strong> ${esc(registrar)}
+/* ================= 域名溯源 ================= */
+async function mRdap(q){
+const type=isDomain(q)?"domain":"ip";
+const res=await fetchT(`https://rdap.org/${type}/${encodeURIComponent(q)}`);
+if(res.status===404)return`<pre>该 ${type} 暂无 RDAP 数据</pre>`;
+if(!res.ok)return`<pre>RDAP 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(type==="domain"){
+const events=(d.events||[]).map(e=>`${e.eventAction}: ${e.eventDate?.slice(0,10)??""}`).join("\n");
+const registrar=(d.entities||[]).find(e=>e.roles?.includes("registrar"))?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3]||"—";
+return`<pre><strong>注册商</strong> ${esc(registrar)}
 <strong>关键日期</strong>
-${esc(events || "—")}</pre>${rawJson(d)}`;
-    } else {
-        return `<pre><strong>网络名称</strong> ${esc(d.name ?? "—")}
-<strong>起始 IP</strong> ${esc(d.startAddress ?? "—")}
-<strong>结束 IP</strong> ${esc(d.endAddress ?? "—")}
-<strong>国家</strong> ${esc(d.country ?? "—")}</pre>${rawJson(d)}`;
-    }
+${esc(events||"—")}</pre>${rawJson(d)}`
+}else{
+return`<pre><strong>网络名称</strong> ${esc(d.name??"—")}
+<strong>起始 IP</strong> ${esc(d.startAddress??"—")}
+<strong>结束 IP</strong> ${esc(d.endAddress??"—")}
+<strong>国家</strong> ${esc(d.country??"—")}</pre>${rawJson(d)}`
+}
 }
 
-function throttle(fn, ms) {
-    let last = 0;
-    return async (...args) => {
-        const wait = Math.max(0, last + ms - Date.now());
-        if (wait > 0) await new Promise(r => setTimeout(r, wait));
-        last = Date.now();
-        return fn(...args);
-    };
-}
-const internetdbThrottled = throttle(mInternetDB, 1100);
-
-async function run() {
-    const q = $in.value.trim();
-    if (!q) return;
-    $btn.disabled = true;
-    $out.innerHTML = "";
-
-    const tasks = [
-        { title: "ip.sb · 主检测源", fn: () => mIpSb(q) },
-        { title: "ippubblico · 备用地理", fn: () => mIppubblico(q) },
-        { title: "Shodan InternetDB · 资产测绘", fn: () => internetdbThrottled(q) },
-        { title: "AlienVault OTX · 威胁情报", fn: () => mOtx(q) },
-        { title: "ContrastAPI · IP 信誉", fn: () => mContrast(q) },
-        { title: "SANS DShield · 攻击面", fn: () => mDShield(q) },
-        { title: "RDAP · 域名/网络注册", fn: () => mRdap(q) },
-    ];
-
-    for (const t of tasks) {
-        $out.insertAdjacentHTML("beforeend", card(t.title, tag("查询中…", "load")));
-        const el = $out.lastElementChild;
-
-        try {
-            const r = await t.fn();
-            const header = el.querySelector(".card-header");
-            if (r && r.skip) {
-                header.innerHTML = `<span class="card-title">${t.title}</span>${tag("跳过", "skip")}`;
-                el.insertAdjacentHTML("beforeend", `<pre>${esc(r.reason)}</pre>`);
-            } else {
-                header.innerHTML = `<span class="card-title">${t.title}</span>${tag("完成", "ok")}`;
-                el.insertAdjacentHTML("beforeend", r);
-            }
-        } catch (e) {
-            el.querySelector(".card-header").innerHTML = `<span class="card-title">${t.title}</span>${tag("失败", "err")}`;
-            const msg = e.name === "AbortError" ? "请求超时（12s）" : e.message;
-            el.insertAdjacentHTML("beforeend", `<pre>${esc(msg)}</pre>`);
-        }
-    }
-
-    $btn.disabled = false;
+async function mTcpWhois(q){
+if(!isDomain(q))return{skip:true,reason:"TCPLab Whois 仅支持域名"};
+const res=await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>TCPLab Whois 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+const data=d.data||d;
+return`<pre><strong>注册商</strong> ${esc(data.registrar??"—")}
+<strong>创建时间</strong> ${esc(data.creation_date??"—")}
+<strong>到期时间</strong> ${esc(data.expiration_date??"—")}
+<strong>状态</strong> ${esc(Array.isArray(data.status)?data.status.join(", "):data.status??"—")}
+<strong>DNS 服务器</strong> ${esc(Array.isArray(data.name_servers)?data.name_servers.join(", "):data.name_servers??"—")}</pre>${rawJson(d)}`
 }
 
-$in.addEventListener("keydown", e => { if (e.key === "Enter" && !$btn.disabled) run(); });
+async function mTcpDns(q){
+if(!isDomain(q))return{skip:true,reason:"DNS 查询仅支持域名"};
+const res=await fetchT(`https://tcp.lc/api/v2/dns/query`,{
+method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({domain:q,type:"A"})
+});
+if(!res.ok)return`<pre>TCPLab DNS 返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(d.code!==200)return`<pre>${esc(d.msg||"查询失败")}</pre>`;
+const records=(d.data?.answers||[]).map(a=>`${a.type} ${a.name} → ${a.data}`).join("\n")||"—";
+return`<pre><strong>A 记录</strong>
+${esc(records)}</pre>${rawJson(d)}`
+}
+
+async function mDohResolve(q){
+if(!isDomain(q))return{skip:true,reason:"DoH 解析仅支持域名"};
+const res=await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`);
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+const answers=(d.Answer||[]).map(a=>`${a.type===1?"A":"AAAA"} ${a.data}`).join("\n")||"无解析记录";
+return`<pre><strong>解析结果</strong>
+${esc(answers)}</pre>${rawJson(d)}`
+}
+
+async function mTcpIcp(q){
+if(!isDomain(q))return{skip:true,reason:"ICP 备案查询仅支持域名"};
+const res=await fetchT(`https://tcp.lc/api/v2/icp/query?domain=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>ICP 查询返回 HTTP ${res.status}</pre>`;
+const d=await res.json();
+if(d.code!==200||!d.data)return`<pre>未查询到 ICP 备案信息（或当日额度已用尽）</pre>`;
+return`<pre><strong>备案号</strong> ${esc(d.data.icp_code??"—")}
+<strong>主办单位</strong> ${esc(d.data.unit_name??"—")}
+<strong>单位性质</strong> ${esc(d.data.unit_nature??"—")}
+<strong>审核时间</strong> ${esc(d.data.update_time??"—")}</pre>${rawJson(d)}`
+}
+
+/* ================= 隐私泄露检测 ================= */
+async function pExitCompare(){
+const results={};
+try{
+const a=await fetchT("https://api.ip.sb/ip",{headers:{"User-Agent":"ip-sb-check"}});
+results.ipSb=await a.text();
+}catch(e){results.ipSb="失败"}
+try{
+const b=await fetchT("https://api.ipify.org?format=json");
+results.ipify=(await b.json()).ip;
+}catch(e){results.ipify="失败"}
+const ok=results.ipSb===results.ipify&&results.ipSb!=="失败"&&results.ipify!=="失败";
+return`<pre><strong>ip.sb 看到</strong> ${esc(results.ipSb)}
+<strong>ipify 看到</strong> ${esc(results.ipify)}
+${ok?"✅ 出口一致":tag("⚠️ 出口不一致，可能存在分流","warn")}</pre>`
+}
+
+async function pWebRTC(){
+return new Promise(resolve=>{
+const ips=new Set();
+const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+pc.createDataChannel("");
+pc.onicecandidate=e=>{
+if(!e.candidate)return;
+const c=e.candidate.candidate;
+const m=c.match(/(\d{1,3}\.){3}\d{1,3}|([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}/i);
+if(m)ips.add(m[0]);
+};
+pc.createOffer().then(o=>pc.setLocalDescription(o));
+setTimeout(()=>{
+pc.close();
+const list=[...ips];
+resolve(`<pre><strong>WebRTC 获取到的地址</strong>
+${list.length?esc(list.join("\n")):"无（可能已被浏览器阻止）"}
+${list.length?tag("⚠️ 如果这些地址与你实际出口不符，说明 WebRTC 泄露了真实网络","warn"):""}</pre>`);
+},3000);
+});
+}
+
+async function pTimeLang(ipGeo){
+const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+const lang=navigator.language;
+let geoCountry="—",geoCity="—";
+if(ipGeo){geoCountry=ipGeo.country||"—";geoCity=ipGeo.city||"—"}
+const tzCountry=tz.split("/")[0]||"—";
+let hint="";
+if(geoCountry!=="—"&&!tz.includes(geoCountry)&&geoCountry!=="United States"){
+hint=`<br>${tag("⚠️ 时区与 IP 国家可能不一致","warn")} IP: ${esc(geoCountry)} / 时区: ${esc(tz)}`;
+}
+return`<pre><strong>浏览器时区</strong> ${esc(tz)}
+<strong>浏览器语言</strong> ${esc(lang)}
+<strong>IP 国家</strong> ${esc(geoCountry)}
+<strong>IP 城市</strong> ${esc(geoCity)}${hint}</pre>`
+}
+
+async function pFingerprint(){
+const canvas=document.createElement("canvas");
+const gl=canvas.getContext("webgl")||canvas.getContext("experimental-webgl");
+let webglInfo="—";
+if(gl){const dbg=gl.getExtension("WEBGL_debug_renderer_info");if(dbg)webglInfo=gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)}
+const parts=[
+navigator.userAgent,
+navigator.language,
+screen.width+"x"+screen.height,
+screen.colorDepth,
+Intl.DateTimeFormat().resolvedOptions().timeZone,
+navigator.hardwareConcurrency||"—",
+navigator.deviceMemory||"—",
+webglInfo
+].join("|");
+let hash=0;
+for(let i=0;i<parts.length;i++){hash=((hash<<5)-hash)+parts.charCodeAt(i);hash|=0}
+const fp=Math.abs(hash).toString(16);
+const key="fp_last_"+location.hostname;
+const last=localStorage.getItem(key);
+localStorage.setItem(key,fp);
+const changed=last&&last!==fp;
+return`<pre><strong>指纹 ID</strong> ${esc(fp)}
+<strong>WebGL 渲染器</strong> ${esc(webglInfo)}
+<strong>CPU 线程</strong> ${esc(navigator.hardwareConcurrency??"—")}
+<strong>设备内存</strong> ${esc(navigator.deviceMemory??"—")} GB
+<strong>上次访问</strong> ${last?esc(last):"首次"}
+${changed?tag("⚠️ 指纹已变化","warn"):last?"✅ 指纹未变":""}</pre>`
+}
+
+/* ================= 主流程 ================= */
+function throttle(fn,ms){let last=0;return async(...a)=>{const w=Math.max(0,last+ms-Date.now());if(w>0)await new Promise(r=>setTimeout(r,w));last=Date.now();return fn(...a)}}
+const internetdbThrottled=throttle(mInternetDB,1100);
+
+async function run(){
+const q=$in.value.trim();
+$btn.disabled=true;$out.innerHTML="";
+const hasQuery=q.length>0;
+const ipOnly=hasQuery&&isIP(q);
+const domOnly=hasQuery&&isDomain(q);
+
+// 并行获取 ip.sb 地理数据，供隐私检测复用
+let ipGeo=null;
+if(ipOnly){try{const r=await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);if(r.ok)ipGeo=await r.json()}catch(e){}}
+
+const sections=[
+{name:"IP 溯源",color:"#3b82f6",tasks:[
+{title:"ip.sb · 主检测源",fn:()=>mIpSb(q),skip:!hasQuery},
+{title:"ipwho.is · 备用地理",fn:()=>mIpwhois(q),skip:!ipOnly},
+{title:"GeoJS · 交叉验证地理",fn:()=>mGeojs(q),skip:!ipOnly},
+{title:"Shodan InternetDB · 资产测绘",fn:()=>internetdbThrottled(q),skip:!ipOnly},
+{title:"AlienVault OTX · 威胁情报",fn:()=>mOtx(q),skip:!hasQuery},
+{title:"ContrastAPI · IP 信誉",fn:()=>mContrast(q),skip:!ipOnly},
+{title:"SANS DShield · 攻击面",fn:()=>mDShield(q),skip:!ipOnly},
+]},
+{name:"域名溯源",color:"#8b5cf6",tasks:[
+{title:"RDAP · 注册信息",fn:()=>mRdap(q),skip:!hasQuery},
+{title:"TCPLab Whois · 注册商/状态",fn:()=>mTcpWhois(q),skip:!domOnly},
+{title:"TCPLab DNS · A 记录",fn:()=>mTcpDns(q),skip:!domOnly},
+{title:"DoH 解析 · A/AAAA",fn:()=>mDohResolve(q),skip:!domOnly},
+{title:"TCPLab ICP 备案",fn:()=>mTcpIcp(q),skip:!domOnly},
+]},
+{name:"隐私泄露检测",color:"#ec4899",tasks:[
+{title:"出口 IP 对比（ip.sb vs ipify）",fn:()=>pExitCompare(),skip:false},
+{title:"WebRTC 泄露检测",fn:()=>pWebRTC(),skip:false},
+{title:"时区 / 语言一致性",fn:()=>pTimeLang(ipGeo),skip:false},
+{title:"浏览器指纹卡片",fn:()=>pFingerprint(),skip:false},
+]}
+];
+
+for(const sec of sections){
+$out.insertAdjacentHTML("beforeend",`<div class="section"><div class="section-title" style="color:${sec.color}">${sec.name}</div></div>`);
+const secEl=$out.lastElementChild;
+for(const t of sec.tasks){
+if(t.skip&&hasQuery){continue}
+if(!hasQuery&&sec.name!=="隐私泄露检测"){continue}
+
+secEl.insertAdjacentHTML("beforeend",card(t.title,tag("查询中…","load")));
+const el=secEl.lastElementChild;
+try{
+const r=await t.fn();
+const h=el.querySelector(".card-header");
+if(r&&r.skip){h.innerHTML=`<span class="card-title">${t.title}</span>${tag("跳过","skip")}`;el.insertAdjacentHTML("beforeend",`<pre>${esc(r.reason)}</pre>`)}
+else{h.innerHTML=`<span class="card-title">${t.title}</span>${tag("完成","ok")}`;el.insertAdjacentHTML("beforeend",r)}
+}catch(e){
+el.querySelector(".card-header").innerHTML=`<span class="card-title">${t.title}</span>${tag("失败","err")}`;
+const msg=e.name==="AbortError"?"请求超时（12s）":e.message;
+el.insertAdjacentHTML("beforeend",`<pre>${esc(msg)}</pre>`);
+}
+}
+}
+$btn.disabled=false;
+}
+
+$in.addEventListener("keydown",e=>{if(e.key==="Enter"&&!$btn.disabled)run()});
 </script>
 </body>
 </html>
