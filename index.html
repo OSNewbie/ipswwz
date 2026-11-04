@@ -74,8 +74,6 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .about-card code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.75rem;color:#334155}
 .relation-box{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:.8rem;color:#6b21a8}
 .relation-box strong{color:#7c3aed}
-
-/* ============ SSL 可视化组件 ============ */
 .ssl-visual{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
 .ssl-ring{width:90px;height:90px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--s) * 1%),#e2e8f0 0);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .8s ease}
 .ssl-ring::before{content:'';position:absolute;inset:8px;background:#fff;border-radius:50%}
@@ -99,7 +97,18 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .cipher-tag{padding:.22rem .55rem;background:#f3e8ff;color:#7c3aed;border-radius:20px;font-size:.7rem;font-weight:600}
 .cipher-name{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.74rem;color:#334155;margin:.3rem 0}
 .ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6}
-
+.ad-tools{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center}
+.ad-tools .dur-btn{padding:.3rem .7rem;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#334155;font-size:.74rem;cursor:pointer;font-weight:500;transition:all .15s}
+.ad-tools .dur-btn:hover{background:#f1f5f9}
+.ad-tools .dur-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+.ad-progress{height:6px;background:#e2e8f0;border-radius:3px;margin-top:.5rem;overflow:hidden;display:none}
+.ad-progress-fill{height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width .3s linear;border-radius:3px}
+.ad-phase{display:flex;gap:.35rem;margin-top:.4rem;flex-wrap:wrap;font-size:.7rem}
+.ad-phase span{padding:.15rem .5rem;border-radius:20px;background:#f1f5f9;color:#94a3b8;font-weight:500;transition:all .2s}
+.ad-phase span.active{background:#3b82f6;color:#fff;font-weight:600}
+.ad-phase span.done{background:#ecfdf5;color:#059669}
+.ad-action-row{display:flex;gap:.4rem;margin-top:.5rem}
+.ad-action-row button{flex:1}
 @media(max-width:600px){.header-inner{padding:.75rem .75rem .4rem}.header h1{font-size:1rem}.query-bar{flex-direction:column}.query-bar button{width:100%}main{padding:1rem .75rem 2rem}.score-circle{width:110px;height:110px}.score-num{font-size:1.7rem}}
 </style>
 </head>
@@ -177,6 +186,17 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
         <li>剩余有效期 &gt; 30 天：+10</li>
         <li>加密套件包含 GCM 或 CHACHA20：+10</li>
         <li>等级：A≥90 / B≥75 / C≥60 / D&lt;60</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>🎯 用户视角广告检测说明</h3>
+      <p>模拟浏览器真实访问，分三阶段观察：0–3 秒快速弹窗、3–10 秒延迟加载、10 秒后滚动触发懒加载。</p>
+      <ul>
+        <li><strong>预检</strong>：HEAD 请求探测 <code>X-Frame-Options</code> 与 CSP <code>frame-ancestors</code>，被拒绝时提示原因并给出“新标签页打开”备选</li>
+        <li><strong>观察时长</strong>：可选 10 / 15 / 20 秒，默认 15 秒</li>
+        <li><strong>可中断</strong>：随时点“停止”立即结束并保留已捕获信号</li>
+        <li><strong>信号</strong>：弹窗尝试、浏览器广告干预、iframe 高度突变（&gt;60px）</li>
+        <li><strong>局限</strong>：跨域 iframe 无法读取 DOM，仅基于外围信号判断；同源时会在第三阶段尝试模拟滚动</li>
       </ul>
     </div>
     <div class="about-card">
@@ -828,7 +848,7 @@ ${state.adHits.map(n => "• " + n).join("\n")}
 <em>（该站点接入了上述广告联盟，大概率存在商业广告展示）</em></pre>`;
 }
 
-/* ============ 广告检测：iframe 预检 ============ */
+/* ============ 广告检测：预检 + 多阶段观察 ============ */
 async function preflightFrame(q) {
   try {
     const res = await fetchT(`https://${q}`, { method: "HEAD", mode: "cors" }, 6000);
@@ -852,35 +872,88 @@ function mUserAdDetect(q) {
 
   return new Promise((resolve) => {
     const container = document.createElement("div");
-    container.style.cssText = "position:relative;";
 
+    const durBar = document.createElement("div");
+    durBar.className = "ad-tools";
+    const durations = [
+      { label: "10 秒（快速）", value: 10000 },
+      { label: "15 秒（推荐）", value: 15000 },
+      { label: "20 秒（彻底）", value: 20000 },
+    ];
+    let chosenDuration = 15000;
+    const durBtns = durations.map(d => {
+      const b = document.createElement("button");
+      b.className = "dur-btn" + (d.value === chosenDuration ? " active" : "");
+      b.textContent = d.label;
+      b.onclick = () => {
+        chosenDuration = d.value;
+        durBtns.forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+      };
+      durBar.appendChild(b);
+      return b;
+    });
+
+    const actionRow = document.createElement("div");
+    actionRow.className = "ad-action-row";
     const btn = document.createElement("button");
     btn.className = "copy-btn";
-    btn.style.cssText = "margin-top:0;width:100%;";
-    btn.textContent = "▶ 模拟用户访问，检测延迟广告（约 10 秒）";
+    btn.style.cssText = "margin-top:0;";
+    btn.textContent = "▶ 开始模拟用户访问";
+    const stopBtn = document.createElement("button");
+    stopBtn.className = "copy-btn";
+    stopBtn.style.cssText = "margin-top:0;display:none;color:#dc2626;border-color:#fca5a5;background:#fef2f2;";
+    stopBtn.textContent = "⏹ 停止检测";
+    actionRow.appendChild(btn);
+    actionRow.appendChild(stopBtn);
+
+    const phaseBar = document.createElement("div");
+    phaseBar.className = "ad-phase";
+    const phase1 = document.createElement("span");
+    phase1.textContent = "① 0-3s 快速弹窗";
+    const phase2 = document.createElement("span");
+    phase2.textContent = "② 3-10s 延迟加载";
+    const phase3 = document.createElement("span");
+    phase3.textContent = "③ 10s+ 滚动触发";
+    phaseBar.appendChild(phase1);
+    phaseBar.appendChild(phase2);
+    phaseBar.appendChild(phase3);
+
+    const progress = document.createElement("div");
+    progress.className = "ad-progress";
+    const progressFill = document.createElement("div");
+    progressFill.className = "ad-progress-fill";
+    progress.appendChild(progressFill);
 
     const status = document.createElement("div");
     status.style.cssText = "font-size:.78rem;color:#94a3b8;margin-top:.4rem;min-height:1.2em;";
 
     const frame = document.createElement("iframe");
-    frame.style.cssText = "width:100%;height:420px;border:1px solid #e2e8f0;border-radius:8px;margin-top:.6rem;display:none;";
+    frame.style.cssText = "width:100%;height:420px;border:1px solid #e2e8f0;border-radius:8px;margin-top:.6rem;display:none;background:#fff;";
     frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups allow-forms");
     frame.setAttribute("referrerpolicy", "no-referrer");
 
     const resultBox = document.createElement("div");
     resultBox.style.cssText = "font-size:.8rem;margin-top:.6rem;line-height:1.7;";
 
-    container.appendChild(btn);
+    container.appendChild(durBar);
+    container.appendChild(actionRow);
+    container.appendChild(phaseBar);
+    container.appendChild(progress);
     container.appendChild(status);
     container.appendChild(frame);
     container.appendChild(resultBox);
 
     let popupAttempts = 0;
     const origOpen = window.open;
-    let checkTimer = null;
-    let lastHeight = 0;
+    const timeouts = [];
+    const intervals = [];
     let adInterventions = 0;
-    let started = false;
+    let iframeLoaded = false;
+    let lastHeight = 0;
+    let aborted = false;
+    let startTime = 0;
+    let activePhase = 0;
 
     try {
       if (typeof ReportingObserver !== "undefined") {
@@ -891,45 +964,97 @@ function mUserAdDetect(q) {
       }
     } catch (e) {}
 
-    function finish() {
-      if (checkTimer) clearInterval(checkTimer);
+    function clearAll() {
+      timeouts.forEach(t => clearTimeout(t));
+      intervals.forEach(i => clearInterval(i));
+      timeouts.length = 0;
+      intervals.length = 0;
+    }
+
+    function setPhase(n) {
+      if (activePhase === n) return;
+      activePhase = n;
+      [phase1, phase2, phase3].forEach((el, i) => {
+        el.classList.remove("active", "done");
+        if (i + 1 < n) el.classList.add("done");
+        else if (i + 1 === n) el.classList.add("active");
+      });
+    }
+
+    function finish(manual) {
+      clearAll();
       window.open = origOpen;
       frame.style.display = "none";
+      progress.style.display = "none";
+      stopBtn.style.display = "none";
+      [phase1, phase2, phase3].forEach(el => { el.classList.remove("active", "done"); });
+      activePhase = 0;
+
+      if (manual) {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        resultBox.innerHTML = `<pre>${tag("⏹ 已手动停止", "skip")}
+<strong>已观察</strong> ${elapsed} 秒（提前结束，保留已捕获信号）
+${popupAttempts > 0 ? `<strong>已捕获</strong> 弹窗尝试 ${popupAttempts} 次` : ""}
+${adInterventions > 0 ? `<strong>已捕获</strong> 浏览器广告干预 ${adInterventions} 次` : ""}
+${state.iframeResized ? `<strong>已捕获</strong> iframe 高度突变` : ""}</pre>`;
+        state.userAdHit = popupAttempts > 0 || adInterventions > 0 || state.iframeResized;
+        btn.textContent = "▶ 重新检测";
+        btn.disabled = false;
+        return;
+      }
+
       const signals = [];
       if (popupAttempts > 0) signals.push(`检测到 ${popupAttempts} 次弹窗/新窗口尝试`);
       if (adInterventions > 0) signals.push(`浏览器报告 ${adInterventions} 次重型广告干预`);
+      if (state.iframeResized) signals.push("iframe 高度发生显著变化（疑似广告插入）");
       if (state.adHits?.length) signals.push(`DNS 层关联广告联盟：${state.adHits.join("、")}`);
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
       if (signals.length) {
         resultBox.innerHTML = `${tag("⚠️ 用户视角检测到广告行为", "warn")}
-<pre><strong>命中信号</strong>
+<pre><strong>观察时长</strong> ${elapsed} 秒（完整三阶段）
+<strong>命中信号</strong>
 ${signals.map(s => "• " + s).join("\n")}
 
 <strong>结论</strong>
 该站点在模拟用户访问过程中触发了广告相关行为，大概率存在商业广告展示或弹窗。</pre>`;
         state.userAdHit = true;
       } else {
-        resultBox.innerHTML = `<pre>未在 10 秒观察窗口内捕获到弹窗或浏览器广告干预。
-<em>（纯前端无法读取跨域 iframe 的 DOM，此结果仅基于弹窗/干预/高度突变等外围信号）</em></pre>`;
+        resultBox.innerHTML = `<pre><strong>观察时长</strong> ${elapsed} 秒（完整三阶段）
+未捕获到弹窗、广告干预或 iframe 高度突变。
+<em>（纯前端无法读取跨域 iframe 的 DOM，此结果仅基于弹窗/干预/高度突变等外围信号；可尝试延长至 20 秒重测）</em></pre>`;
         state.userAdHit = false;
       }
+      state.frameBlocked = false;
+      state.frameBlockReason = null;
       btn.textContent = "▶ 重新检测";
       btn.disabled = false;
     }
 
+    stopBtn.onclick = () => {
+      aborted = true;
+      finish(true);
+    };
+
     btn.onclick = async () => {
-      if (started) {
-        window.open = origOpen;
-        if (checkTimer) clearInterval(checkTimer);
-        frame.src = "about:blank";
-        resultBox.innerHTML = "";
-        status.textContent = "";
-        popupAttempts = 0;
-        adInterventions = 0;
-      }
-      started = true;
+      aborted = false;
+      popupAttempts = 0;
+      adInterventions = 0;
+      iframeLoaded = false;
+      state.iframeResized = false;
+      state.userAdHit = false;
+      activePhase = 0;
+      clearAll();
+      window.open = origOpen;
+      resultBox.innerHTML = "";
+      frame.src = "about:blank";
+      progressFill.style.width = "0%";
+      [phase1, phase2, phase3].forEach(el => el.classList.remove("active", "done"));
+
       btn.disabled = true;
-      btn.textContent = "⏳ 正在预检…";
+      btn.textContent = "⏳ 预检中…";
+      stopBtn.style.display = "inline-block";
       status.textContent = "正在检测目标站点是否允许 iframe 嵌入…";
 
       const pre = await preflightFrame(q);
@@ -939,9 +1064,14 @@ ${signals.map(s => "• " + s).join("\n")}
         resultBox.innerHTML = `${tag("⚠️ 该站点禁止 iframe 嵌入", "warn")}
 <pre><strong>拒绝原因</strong> ${esc(pre.reason)}
 <strong>结论</strong> 无法通过 iframe 模拟用户访问进行广告检测。
+
+<strong>建议</strong>
+• 使用下方“在新标签页打开”手动观察广告
+• 对于禁止嵌入的站点，任何前端工具都无法通过 iframe 完整读取其广告行为
 <em>X-Frame-Options 或 CSP frame-ancestors 是网站主动设置的安全策略，用于防止点击劫持。</em></pre>
 <a href="https://${esc(q)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:.5rem;padding:.4rem .9rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.8rem;text-decoration:none;">↗ 在新标签页打开 ${esc(q)}</a>`;
         status.textContent = "";
+        stopBtn.style.display = "none";
         btn.textContent = "▶ 重新尝试";
         btn.disabled = false;
         return;
@@ -949,10 +1079,12 @@ ${signals.map(s => "• " + s).join("\n")}
 
       state.frameBlocked = false;
       state.frameBlockReason = null;
-      btn.textContent = "⏳ 正在模拟访问…";
+      startTime = Date.now();
+      progress.style.display = "block";
+      setPhase(1);
       status.textContent = pre.corsBlocked
         ? "无法读取响应头（CORS 拦截），直接加载 iframe 观察…"
-        : "用户手势已触发，正在加载目标站点并观察 10 秒…";
+        : "预检通过，正在加载目标站点…";
       frame.style.display = "block";
 
       window.open = function (...args) {
@@ -960,9 +1092,19 @@ ${signals.map(s => "• " + s).join("\n")}
         return origOpen.apply(this, args);
       };
 
+      const loadTimeout = setTimeout(() => {
+        if (!iframeLoaded && !aborted) {
+          status.textContent = "iframe 5 秒未响应，可能被目标站点拒绝或网络延迟，继续尝试观察…";
+        }
+      }, 5000);
+      timeouts.push(loadTimeout);
+
       frame.onload = () => {
+        iframeLoaded = true;
+        clearTimeout(loadTimeout);
         lastHeight = frame.clientHeight;
-        checkTimer = setInterval(() => {
+        const checkTimer = setInterval(() => {
+          if (aborted) return;
           try {
             const h = frame.clientHeight;
             if (Math.abs(h - lastHeight) > 60) {
@@ -970,11 +1112,45 @@ ${signals.map(s => "• " + s).join("\n")}
               lastHeight = h;
             }
           } catch (e) {}
-        }, 2500);
+        }, 1000);
+        intervals.push(checkTimer);
       };
 
       frame.src = `https://${q}`;
-      setTimeout(finish, 10000);
+
+      const total = chosenDuration;
+      const startTs = Date.now();
+
+      const t1 = setTimeout(() => {
+        if (!aborted) { setPhase(2); status.textContent = "观察中（第 2 阶段）：检测延迟加载广告…"; }
+      }, 3000);
+      const t2 = setTimeout(() => {
+        if (aborted) return;
+        setPhase(3);
+        status.textContent = "观察中（第 3 阶段）：模拟滚动，检测懒加载广告…";
+        try {
+          if (frame.contentWindow && frame.contentDocument) {
+            const scroll = () => { try { frame.contentWindow.scrollBy(0, 300); } catch (e) {} };
+            scroll();
+            timeouts.push(setTimeout(scroll, 800));
+            timeouts.push(setTimeout(scroll, 1600));
+            timeouts.push(setTimeout(scroll, 2400));
+          }
+        } catch (e) {}
+      }, 10000);
+      timeouts.push(t1, t2);
+
+      const progressTimer = setInterval(() => {
+        if (aborted) return;
+        const el = Date.now() - startTs;
+        progressFill.style.width = Math.min(100, (el / total) * 100) + "%";
+      }, 200);
+      intervals.push(progressTimer);
+
+      const endTimer = setTimeout(() => {
+        if (!aborted) finish(false);
+      }, total);
+      timeouts.push(endTimer);
     };
 
     resolve(container);
@@ -1223,7 +1399,7 @@ function calcDomainQuality() {
   }
   const pulse = state.otxPulseCount || 0;
   if (pulse > 0) { const p = Math.min(20, pulse * 5); score -= p; issues.push({ pts: -p, text: `OTX 关联 ${pulse} 个威胁 Pulse` }); }
-  const sslScore = state.sslScore ?? computeSslScoreFromState();
+  const sslScore = computeSslScoreFromState();
   if (typeof sslScore === "number") {
     if (sslScore < 60) { score -= 25; issues.push({ pts: -25, text: `SSL 安全评分 ${sslScore}（等级 D）` }); }
     else if (sslScore < 80) { score -= 10; issues.push({ pts: -10, text: `SSL 安全评分 ${sslScore}（等级 C）` }); }
@@ -1562,7 +1738,7 @@ async function runQuery() {
     { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
-    { title: "用户视角广告检测", fn: () => mUserAdDetect(q) },
+    { title: "用户视角广告检测（多阶段观察）", fn: () => mUserAdDetect(q) },
   ] : [];
 
   const intelTasks = (ipOnly || domOnly || urlOnly) ? [
