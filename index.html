@@ -74,29 +74,62 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .about-card code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.75rem;color:#334155}
 .relation-box{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:.8rem;color:#6b21a8}
 .relation-box strong{color:#7c3aed}
+
+/* ============ SSL 图形化增强 ============ */
 .ssl-visual{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
-.ssl-ring{width:90px;height:90px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--s) * 1%),#e2e8f0 0);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .8s ease}
-.ssl-ring::before{content:'';position:absolute;inset:8px;background:#fff;border-radius:50%}
-.ssl-ring-inner{position:relative;z-index:1;text-align:center}
-.ssl-ring-num{font-size:1.4rem;font-weight:700;line-height:1}
-.ssl-ring-label{font-size:.65rem;color:#64748b;margin-top:2px;font-weight:600}
-.ssl-timeline{width:100%}
-.ssl-timeline-bar{height:14px;background:#e2e8f0;border-radius:7px;position:relative;overflow:hidden}
-.ssl-timeline-fill{height:100%;background:var(--tcolor);border-radius:7px 0 0 7px;transition:width .8s ease}
-.ssl-timeline-now{position:absolute;top:-3px;bottom:-3px;width:3px;background:#0f172a;border-radius:2px;box-shadow:0 0 0 2px #fff}
-.ssl-timeline-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.72rem;color:#64748b;margin-top:.35rem;flex-wrap:wrap}
-.ssl-timeline-labels strong{color:#0f172a}
-.ssl-section-title{font-size:.74rem;font-weight:700;color:#475569;margin:.75rem 0 .35rem;display:flex;align-items:center;gap:.3rem}
+.ssl-ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0}
+.ssl-ring-svg{width:110px;height:110px;display:block}
+.ssl-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ssl-ring-num{font-size:1.7rem;font-weight:700;line-height:1}
+.ssl-ring-label{font-size:.66rem;color:#64748b;margin-top:2px;font-weight:600}
+.ssl-timeline-wrap{width:100%}
+.ssl-tl-bar{height:16px;background:#e2e8f0;border-radius:8px;position:relative;overflow:hidden}
+.ssl-tl-fill{height:100%;background:var(--tcolor);border-radius:8px 0 0 8px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1) .3s}
+.ssl-tl-now{position:absolute;top:-4px;bottom:-4px;width:3px;background:#0f172a;border-radius:2px;box-shadow:0 0 0 2px #fff;opacity:0;transition:opacity .3s ease 1.4s;transform:translateX(-50%)}
+.ssl-tl-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.72rem;color:#64748b;margin-top:.4rem;flex-wrap:wrap;opacity:0;transition:opacity .4s ease .8s}
+.ssl-tl-labels.show{opacity:1}
+.ssl-tl-labels strong{color:#0f172a}
+.ssl-section-title{font-size:.74rem;font-weight:700;color:#475569;margin:.85rem 0 .4rem;display:flex;align-items:center;gap:.3rem}
 .tls-ladder{display:flex;gap:.35rem;margin:.4rem 0 .5rem;flex-wrap:wrap}
-.tls-step{flex:1;min-width:70px;padding:.45rem .2rem;text-align:center;border-radius:6px;font-size:.72rem;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1.5px solid transparent;transition:all .3s}
+.tls-step{flex:1;min-width:70px;padding:.5rem .2rem;text-align:center;border-radius:6px;font-size:.72rem;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1.5px solid transparent;opacity:0;transform:translateY(8px);transition:all .4s ease}
+.tls-step.show{opacity:1;transform:translateY(0)}
 .tls-step.usable{background:#eff6ff;color:#3b82f6}
-.tls-step.active{background:#3b82f6;color:#fff;border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(59,130,246,.15);transform:translateY(-1px)}
+.tls-step.active{background:#3b82f6;color:#fff;border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(59,130,246,.2);animation:tlsPulse 1.8s ease-in-out infinite}
 .tls-step.active::after{content:' ✓'}
-.tls-step.deprecated{background:#fef2f2;color:#dc2626;text-decoration:line-through;opacity:.75}
+.tls-step.deprecated{background:#fef2f2;color:#dc2626;text-decoration:line-through;opacity:.6}
+.tls-step.deprecated.show{opacity:.6}
+@keyframes tlsPulse{0%,100%{box-shadow:0 0 0 3px rgba(59,130,246,.2);transform:translateY(0)}50%{box-shadow:0 0 0 6px rgba(59,130,246,.1);transform:translateY(-2px)}}
 .cipher-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin:.4rem 0}
-.cipher-tag{padding:.22rem .55rem;background:#f3e8ff;color:#7c3aed;border-radius:20px;font-size:.7rem;font-weight:600}
-.cipher-name{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.74rem;color:#334155;margin:.3rem 0}
-.ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6}
+.cipher-tag{padding:.22rem .55rem;background:#f3e8ff;color:#7c3aed;border-radius:20px;font-size:.7rem;font-weight:600;opacity:0;transform:scale(.7);transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+.cipher-tag.show{opacity:1;transform:scale(1)}
+.cipher-name{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.74rem;color:#334155;margin:.3rem 0;opacity:0;transition:opacity .4s ease .2s}
+.cipher-name.show{opacity:1}
+.ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6;opacity:0;transition:opacity .4s ease 1.5s}
+.ssl-note.show{opacity:1}
+
+/* ============ CDN 图形化 ============ */
+.cdn-summary{display:flex;gap:.8rem;flex-wrap:wrap;margin:.5rem 0 .8rem}
+.cdn-stat{flex:1;min-width:100px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.6rem .8rem;text-align:center}
+.cdn-stat-num{font-size:1.4rem;font-weight:700;line-height:1}
+.cdn-stat-label{font-size:.68rem;color:#64748b;margin-top:.2rem}
+.cdn-ip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.4rem;margin:.6rem 0}
+.cdn-ip-node{padding:.5rem;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:.72rem;text-align:center;transition:all .3s ease;opacity:0;transform:scale(.9)}
+.cdn-ip-node.show{opacity:1;transform:scale(1)}
+.cdn-ip-node.hit{border-color:currentColor;background:#fff}
+.cdn-ip-addr{font-family:ui-monospace,monospace;font-weight:600;color:#0f172a;margin-bottom:.15rem;font-size:.7rem}
+.cdn-ip-vendor{font-size:.65rem;font-weight:600}
+.cdn-bars{margin:.5rem 0}
+.cdn-bar-row{display:flex;align-items:center;gap:.5rem;margin:.3rem 0;font-size:.74rem;opacity:0;transition:opacity .4s ease}
+.cdn-bar-row.show{opacity:1}
+.cdn-bar-name{min-width:110px;color:#475569;font-weight:500}
+.cdn-bar-track{flex:1;height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden}
+.cdn-bar-fill{height:100%;border-radius:5px;width:0;transition:width 1s cubic-bezier(.4,0,.2,1) .2s}
+.cdn-bar-count{min-width:60px;text-align:right;color:#64748b;font-size:.7rem}
+.cdn-verdict{margin-top:.6rem;padding:.6rem .85rem;border-radius:8px;font-size:.8rem;font-weight:600}
+.cdn-verdict.hit{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
+.cdn-verdict.no{background:#ecfdf5;color:#059669;border:1px solid #6ee7b7}
+
+/* 广告检测 */
 .ad-tools{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center}
 .ad-tools .dur-btn{padding:.3rem .7rem;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#334155;font-size:.74rem;cursor:pointer;font-weight:500;transition:all .15s}
 .ad-tools .dur-btn:hover{background:#f1f5f9}
@@ -139,7 +172,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-cert">
-    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 深度检测（评分 · 有效期 · 协议 · 算法）、CDN 特征、广告联盟信号、用户视角广告检测</p></div>
+    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 图形化检测、CDN 厂商识别、广告联盟信号、用户视角广告检测</p></div>
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
@@ -167,14 +200,14 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
     <div class="about-card">
       <h3>📌 数据来源（全部免费、无强制密钥）</h3>
       <ul>
-        <li><code>tcp.lc</code>：IP 归属、DNS、Whois、ICP 备案、SSL（CORS 已启用）</li>
+        <li><code>tcp.lc</code>：IP 归属、DNS、Whois、ICP 备案、SSL</li>
         <li><code>ip.sb</code>：备用地理与出口 IP</li>
         <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
         <li><code>Google DoH</code>：DNS 综合解析（正反向）</li>
         <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>Domainee</code>：SSL 深度检测（协议/套件/颁发机构/有效期/安全评分）</li>
-        <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分，CORS 已启用</li>
-        <li><code>PhishDestroy</code>：恶意域名风险评分 0–100，无密钥、CORS Ready</li>
+        <li><code>Domainee</code>：SSL 深度检测</li>
+        <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分</li>
+        <li><code>PhishDestroy</code>：恶意域名风险评分</li>
         <li><code>OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
       </ul>
     </div>
@@ -189,25 +222,31 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
       </ul>
     </div>
     <div class="about-card">
+      <h3>🌐 CDN 识别说明</h3>
+      <p>三层判定：</p>
+      <ul>
+        <li><strong>CNAME 链</strong>：解析链中出现已知 CDN 域名特征</li>
+        <li><strong>IP 段命中</strong>：A 记录 IP 落在 Cloudflare / CloudFront / Fastly / Akamai / Azure 等已知 IP 段内</li>
+        <li><strong>厂商统计</strong>：按命中厂商聚合，柱状图展示每个厂商覆盖的 IP 数量</li>
+      </ul>
+    </div>
+    <div class="about-card">
       <h3>🎯 用户视角广告检测说明</h3>
       <p>模拟浏览器真实访问，分三阶段观察：0–3 秒快速弹窗、3–10 秒延迟加载、10 秒后滚动触发懒加载。</p>
       <ul>
-        <li><strong>预检</strong>：HEAD 请求探测 <code>X-Frame-Options</code> 与 CSP <code>frame-ancestors</code>，被拒绝时提示原因并给出“新标签页打开”备选</li>
+        <li><strong>预检</strong>：HEAD 请求探测 <code>X-Frame-Options</code> 与 CSP <code>frame-ancestors</code></li>
         <li><strong>观察时长</strong>：可选 10 / 15 / 20 秒，默认 15 秒</li>
         <li><strong>可中断</strong>：随时点“停止”立即结束并保留已捕获信号</li>
-        <li><strong>信号</strong>：弹窗尝试、浏览器广告干预、iframe 高度突变（&gt;60px）</li>
-        <li><strong>局限</strong>：跨域 iframe 无法读取 DOM，仅基于外围信号判断；同源时会在第三阶段尝试模拟滚动</li>
       </ul>
     </div>
     <div class="about-card">
       <h3>📊 质量评分规则</h3>
-      <p><strong>IP 评分（满分 100）</strong>：Feodo C2 命中 -35；OTX Pulse 每个 -5（最多 -20）；VPN/代理/Tor -15；高危端口每个 -5（最多 -20）；CVE 每个 -5（最多 -15）。</p>
-      <p style="margin-top:.5rem;"><strong>域名评分（满分 100）</strong>：PhishDestroy 风险分 ≥70 -25，50–69 -15，30–49 -5；OTX Pulse 每个 -5（最多 -20）；SSL 评分 &lt;60 -25，60–79 -10；缺 SPF -5；缺 DMARC -5；未备案 -10；广告联盟 -5；用户视角广告命中 -5。</p>
-      <p style="margin-top:.5rem;font-size:.78rem;color:#94a3b8;">分数与雷达图仅供参考，不能替代专业安全评估。</p>
+      <p><strong>IP 评分</strong>：Feodo C2 命中 -35；OTX Pulse 每个 -5（最多 -20）；VPN/代理/Tor -15；高危端口每个 -5（最多 -20）；CVE 每个 -5（最多 -15）。</p>
+      <p style="margin-top:.5rem;"><strong>域名评分</strong>：PhishDestroy ≥70 -25，50–69 -15，30–49 -5；OTX Pulse 每个 -5（最多 -20）；SSL &lt;60 -25，60–79 -10；缺 SPF -5；缺 DMARC -5；未备案 -10；广告联盟 -5；用户视角广告命中 -5。</p>
     </div>
     <div class="about-card">
       <h3>🔐 隐私</h3>
-      <p>本工具纯前端运行，不收集、不上传任何查询记录。所有请求直接发往第三方公开接口。</p>
+      <p>本工具纯前端运行，不收集、不上传任何查询记录。</p>
     </div>
   </section>
 </main>
@@ -294,6 +333,63 @@ const PORT_SERVICES = {
   27017:"MongoDB",
 };
 
+/* ============ CDN 厂商 IP 段 ============ */
+const CDN_VENDORS = [
+  { name: "Cloudflare", color: "#f38020", cidrs: [
+    "104.16.0.0/12", "172.64.0.0/13", "162.158.0.0/15", "173.245.48.0/20",
+    "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "141.101.64.0/18",
+    "108.162.192.0/18", "190.93.240.0/20", "188.114.96.0/20", "197.234.240.0/22",
+    "198.41.128.0/17", "162.159.0.0/16"
+  ]},
+  { name: "Amazon CloudFront", color: "#ff9900", cidrs: [
+    "13.32.0.0/15", "13.224.0.0/14", "13.228.0.0/15", "13.230.0.0/15",
+    "13.232.0.0/14", "13.236.0.0/14", "13.240.0.0/13", "13.248.0.0/15",
+    "52.84.0.0/15", "54.182.0.0/16", "54.192.0.0/16", "54.230.0.0/15",
+    "54.239.128.0/18", "54.239.192.0/18", "54.240.128.0/18",
+    "143.204.0.0/16", "204.246.164.0/22", "204.246.168.0/22",
+    "205.251.192.0/19", "216.137.32.0/19"
+  ]},
+  { name: "Fastly", color: "#ff282d", cidrs: [
+    "151.101.0.0/16", "199.232.0.0/16", "23.235.32.0/20",
+    "43.249.72.0/22", "103.244.50.0/24", "103.245.222.0/23",
+    "104.156.80.0/20", "146.75.0.0/16", "157.52.64.0/18",
+    "167.82.0.0/17", "167.82.128.0/20", "172.111.64.0/18",
+    "185.31.16.0/22", "199.27.72.0/21"
+  ]},
+  { name: "Akamai", color: "#009bde", cidrs: [
+    "23.0.0.0/12", "23.32.0.0/11", "23.64.0.0/14", "23.72.0.0/13",
+    "96.6.0.0/15", "96.16.0.0/15", "184.24.0.0/13", "184.50.0.0/15",
+    "184.84.0.0/14", "2.16.0.0/13", "2.17.0.0/16"
+  ]},
+  { name: "Azure CDN", color: "#0078d4", cidrs: [
+    "13.107.0.0/16", "20.0.0.0/8", "40.0.0.0/8", "52.0.0.0/8"
+  ]},
+];
+
+function ipToNum(ip) {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(n => isNaN(n) || n < 0 || n > 255)) return null;
+  return ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+}
+
+function ipInCidr(ip, cidr) {
+  const [range, bits] = cidr.split("/");
+  const ipNum = ipToNum(ip);
+  const rangeNum = ipToNum(range);
+  if (ipNum === null || rangeNum === null) return false;
+  const mask = parseInt(bits) === 0 ? 0 : (~0 << (32 - parseInt(bits))) >>> 0;
+  return (ipNum & mask) === (rangeNum & mask);
+}
+
+function detectCdnVendor(ip) {
+  for (const v of CDN_VENDORS) {
+    for (const cidr of v.cidrs) {
+      if (ipInCidr(ip, cidr)) return v;
+    }
+  }
+  return null;
+}
+
 function cnValue(key, val) {
   if (val === null || val === undefined) return "—";
   if (typeof val === "boolean") return val ? "是" : "否";
@@ -352,6 +448,34 @@ function fmtPorts(ports) {
 function fmtTags(tags) {
   if (!tags || !tags.length) return "—";
   return tags.map(t => ENUM_CN[String(t).toLowerCase()] || t).join(", ");
+}
+
+/* 动画启动器：插入 HTML 后延迟触发各元素 .show 类 */
+function animateIn(container) {
+  const tlFill = container.querySelector(".ssl-tl-fill");
+  const tlNow = container.querySelector(".ssl-tl-now");
+  const tlLabels = container.querySelector(".ssl-tl-labels");
+  if (tlFill) {
+    setTimeout(() => { tlFill.style.width = tlFill.dataset.pct + "%"; }, 100);
+    if (tlNow) { tlNow.style.left = tlNow.dataset.pct + "%"; setTimeout(() => { tlNow.style.opacity = "1"; }, 100); }
+    if (tlLabels) setTimeout(() => tlLabels.classList.add("show"), 600);
+  }
+  const tlsSteps = container.querySelectorAll(".tls-step");
+  tlsSteps.forEach((el, i) => setTimeout(() => el.classList.add("show"), 400 + i * 120));
+  const cipherName = container.querySelector(".cipher-name");
+  if (cipherName) setTimeout(() => cipherName.classList.add("show"), 200);
+  const cipherTags = container.querySelectorAll(".cipher-tag");
+  cipherTags.forEach((el, i) => setTimeout(() => el.classList.add("show"), 1000 + i * 100));
+  const notes = container.querySelectorAll(".ssl-note");
+  notes.forEach((el, i) => setTimeout(() => el.classList.add("show"), 1400 + i * 100));
+  const ipNodes = container.querySelectorAll(".cdn-ip-node");
+  ipNodes.forEach((el, i) => setTimeout(() => el.classList.add("show"), 100 + i * 80));
+  const barRows = container.querySelectorAll(".cdn-bar-row");
+  barRows.forEach((el, i) => {
+    setTimeout(() => el.classList.add("show"), 200 + i * 100);
+    const fill = el.querySelector(".cdn-bar-fill");
+    if (fill) setTimeout(() => { fill.style.width = fill.dataset.w + "%"; }, 300 + i * 100);
+  });
 }
 
 document.getElementById("tabs").addEventListener("click", e => {
@@ -581,7 +705,7 @@ ${esc(events || "—")}
 <em>（registration=注册，expiration=到期，last changed=最近变更）</em></pre>${rawJson(d)}`;
 }
 
-/* ============ SSL 图形化组件 ============ */
+/* ============ SSL 图形化（带逐帧动画） ============ */
 function renderSslVisual(d) {
   const fromRaw = d.validFrom || d.notBefore || d.valid_from;
   const toRaw = d.validTo || d.notAfter || d.valid_to;
@@ -622,6 +746,12 @@ function renderSslVisual(d) {
   const sColor = score >= 80 ? "#10b981" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444";
   const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
 
+  // SVG 圆环动画参数
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const targetOffset = circumference * (1 - score / 100);
+  const uid = "ssl" + Math.random().toString(36).slice(2, 9);
+
   const tlsHTML = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"].map((v, i) => {
     const isCurrent = (i === 3 && is13) || (i === 2 && is12);
     const isDeprecated = i <= 1;
@@ -659,27 +789,38 @@ function renderSslVisual(d) {
         : "无法识别协议版本";
 
   return `
+    <style>
+      @keyframes ${uid}_ring { from { stroke-dashoffset: ${circumference}; } to { stroke-dashoffset: ${targetOffset}; } }
+    </style>
+
     <div class="ssl-visual">
-      <div class="ssl-ring" style="--s:${score};--c:${sColor};">
-        <div class="ssl-ring-inner">
+      <div class="ssl-ring-wrap">
+        <svg class="ssl-ring-svg" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="${radius}" fill="none" stroke="#e2e8f0" stroke-width="9"/>
+          <circle cx="55" cy="55" r="${radius}" fill="none" stroke="${sColor}" stroke-width="9"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${circumference}"
+            stroke-linecap="round"
+            transform="rotate(-90 55 55)"
+            style="animation: ${uid}_ring 1.4s cubic-bezier(.4,0,.2,1) .2s forwards;"/>
+        </svg>
+        <div class="ssl-ring-center">
           <div class="ssl-ring-num" style="color:${sColor}">${score}</div>
           <div class="ssl-ring-label">等级 ${grade}</div>
         </div>
       </div>
-      <div style="flex:1;min-width:240px;">
-        <div class="ssl-section-title">📅 证书有效期</div>
-        <div class="ssl-timeline">
-          <div class="ssl-timeline-bar">
-            <div class="ssl-timeline-fill" style="width:${pct.toFixed(1)}%;--tcolor:${tcolor};"></div>
-            <div class="ssl-timeline-now" style="left:${pct.toFixed(1)}%;"></div>
-          </div>
-          <div class="ssl-timeline-labels">
-            <span>生效 <strong>${esc(fromStr)}</strong></span>
-            <span style="color:${tcolor};font-weight:700;">${esc(daysLabel)}</span>
-            <span>到期 <strong>${esc(toStr)}</strong></span>
-          </div>
+      <div class="ssl-timeline-wrap" style="flex:1;min-width:240px;">
+        <div class="ssl-section-title">📅 证书有效期（起止时间轴）</div>
+        <div class="ssl-tl-bar">
+          <div class="ssl-tl-fill" data-pct="${pct.toFixed(1)}" style="--tcolor:${tcolor};"></div>
+          <div class="ssl-tl-now" data-pct="${pct.toFixed(1)}"></div>
         </div>
-        <div class="ssl-note">进度条灰色部分为已过去的时间，彩色部分为剩余有效期；颜色越红表示越接近过期。</div>
+        <div class="ssl-tl-labels">
+          <span>生效 <strong>${esc(fromStr)}</strong></span>
+          <span style="color:${tcolor};font-weight:700;">${esc(daysLabel)}</span>
+          <span>到期 <strong>${esc(toStr)}</strong></span>
+        </div>
+        <div class="ssl-note">彩色进度条 = 剩余有效期，灰色 = 已过去；竖线为当前时间。</div>
       </div>
     </div>
 
@@ -693,7 +834,7 @@ function renderSslVisual(d) {
     <div class="cipher-name">${esc(d.cipher?.name || d.cipher || "—")}</div>
     <div class="cipher-tags">${cipherTags}</div>
     <div class="ssl-note">
-      加密套件决定了「密钥交换 + 批量加密 + 消息认证」三部分的组合方式。包含 GCM / CHACHA20 表示使用 AEAD 认证加密，抗篡改能力更强；CBC / SHA1 属于旧式组合，安全性较弱。
+      加密套件 = 密钥交换 + 批量加密 + 消息认证。GCM / CHACHA20 属于 AEAD 认证加密；CBC / SHA1 属于旧式组合。
     </div>
   `;
 }
@@ -779,42 +920,114 @@ async function mTcpSsl(q) {
     ${rawJson(d)}`;
 }
 
-/* ============ CDN / 广告联盟 ============ */
+/* ============ CDN 图形化检测 ============ */
 async function mCdnDetect(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
-  const hits = [];
+
+  // 1. 查 CNAME 链
+  let cnameChain = [];
+  let cnameHit = null;
   try {
     const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`);
     const d = await r.json();
-    const cname = (d.Answer || []).map(a => a.data).join(" ").toLowerCase();
+    cnameChain = (d.Answer || []).map(a => a.data);
+    const cnameStr = cnameChain.join(" ").toLowerCase();
     const patterns = [
-      [/cloudflare\.net/, "Cloudflare"], [/akamai/, "Akamai"], [/fastly/, "Fastly"],
-      [/cloudfront\.net/, "Amazon CloudFront"], [/azureedge\.net|trafficmanager\.net/, "Azure CDN"],
-      [/wscdns\.com|kunlun\.com|kunlungr\.com/, "网宿 CDN"], [/cdngslb\.com|alikunlun/, "阿里云 CDN"],
-      [/tencent-cloud|cdn\.dnsv1\.com/, "腾讯云 CDN"], [/baidu\.com.*cdn|bdydns/, "百度云加速"],
+      [/cloudflare\.net|cloudflare\.com/, "Cloudflare"],
+      [/akamai(edge|hd|\.net)|akamaiedge|akamai\.net/, "Akamai"],
+      [/fastly\.net/, "Fastly"],
+      [/cloudfront\.net/, "Amazon CloudFront"],
+      [/azureedge\.net|trafficmanager\.net/, "Azure CDN"],
+      [/wscdns\.com|kunlun\.com|kunlungr\.com|wscloudcdn/, "网宿 CDN"],
+      [/cdngslb\.com|alikunlun|kunluncan/, "阿里云 CDN"],
+      [/tencent-cloud|cdn\.dnsv1\.com|qcloudcdn/, "腾讯云 CDN"],
+      [/baidu\.com.*cdn|bdydns|yunjiasu/, "百度云加速"],
     ];
-    for (const [re, vendor] of patterns) if (re.test(cname)) hits.push(`CNAME → ${vendor}`);
+    for (const [re, vendor] of patterns) {
+      if (re.test(cnameStr)) { cnameHit = vendor; break; }
+    }
   } catch (e) {}
+
+  // 2. 查 A 记录 IP
+  const ips = [];
   try {
     const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`);
     const d = await r.json();
-    const ips = (d.Answer || []).filter(a => a.type === 1).map(a => a.data);
-    for (const ip of ips) {
-      const [a, b] = ip.split(".").map(Number);
-      if (a === 104 && b >= 16 && b <= 31) hits.push(`A → ${ip}（Cloudflare IP 段）`);
-      else if (a === 172 && b >= 64 && b <= 71) hits.push(`A → ${ip}（Cloudflare IP 段）`);
-      else if (a === 162 && b === 158) hits.push(`A → ${ip}（Cloudflare IP 段）`);
-      else if (a === 13 && b === 32) hits.push(`A → ${ip}（CloudFront IP 段）`);
-    }
+    (d.Answer || []).filter(a => a.type === 1).forEach(a => ips.push(a.data));
   } catch (e) {}
-  state.cdnHits = hits;
-  if (!hits.length) return `<pre>未从 CNAME / A 记录中发现明确的 CDN 特征。
-<em>（CDN 检测基于 DNS 特征与 IP 段启发式，不能覆盖所有 CDN 场景）</em></pre>`;
-  return `<pre><strong>CDN 判定信号</strong>
-${hits.map(h => "• " + h).join("\n")}
-<em>（CNAME 链或 A 记录命中已知 CDN 特征）</em></pre>`;
+
+  // 3. 每个 IP 判断 CDN 厂商
+  const results = ips.map(ip => {
+    const vendor = detectCdnVendor(ip);
+    return { ip, vendor };
+  });
+
+  // 4. 统计
+  const vendorStats = {};
+  results.forEach(r => {
+    if (r.vendor) {
+      const name = r.vendor.name;
+      if (!vendorStats[name]) vendorStats[name] = { count: 0, color: r.vendor.color };
+      vendorStats[name].count++;
+    }
+  });
+  const hitCount = results.filter(r => r.vendor).length;
+  const uniqueVendors = Object.keys(vendorStats);
+
+  state.cdnHits = [];
+  if (cnameHit) state.cdnHits.push(`CNAME → ${cnameHit}`);
+  Object.entries(vendorStats).forEach(([v, s]) => state.cdnHits.push(`${v}（${s.count} 个 IP）`));
+
+  // 5. 生成图形化 HTML
+  const ipNodesHTML = results.map(r => {
+    const color = r.vendor ? r.vendor.color : "#94a3b8";
+    const cls = r.vendor ? "cdn-ip-node hit" : "cdn-ip-node";
+    const vendorLabel = r.vendor ? r.vendor.name : "非 CDN";
+    return `<div class="${cls}" style="color:${color}">
+      <div class="cdn-ip-addr">${esc(r.ip)}</div>
+      <div class="cdn-ip-vendor" style="color:${color}">${esc(vendorLabel)}</div>
+    </div>`;
+  }).join("");
+
+  const barRowsHTML = Object.entries(vendorStats).map(([v, s]) => {
+    const pct = (s.count / results.length) * 100;
+    return `<div class="cdn-bar-row">
+      <div class="cdn-bar-name">${esc(v)}</div>
+      <div class="cdn-bar-track"><div class="cdn-bar-fill" data-w="${pct.toFixed(0)}" style="background:${s.color};"></div></div>
+      <div class="cdn-bar-count">${s.count} 个</div>
+    </div>`;
+  }).join("");
+
+  const cnameChainHTML = cnameChain.length
+    ? `<div style="margin:.5rem 0;font-size:.76rem;color:#64748b;">
+        <strong style="color:#0f172a;">CNAME 链：</strong>
+        ${cnameChain.map((c, i) => `${i ? ' → ' : ''}<code style="background:#f1f5f9;padding:.1rem .35rem;border-radius:3px;">${esc(c)}</code>`).join('')}
+      </div>`
+    : "";
+
+  const verdictHTML = (cnameHit || uniqueVendors.length)
+    ? `<div class="cdn-verdict hit">🔍 判定结果：使用 CDN 加速${cnameHit ? `（CNAME 命中 ${cnameHit}）` : ""}${uniqueVendors.length ? `，A 记录命中 ${uniqueVendors.join("、")}` : ""}</div>`
+    : `<div class="cdn-verdict no">✅ 判定结果：未发现明确 CDN 特征（CNAME 链与 A 记录 IP 段均未命中）</div>`;
+
+  return `
+    <div class="cdn-summary">
+      <div class="cdn-stat"><div class="cdn-stat-num">${ips.length}</div><div class="cdn-stat-label">解析 IP 数</div></div>
+      <div class="cdn-stat"><div class="cdn-stat-num" style="color:${hitCount ? '#dc2626' : '#059669'}">${hitCount}</div><div class="cdn-stat-label">命中 CDN 的 IP</div></div>
+      <div class="cdn-stat"><div class="cdn-stat-num" style="color:#7c3aed">${uniqueVendors.length}</div><div class="cdn-stat-label">CDN 厂商数</div></div>
+    </div>
+    ${cnameChainHTML}
+    <div style="font-size:.74rem;color:#475569;font-weight:600;margin:.5rem 0 .35rem;">📡 解析 IP 与厂商分布</div>
+    <div class="cdn-ip-grid">${ipNodesHTML || '<div style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:1rem;">未解析到 IP</div>'}</div>
+    ${Object.keys(vendorStats).length ? `<div style="font-size:.74rem;color:#475569;font-weight:600;margin:.6rem 0 .35rem;">📊 厂商占比统计</div><div class="cdn-bars">${barRowsHTML}</div>` : ""}
+    ${verdictHTML}
+    <div class="ssl-note" style="margin-top:.5rem;">
+      检测逻辑：CNAME 链特征 + A 记录 IP 段匹配（Cloudflare / CloudFront / Fastly / Akamai / Azure）。未命中的 IP 可能使用其他 CDN 或自建。
+    </div>
+    ${rawJson({ cname_chain: cnameChain, cname_hit: cnameHit, resolved_ips: results.map(r => ({ ip: r.ip, vendor: r.vendor ? r.vendor.name : null })), vendor_stats: vendorStats })}
+  `;
 }
 
+/* ============ 广告联盟 DNS 信号 ============ */
 const AD_NETWORKS = [
   { pattern: /googlesyndication\.com|doubleclick\.net/i, name: "Google AdSense / AdX" },
   { pattern: /pos\.baidu\.com|cpro\.baidu\.com/i, name: "百度联盟" },
@@ -1344,6 +1557,8 @@ async function runTasksIn(container, tasks) {
       } else {
         placeholder.querySelector(".card-header").innerHTML = `<span class="card-title">${t.title}</span>${tag("完成", "ok")}`;
         placeholder.insertAdjacentHTML("beforeend", r);
+        // 触发动画
+        animateIn(placeholder);
       }
     } catch (e) {
       placeholder.querySelector(".card-header").innerHTML = `<span class="card-title">${t.title}</span>${tag("失败", "err")}`;
@@ -1736,7 +1951,7 @@ async function runQuery() {
   const certTasks = domOnly ? [
     { title: "Domainee · SSL 深度检测（评分 / 有效期 / 协议 / 算法）", fn: () => mSslDomainee(q) },
     { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
-    { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
+    { title: "CDN 厂商识别（CNAME + IP 段 + 图形化）", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
     { title: "用户视角广告检测（多阶段观察）", fn: () => mUserAdDetect(q) },
   ] : [];
