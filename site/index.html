@@ -49,6 +49,19 @@ th{color:var(--muted);font-weight:500}
 .radar .g{fill:none;stroke:var(--line)}
 .radar .s{fill:rgba(79,140,255,.25);stroke:var(--accent);stroke-width:2}
 .radar text{fill:var(--text);font-size:11px}
+.rec{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:4px;margin:8px 0}
+.rec code{word-break:break-all;font-size:13px}
+.items{display:grid;gap:8px;margin:10px 0}
+.item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;flex-wrap:wrap}
+.item small{color:var(--muted);width:100%}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.ok{background:var(--ok)}
+.dot.bad{background:var(--bad)}
+.ta{width:100%;min-height:110px;font:13px/1.4 ui-monospace,Menlo,monospace;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);margin:6px 0}
+.tool{border-top:1px solid var(--line);padding:12px 0}
+.tool input{width:100%;margin:6px 0;display:block}
+.tool .btn{margin:4px 6px 4px 0}
+.toolout{margin-top:8px}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 </style>
 </head>
@@ -206,9 +219,9 @@ function timelineSvg(nb, na) {
   const pct = Math.min(1, Math.max(0, (Date.now() - nb) / span));
   const x = pad + (W - 2 * pad) * pct;
   return `<svg class="chart" viewBox="0 0 ${W} 70">
-    <rect x="${pad}" y="28" width="${W - 2 * pad}" height="14" rx="7" fill="var(--line)"/>
-    <rect x="${pad}" y="28" width="${Math.max(x - pad, 0)}" height="14" rx="7" fill="var(--accent)"/>
-    <line x1="${x}" x2="${x}" y1="18" y2="50" stroke="var(--text)" stroke-width="2"/>
+    <rect x="${pad}" y="28" width="${W - 2 * pad}" height="14" rx="7" style="fill:var(--line)"/>
+    <rect x="${pad}" y="28" width="${Math.max(x - pad, 0)}" height="14" rx="7" style="fill:var(--accent)"/>
+    <line x1="${x}" x2="${x}" y1="18" y2="50" style="stroke:var(--text)" stroke-width="2"/>
     <text x="${pad}" y="16">签发 ${fmtDate(nb)}</text>
     <text x="${W - pad}" y="16" text-anchor="end">到期 ${fmtDate(na)}</text>
     <text x="${x}" y="66" text-anchor="middle">今天</text></svg>`;
@@ -269,7 +282,7 @@ function renderCert(cs) {
 }
 
 // DNSSEC（a 为 A 记录的原始 JSON）、CAA（c）、HTTPS 记录（h）
-function renderDnsSec(a, c, h) {
+function renderDnsSec(a, c, h, issuers = []) {
   const dnssec = a === null ? pill('查询失败', 'no') : a.AD ? pill('已验证（DNSSEC 签名有效）', 'ok') : pill('未验证（未启用或解析器未返回）', 'warn');
   const caa = c ? recs(c, 257).map(x => {
     const m = x.match(/^(\d+)\s+(\w+)\s+"?([^"]*)"?$/);
@@ -279,8 +292,7 @@ function renderDnsSec(a, c, h) {
   const alpn = https?.map(x => x.match(/alpn="([^"]+)"/)?.[1]).find(Boolean) || '';
   const ech = https ? https.some(x => /(^|\s)ech=/.test(x)) : false;
   return `<p>${dnssec}</p>` +
-    `<h3>CAA（允许签发证书的 CA）</h3>` +
-    (caa === null ? note('查询失败') : caa.length ? tbl(['标签', '值', '级别'], caa) : `<p>${pill('未设置 CAA：任何 CA 都可以为该域名签发证书', 'warn')}</p>`) +
+    `<h3>CAA（允许签发证书的 CA）</h3>` + renderCaa(caa, issuers) +
     `<h3>HTTPS 记录（新一代协议支持）</h3>` +
     (https === null ? note('查询失败') : !https.length ? note('未发布 HTTPS 记录') : kv({
       '应用层协议（ALPN）': alpn || '—',
@@ -320,22 +332,30 @@ async function probeAll(t) {
   return Promise.all([0, 1, 2].map(probe));
 }
 
-function renderMail(txt, mail) {
+function renderMail(txt, mail, mx = [], t = '') {
   const spf = txt.find(x => /^v=spf1/i.test(x));
   const {dm, mt, tr} = mailScore(mail);
+  const hasMx = mx.length > 0;
   const spfPol = spf ? (spf.match(/[-~?+]all/)?.[0] || '无 all 结尾') : '未配置';
-  const spfLv = spfPol === '-all' ? 'ok' : spfPol === '~all' ? 'warn' : 'bad';
   const dPol = dm ? (dm.match(/p=(\w+)/)?.[1] || '—') : '未配置';
-  const dLv = dPol === 'reject' ? 'ok' : dPol === 'quarantine' ? 'warn' : 'bad';
-  const rows = [
-    ['SPF', spfPol, '声明哪些服务器可以代表本域名发信（-all 最严格）'],
-    ['DMARC', dPol === '未配置' ? dPol : 'p=' + dPol, '收到伪造发件人邮件时的处理策略（reject 最严格）'],
-    ['MTA-STS', mt ? '已启用' : '未配置', '强制邮件服务器之间使用 TLS 加密传输'],
-    ['TLS-RPT', tr ? '已启用' : '未配置', '接收邮件加密失败的报告'],
+  const items = [
+    {k: 'SPF', ok: spfPol === '-all' || spfPol === '~all', v: spfPol, d: '声明哪些服务器可代表本域名发信（-all 最严格）'},
+    {k: 'DMARC', ok: dPol === 'reject' || dPol === 'quarantine', v: dPol === '未配置' ? dPol : 'p=' + dPol, d: '伪造发件人邮件的处理策略（reject 最严格）'},
+    {k: 'MTA-STS', ok: !!mt, v: mt ? '已启用' : '未配置', d: '强制邮件服务器之间使用 TLS 加密'},
+    {k: 'TLS-RPT', ok: !!tr, v: tr ? '已启用' : '未配置', d: '接收邮件加密失败的报告'},
   ];
-  const score = [spf, dm, mt, tr].filter(Boolean).length;
-  return `<p>${pill(`邮件安全项 ${score}/4 已配置`, score >= 3 ? 'ok' : score >= 2 ? 'warn' : 'bad')}</p>` +
-    tbl(['项目', '状态', '说明'], rows) + note('数据来自公开 DNS 记录，不涉及邮件内容。');
+  const done = items.filter(x => x.ok).length, pct = Math.round(done / 4 * 100);
+  const col = done >= 3 ? '#2ea56b' : done >= 2 ? '#e0a526' : '#e5484d';
+  const sug = [];
+  if (hasMx && !spf) sug.push(rec('SPF（TXT）', t, 'v=spf1 mx -all', '只允许 MX 服务器发信；若使用第三方发信，需加入其 include'));
+  if (!hasMx && !spf) sug.push(rec('SPF（TXT）', t, 'v=spf1 -all', '域名不收发邮件，直接声明禁止发信'));
+  if (hasMx && !dm) sug.push(rec('DMARC（TXT）', '_dmarc.' + t, `v=DMARC1; p=none; rua=mailto:dmarc@${t}`, '先观察，确认无误后改为 quarantine 或 reject；rua 地址需真实存在'));
+  if (dm && dPol === 'none') sug.push(rec('DMARC 收紧', '_dmarc.' + t, `v=DMARC1; p=quarantine; rua=mailto:dmarc@${t}`, '报告无误后再改为 reject'));
+  return gauge(pct, col, '已配置') +
+    `<div class="items">${items.map(x => `<div class="item"><span class="dot ${x.ok ? 'ok' : 'bad'}"></span><b>${x.k}</b><span>${esc(x.v)}</span><small>${esc(x.d)}</small></div>`).join('')}</div>` +
+    (hasMx ? '' : note('未发现 MX 记录，域名看起来不收邮件。')) +
+    (sug.length ? `<h3>建议记录</h3>` + sug.join('') : `<p>${pill('邮件安全配置已齐全', 'ok')}</p>`) +
+    note('建议记录只是模板，请先确认真实发信服务商，再决定 SPF 内容。');
 }
 
 function renderReg(ri, t) {
@@ -408,8 +428,8 @@ function dom(t) {
   }));
   fill(sec('连通性与延迟（你的网络视角）'), connP.then(ms => renderConn(ms || [null, null, null])));
   fill(sec('邮件安全（SPF / DMARC / MTA-STS）'), Promise.all([dnsP, mailP]).then(([r, m]) =>
-    renderMail(getR(r || [], 'TXT'), m || [null, null, null])));
-  fill(sec('DNS 安全（DNSSEC / CAA / HTTPS 记录）'), Promise.all([dnssecP, caaP, httpsP]).then(([a, c, h]) => renderDnsSec(a, c, h)));
+    renderMail(getR(r || [], 'TXT'), m || [null, null, null], getR(r || [], 'MX'), t)));
+  fill(sec('DNS 安全（DNSSEC / CAA / HTTPS 记录）'), Promise.all([dnssecP, caaP, httpsP, certsP]).then(([a, c, h, cs]) => renderDnsSec(a, c, h, (cs || []).map(x => orgOf(x.issuer_name)))));
   fill(sec('证书申请与到期（证书透明日志）'), certsP.then(renderCert));
   fill(sec('注册信息（RDAP）'), rdapP.then(ri => renderReg(ri, t)));
   fill(sec('子域名（证书日志 + HackerTarget）'), Promise.all([certsP, subP]).then(([cs, hs]) => {
@@ -611,6 +631,30 @@ function radar(D) {
   return `<svg class="radar" viewBox="0 0 260 260">${grid}${axes}${shape}${labels}</svg>`;
 }
 
+// 半圆仪表盘：按风险占比填充颜色（颜色用 style 设置，兼容明暗主题）
+function gauge(pct, color, label = '风险占比') {
+  const L = 314.16, f = Math.max(0, Math.min(100, pct)) / 100 * L;
+  return `<svg viewBox="0 0 240 150" style="width:100%;max-width:300px;display:block;margin:0 auto">
+    <path d="M20 120 A100 100 0 0 1 220 120" fill="none" style="stroke:var(--line)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M20 120 A100 100 0 0 1 220 120" fill="none" style="stroke:${color}" stroke-width="18" stroke-linecap="round" stroke-dasharray="${f} ${L}"/>
+    <text x="120" y="108" text-anchor="middle" font-size="30" font-weight="700" style="fill:var(--text)">${pct}%</text>
+    <text x="120" y="140" text-anchor="middle" font-size="12" style="fill:var(--muted)">${label}</text></svg>`;
+}
+// 权重占比条：每个信号按权重切分宽度，颜色表示命中 / 未命中 / 无法检测
+function shareBar(sig) {
+  const W = 560, H = 62, tot = sig.reduce((s, x) => s + x.w, 0);
+  let x = 0;
+  const segs = sig.map(s => {
+    const w = s.w / tot * W;
+    const col = s.hit === null ? 'var(--line)' : s.hit ? 'var(--bad)' : 'var(--ok)';
+    const r = `<rect x="${x}" y="6" width="${w}" height="26" style="fill:${col};stroke:var(--bg)" stroke-width="2"/>` +
+      `<text x="${x + w / 2}" y="50" text-anchor="middle" font-size="11" style="fill:var(--muted)">${s.w}</text>`;
+    x += w;
+    return r;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${segs}</svg>`;
+}
+
 function vpnView() {
   const selfG = geo(null), cfP = cfTrace().catch(() => null), torP = torCheck(), rtcP = webrtc();
 
@@ -649,15 +693,16 @@ function vpnView() {
     const maxScore = checked.reduce((s, x) => s + x.w, 0);
     const level = score >= 50 ? ['很可能在使用 VPN / 代理', 'bad'] : score >= 20 ? ['可能在使用 VPN / 代理', 'warn'] : ['未发现明显 VPN / 代理特征', 'ok'];
     const pct = maxScore ? Math.round(score / maxScore * 100) : 0;
-    const D = [
-      ['Tor', tr ? 100 : 0], ['WARP', c && (c.warp === 'on' || c.warp === 'plus') ? 100 : 0],
-      ['数据中心', g.org && DC_RE.test(g.org) ? 100 : 0], ['WebRTC', r && r.pub.length && !r.pub.includes(g.ip) ? 100 : 0],
-      ['时区', g.tz && browserTz !== g.tz ? 100 : 0], ['语言', lang && g.cc && lang !== g.cc.toUpperCase() ? 100 : 0],
-    ];
+    const col = level[1] === 'bad' ? '#e5484d' : level[1] === 'warn' ? '#e0a526' : '#2ea56b';
+    const tot = sig.reduce((s, x) => s + x.w, 0);
+    const share = k => Math.round(sig.filter(x => k === 'hit' ? x.hit === true : k === 'miss' ? x.hit === false : x.hit === null)
+      .reduce((s, x) => s + x.w, 0) / tot * 100);
     return `<p class="verdict">${pill(level[0], level[1])}</p>` +
-      note(`基于 ${checked.length} 项可检测信号，风险分 ${score}/${maxScore}（${pct}%）。启发式结果，无法做到百分之百准确。`) +
-      radar(D) +
-      tbl(['信号', '结果', '说明'], sig.map(s => [s.name, s.hit === null ? '无法检测' : s.hit ? '命中' : '未命中', s.detail]));
+      gauge(pct, col) +
+      note(`基于 ${checked.length}/${sig.length} 项可检测信号，风险分 ${score}/${maxScore}。启发式结果，无法做到百分之百准确。`) +
+      `<h3>各信号权重占比</h3>` + shareBar(sig) +
+      `<p>${pill(`命中 ${share('hit')}%`, 'bad')} ${pill(`未命中 ${share('miss')}%`, 'ok')} ${pill(`无法检测 ${share('unk')}%`, 'no')}</p>` +
+      tbl(['信号', '权重占比', '结果', '说明'], sig.map(s => [s.name, Math.round(s.w / tot * 100) + '%', s.hit === null ? '无法检测' : s.hit ? '命中' : '未命中', s.detail]));
   })());
 
   out.insertAdjacentHTML('beforeend', '<button class="btn" id="re">🔄 重新检测</button>');
@@ -667,24 +712,222 @@ function vpnView() {
 function sslView(t) {
   fill(sec('证书申请与到期（证书透明日志）'), certs(t).catch(() => []).then(renderCert));
   fill(sec('DNS 层加密策略（DNSSEC / CAA / HTTPS 记录）'),
-    Promise.all([dns(t, T.A), dns(t, T.CAA), dns(t, T.HTTPS)].map(p => p.catch(() => null)))
-      .then(([a, c, h]) => renderDnsSec(a, c, h)));
+    Promise.all([dns(t, T.A), dns(t, T.CAA), dns(t, T.HTTPS), certs(t).catch(() => [])].map(p => p.catch(() => null)))
+      .then(([a, c, h, cs]) => renderDnsSec(a, c, h, (cs || []).map(x => orgOf(x.issuer_name)))));
   fill(sec('TLS 协议与密码套件'),
     `<p class="muted">浏览器无法读取其他网站的 TLS 协议版本与密码套件，这部分需要服务端探测。</p>` +
     `<p><a href="https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(t)}" target="_blank" rel="noopener">在 SSL Labs 打开该域名的完整 TLS 测试 ↗</a></p>`);
-  fill(sec('术语速查'), '<dl class="kv">' + [
-    ['证书', '网站的身份凭证，由 CA（证书颁发机构）签发，证明域名确实属于该服务器，并附带用于加密的公钥。'],
-    ['签发 / 到期', '证书有效期的起止时间。到期后浏览器会报错，因此需要定期续期。Let\'s Encrypt 证书有效期约 90 天，常配合自动续期。'],
-    ['CA', '如 Let\'s Encrypt、DigiCert、Sectigo。它在验证你确实控制该域名后签发证书。'],
-    ['CAA', '域名上的 DNS 记录，声明“只允许哪家 CA 签发证书”，可防止其他 CA 被误用签发证书。'],
-    ['DNSSEC', '给 DNS 记录加数字签名，防止解析结果被篡改或投毒。'],
-    ['HTTPS 记录', '写在 DNS 里的新记录，告知浏览器支持的协议（如 HTTP/3）以及是否启用 ECH。'],
-    ['ECH（加密 SNI）', '加密 TLS 握手中的域名字段，避免中间人或运营商看到你访问的具体网站。'],
-    ['TLS 协议与密码套件', '客户端与服务器建立加密通道的规则与算法组合。TLS 1.2 和 1.3 为现行标准，1.3 更快更安全。'],
-    ['前向保密（ECDHE / DHE）', '即使服务器私钥将来泄露，过去的通信也无法被解密。'],
-    ['证书透明日志（CT）', '公开记录所有已签发证书的日志。本页用它查找证书历史和子域名。'],
-  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>');
+  fill(sec('证书工具箱'), TOOLBOX_HTML);
 }
+
+/* ---------- CAA：覆盖率环 + 可复制的建议记录 ---------- */
+const CA_DOMAIN = {"Let's Encrypt": 'letsencrypt.org', 'DigiCert': 'digicert.com', 'Sectigo': 'sectigo.com', 'ZeroSSL': 'sectigo.com', 'GlobalSign': 'globalsign.com', 'Google Trust Services': 'pki.goog', 'GoDaddy': 'godaddy.com', 'Amazon': 'amazon.com', 'Entrust': 'entrust.net', 'Buypass': 'buypass.com', 'SSL.com': 'ssl.com'};
+const caDomainOf = org => { const k = Object.keys(CA_DOMAIN).find(n => (org || '').toLowerCase().includes(n.toLowerCase())); return k ? CA_DOMAIN[k] : null; };
+const copyBtn = text => `<button class="btn" data-act="copy" data-text="${esc(text)}">复制</button>`;
+const rec = (type, name, value, hint = '') => `<div class="rec"><b>${esc(type)}</b><code>${esc(name)}</code><code>${esc(value)}</code>${hint ? `<span class="muted">${esc(hint)}</span>` : ''}${copyBtn(value)}</div>`;
+
+function renderCaa(caa, issuers) {
+  if (caa === null) return note('CAA 查询失败，无法判断。');
+  const counts = {};
+  issuers.forEach(o => { counts[o] = (counts[o] || 0) + 1; });
+  const ranked = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (!caa.length) {
+    const top = ranked[0], d = top ? caDomainOf(top) : null;
+    return `<p>${pill('未设置 CAA：任何 CA 都可以为该域名签发证书', 'warn')}</p>` +
+      note('CAA 可以限定只有指定的 CA 能签发证书，防止误签或被冒用。') +
+      (d
+        ? `<h3>建议记录（证书历史中最常见的 CA）</h3>` + rec('CAA', '@（主域名）', `0 issue "${d}"`, `允许 ${top}`)
+        : note('无法从证书历史识别签发机构，请手动填写你使用的 CA 域名。'));
+  }
+  const allowed = caa.filter(x => x[0] === 'issue').map(x => x[1].toLowerCase());
+  const isAllowed = o => { const d = caDomainOf(o); return !!d && allowed.some(a => a === d || a.endsWith('.' + d)); };
+  const total = issuers.length;
+  const covered = issuers.filter(isAllowed).length;
+  const pct = total ? Math.round(covered / total * 100) : null;
+  const col = pct === null ? '#8a90a0' : pct === 100 ? '#2ea56b' : pct >= 50 ? '#e0a526' : '#e5484d';
+  const uncovered = ranked.filter(o => !isAllowed(o));
+  return (pct === null ? note('没有证书历史，无法计算覆盖率。') : gauge(pct, col, '证书被允许')) +
+    `<h3>已设置的 CAA 记录</h3>` + tbl(['标签', '值', '级别'], caa) +
+    (uncovered.length
+      ? `<p>${pill('以下签发机构未被 CAA 允许：' + uncovered.join('、'), 'bad')}</p>` +
+        uncovered.map(o => caDomainOf(o)
+          ? rec('CAA', '@（主域名）', `0 issue "${caDomainOf(o)}"`, `允许 ${o}`)
+          : note(`${o}：未收录其域名，请手动添加`)).join('')
+      : `<p>${pill('近期证书的签发机构都在 CAA 允许范围内', 'ok')}</p>`);
+}
+
+/* ---------- 证书解码：纯 JS 解析 DER（本地完成，不上传） ---------- */
+const OIDS = {'2.5.4.3': 'CN', '2.5.4.6': 'C', '2.5.4.7': 'L', '2.5.4.8': 'ST', '2.5.4.10': 'O', '2.5.4.11': 'OU',
+  '1.2.840.113549.1.1.1': 'RSA', '1.2.840.113549.1.1.5': 'sha1WithRSA', '1.2.840.113549.1.1.11': 'sha256WithRSA',
+  '1.2.840.113549.1.1.12': 'sha384WithRSA', '1.2.840.113549.1.1.13': 'sha512WithRSA', '1.2.840.10045.2.1': 'EC',
+  '1.2.840.10045.4.3.2': 'ecdsa-with-SHA256', '1.2.840.10045.4.3.3': 'ecdsa-with-SHA384', '1.2.840.10045.3.1.7': 'P-256',
+  '1.3.132.0.34': 'P-384', '1.3.132.0.35': 'P-521', '1.3.101.112': 'Ed25519', '2.5.29.17': 'subjectAltName'};
+function derTLV(u, off) {
+  const tag = u[off++]; let len = u[off++];
+  if (len & 0x80) { const n = len & 0x7f; len = 0; for (let i = 0; i < n; i++) len = len * 256 + u[off++]; }
+  return {tag, start: off, end: off + len, next: off + len};
+}
+function derChildren(u, s, e) { const out = []; let o = s; while (o < e) { const t = derTLV(u, o); out.push(t); o = t.next; } return out; }
+const bytesHex = (u, s, e) => Array.from(u.slice(s, e), b => b.toString(16).padStart(2, '0')).join('');
+const derStr = (u, t) => new TextDecoder().decode(u.slice(t.start, t.end));
+function oidStr(u, s, e) {
+  const b = u.slice(s, e), parts = [Math.floor(b[0] / 40), b[0] % 40]; let v = 0;
+  for (let i = 1; i < b.length; i++) { v = v * 128 + (b[i] & 0x7f); if (!(b[i] & 0x80)) { parts.push(v); v = 0; } }
+  return parts.join('.');
+}
+function derTime(u, t) {
+  const s = derStr(u, t);
+  let y, rest;
+  if (t.tag === 0x17) { const m = s.match(/^(\d{2})(\d{10})Z$/); if (!m) throw new Error('UTCTime 格式错误'); y = +m[1] + (+m[1] < 50 ? 2000 : 1900); rest = m[2]; }
+  else { const m = s.match(/^(\d{4})(\d{10})Z$/); if (!m) throw new Error('GeneralizedTime 格式错误'); y = +m[1]; rest = m[2]; }
+  const [mo, d, h, mi, se] = [0, 2, 4, 6, 8].map(i => +rest.slice(i, i + 2));
+  return Date.UTC(y, mo - 1, d, h, mi, se);
+}
+function derName(u, t) {
+  return derChildren(u, t.start, t.end).map(rdn => {
+    const [o, v] = derChildren(u, derChildren(u, rdn.start, rdn.end)[0].start, derChildren(u, rdn.start, rdn.end)[0].end);
+    return `${OIDS[oidStr(u, o.start, o.end)] || oidStr(u, o.start, o.end)}=${derStr(u, v)}`;
+  }).join(', ');
+}
+function parseCertDer(u) {
+  try {
+    const cert = derTLV(u, 0), top = derChildren(u, cert.start, cert.end);
+    let k = derChildren(u, top[0].start, top[0].end);
+    if (k[0].tag === 0xa0) k = k.slice(1); // 跳过 version
+    const [serial, , issuer, validity, subject, spki] = k;
+    const ext = k.find(x => x.tag === 0xa3);
+    const sa = derChildren(u, top[1].start, top[1].end)[0];
+    const sigOid = oidStr(u, sa.start, sa.end);
+    const [nb, na] = derChildren(u, validity.start, validity.end);
+    const sk = derChildren(u, spki.start, spki.end);
+    const ak = derChildren(u, sk[0].start, sk[0].end);
+    const algOid = oidStr(u, ak[0].start, ak[0].end);
+    let key;
+    if (algOid === '1.2.840.113549.1.1.1') {
+      const seq = derTLV(u, sk[1].start + 1);
+      const mod = derChildren(u, seq.start, seq.end)[0];
+      let ml = mod.end - mod.start; if (u[mod.start] === 0) ml--;
+      key = `RSA ${ml * 8} 位`;
+    } else if (algOid === '1.2.840.10045.2.1') {
+      const curve = oidStr(u, ak[1].start, ak[1].end);
+      key = `EC ${OIDS[curve] || curve}`;
+    } else key = OIDS[algOid] || algOid;
+    let san = [];
+    if (ext) {
+      const exts = derChildren(u, ext.start, ext.end)[0];
+      for (const x of derChildren(u, exts.start, exts.end)) {
+        const kids = derChildren(u, x.start, x.end);
+        if (oidStr(u, kids[0].start, kids[0].end) === '2.5.29.17') {
+          const oct = kids[kids.length - 1];
+          const gns = derChildren(u, oct.start, oct.end)[0];
+          san = derChildren(u, gns.start, gns.end).filter(g => g.tag === 0x82).map(g => derStr(u, g));
+        }
+      }
+    }
+    return {subject: derName(u, subject), issuer: derName(u, issuer), serial: bytesHex(u, serial.start, serial.end).toUpperCase(),
+      notBefore: derTime(u, nb), notAfter: derTime(u, na), sig: OIDS[sigOid] || sigOid, key, san};
+  } catch (e) { throw new Error('证书结构无法解析：' + (e.message || e)); }
+}
+function parseCertPem(text) {
+  const m = text.match(/-----BEGIN CERTIFICATE-----([\s\S]+?)-----END CERTIFICATE-----/);
+  if (!m) throw new Error('未找到证书，请粘贴包含 BEGIN CERTIFICATE / END CERTIFICATE 的 PEM 内容');
+  const bin = atob(m[1].replace(/\s+/g, ''));
+  return parseCertDer(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function renderCertInfo(i) {
+  const left = dayDiff(i.notAfter), life = i.notAfter - i.notBefore;
+  const used = Math.max(0, Math.min(100, Math.round((Date.now() - i.notBefore) / life * 100)));
+  return `<p>${pill(left < 0 ? '已过期' : left <= 30 ? `${left} 天后到期` : `有效，剩余 ${left} 天`, left < 0 ? 'bad' : left <= 30 ? 'warn' : 'ok')}</p>` +
+    kv({'主体（Subject）': i.subject, '签发者（Issuer）': i.issuer, '序列号': i.serial, '签发时间': fmtDate(i.notBefore), '到期时间': fmtDate(i.notAfter), '签名算法': i.sig, '公钥': i.key, 'SAN 域名': i.san.join('，') || '无'}) +
+    `<h3>有效期已用占比</h3>` + gauge(used, used > 85 ? '#e5484d' : used > 65 ? '#e0a526' : '#2ea56b', '已用');
+}
+
+/* ---------- 密钥对生成（WebCrypto，私钥不离开浏览器） ---------- */
+function pemWrap(buf, label) {
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf))).match(/.{1,64}/g).join('\n');
+  return `-----BEGIN ${label}-----\n${b64}\n-----END ${label}-----\n`;
+}
+async function makeKeys(alg) {
+  const k = alg === 'rsa'
+    ? await crypto.subtle.generateKey({name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256'}, true, ['sign', 'verify'])
+    : await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+  return {
+    priv: pemWrap(await crypto.subtle.exportKey('pkcs8', k.privateKey), 'PRIVATE KEY'),
+    pub: pemWrap(await crypto.subtle.exportKey('spki', k.publicKey), 'PUBLIC KEY'),
+  };
+}
+function download(name, text, type = 'text/plain') {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------- 密码套件解析 ---------- */
+const cipherDesc = c => {
+  if (/GCM|CHACHA20_POLY1305|CCM/.test(c)) return c.replace(/_/g, '-') + '（AEAD，推荐）';
+  if (/CBC/.test(c)) return c.replace(/_/g, '-') + '（CBC 模式，不推荐新部署）';
+  if (/3DES/.test(c)) return '3DES（已弃用，存在 Sweet32 攻击）';
+  if (/RC4/.test(c)) return 'RC4（已不安全）';
+  if (/NULL/.test(c)) return '无加密（不安全）';
+  return c;
+};
+function cipherGrade(c, h, kx = '') {
+  if (/RC4|NULL|3DES|EXPORT/.test(c) || h === 'MD5') return ['不安全', 'bad'];
+  if (kx === 'RSA' || kx === 'DH' || kx === 'ECDH') return ['无前向保密，不推荐', 'warn'];
+  if (/CBC/.test(c) || h === 'SHA') return ['可用，但建议改用 GCM / ChaCha20', 'warn'];
+  return ['安全（推荐）', 'ok'];
+}
+function renderSuite(raw) {
+  const n = (raw || '').trim().toUpperCase();
+  let m, rows, grade;
+  if ((m = n.match(/^TLS_(AES_\d{3}_GCM|AES_128_CCM(?:_8)?|CHACHA20_POLY1305)_(SHA256|SHA384)$/))) {
+    rows = [['协议', 'TLS 1.3（此种名称只属于 TLS 1.3）'], ['密钥交换', '由 TLS 1.3 固定为 (EC)DHE，具备前向保密'], ['认证', '握手时由证书决定'], ['对称加密', cipherDesc(m[1])], ['完整性 / PRF 哈希', m[2]]];
+    grade = cipherGrade(m[1], m[2]);
+  } else if ((m = n.match(/^TLS_(ECDHE|DHE|ECDH|DH|RSA|PSK)(?:_(RSA|ECDSA|DSS|PSK|ANON))?_WITH_(.+)_(SHA384|SHA256|SHA|MD5)$/))) {
+    const kx = m[1], auth = m[2] || (kx === 'RSA' ? 'RSA' : '—');
+    const kxDesc = {ECDHE: 'ECDHE（临时椭圆曲线密钥，有前向保密）', DHE: 'DHE（临时 Diffie-Hellman，有前向保密）', ECDH: 'ECDH（静态，无前向保密）', DH: 'DH（静态，无前向保密）', RSA: 'RSA（无前向保密）', PSK: 'PSK（预共享密钥）'}[kx];
+    rows = [['协议', 'TLS 1.2 及以下'], ['密钥交换', kxDesc], ['认证', auth], ['对称加密', cipherDesc(m[3])], ['完整性 / PRF 哈希', m[4]]];
+    grade = cipherGrade(m[3], m[4], kx);
+  } else {
+    return `<div class="err">无法识别该名称。请使用 IANA 格式，例如 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 或 TLS_AES_128_GCM_SHA256。</div>`;
+  }
+  return tbl(['组成部分', '说明'], rows) + `<p>${pill(grade[0], grade[1])}</p>`;
+}
+
+/* ---------- 到期提醒（.ics 日历文件） ---------- */
+function makeIcs(title, date) {
+  const d = date.replace(/-/g, '');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const summary = title.replace(/[,;\\]/g, m => '\\' + m).replace(/\n/g, '\\n');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//trace-vpn//CN', 'BEGIN:VEVENT',
+    `UID:cert-${d}-${Date.now()}@trace-vpn`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d}`, `SUMMARY:${summary}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:证书即将到期，请及时续期', 'TRIGGER:-P30D', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n') + '\r\n';
+}
+
+const TOOLBOX_HTML = `
+<div class="tool"><h3>① 证书解码</h3>
+  <p class="muted">粘贴 PEM 格式证书（以 -----BEGIN CERTIFICATE----- 开头）。解析只在你的浏览器本地完成，不会上传。</p>
+  <textarea id="pem" class="ta" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+  <button class="btn" data-act="decode">解析证书</button>
+  <div class="toolout"></div></div>
+<div class="tool"><h3>② 生成密钥对</h3>
+  <p class="muted">使用浏览器自带的 WebCrypto 生成，私钥只保存在你的设备上，请妥善保管，不要发给他人。</p>
+  <button class="btn" data-act="keygen" data-alg="ec">ECDSA P-256（推荐）</button>
+  <button class="btn" data-act="keygen" data-alg="rsa">RSA 2048</button>
+  <div class="toolout"></div></div>
+<div class="tool"><h3>③ 密码套件解析</h3>
+  <p class="muted">输入 IANA 格式的套件名，逐项解释每个部分的作用和安全性。</p>
+  <input id="suite" placeholder="TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256">
+  <button class="btn" data-act="suite">解析套件</button>
+  <div class="toolout"></div></div>
+<div class="tool"><h3>④ 到期提醒（日历文件）</h3>
+  <p class="muted">生成 .ics 文件，导入手机或电脑日历后，到期前 30 天会提醒。解析证书后会自动填入到期日。</p>
+  <input id="icsTitle" value="证书即将到期">
+  <input id="icsDate" type="date">
+  <button class="btn" data-act="ics">下载 .ics</button>
+  <div class="toolout"></div></div>`;
 
 function about() {
   fill(sec('关于'),
@@ -734,8 +977,43 @@ function setup() {
   if (cur === 'vpn') vpnView();
   if (cur === 'about') about();
 }
-out.addEventListener('click', e => {
-  if (e.target.id === 're') { sessionStorage.removeItem('tor'); sessionStorage.removeItem('cft'); setup(); }
+out.addEventListener('click', async e => {
+  if (e.target.id === 're') { sessionStorage.removeItem('tor'); sessionStorage.removeItem('cft'); setup(); return; }
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act, box = id => document.getElementById(id);
+  const setOut = html => { const tb = b.closest('.tool')?.querySelector('.toolout'); if (tb) tb.innerHTML = html; };
+  try {
+    if (act === 'copy') {
+      try { await navigator.clipboard.writeText(b.dataset.text); }
+      catch { const ta = document.createElement('textarea'); ta.value = b.dataset.text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+      const old = b.textContent; b.textContent = '已复制'; setTimeout(() => { b.textContent = old; }, 1500);
+    } else if (act === 'decode') {
+      const info = parseCertPem(box('pem').value);
+      setOut(renderCertInfo(info));
+      const di = box('icsDate'); if (di) di.value = new Date(info.notAfter).toISOString().slice(0, 10);
+    } else if (act === 'keygen') {
+      b.disabled = true;
+      try {
+        const k = await makeKeys(b.dataset.alg);
+        setOut(`<h3>公钥（可公开）</h3><textarea id="kPub" class="ta" readonly>${esc(k.pub)}</textarea>` +
+          `<button class="btn" data-act="dl" data-id="kPub" data-name="public.pem">下载公钥</button>` +
+          `<h3>私钥（请妥善保管）</h3><textarea id="kPriv" class="ta" readonly>${esc(k.priv)}</textarea>` +
+          `<button class="btn" data-act="dl" data-id="kPriv" data-name="private.pem">下载私钥</button>`);
+      } finally { b.disabled = false; }
+    } else if (act === 'dl') {
+      download(b.dataset.name, box(b.dataset.id).value, 'application/x-pem-file');
+    } else if (act === 'suite') {
+      setOut(renderSuite(box('suite').value));
+    } else if (act === 'ics') {
+      const title = box('icsTitle').value.trim() || '证书即将到期', date = box('icsDate').value;
+      if (!date) throw new Error('请先选择到期日期，或先解析一张证书');
+      download('cert-expiry.ics', makeIcs(title, date), 'text/calendar');
+      setOut(note('已生成日历文件，导入后到期前 30 天会提醒。'));
+    }
+  } catch (err) {
+    setOut(`<div class="err">${esc(err.message || err)}</div>`);
+  }
 });
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
