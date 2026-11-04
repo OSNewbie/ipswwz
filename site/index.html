@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>网站溯源 & VPN 检测</title>
+<title>网络测绘 · 网站溯源 · VPN 检测</title>
 <style>
 :root{--bg:#0f1115;--card:#171a21;--text:#e6e8ee;--muted:#8a90a0;--line:#2a2f3a;--accent:#4f8cff;--ok:#2ea56b;--no:#6b7280;--bad:#e5484d;--warn:#e0a526}
 @media(prefers-color-scheme:light){:root{--bg:#f6f7fb;--card:#fff;--text:#1d2330;--muted:#6b7385;--line:#e3e6ee}}
@@ -14,13 +14,14 @@ h1{margin:0;font-size:22px}
 nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px}
 .tab{border:1px solid var(--line);background:var(--card);color:var(--text);padding:6px 12px;border-radius:999px;cursor:pointer;font-size:14px}
 .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.wrap{max-width:900px;margin:0 auto;padding:0 12px 24px}
+.wrap{max-width:960px;margin:0 auto;padding:0 12px 24px}
 .bar{display:flex;gap:8px;margin:14px 0}
 input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
 input:disabled{opacity:.5}
-.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;white-space:nowrap}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;white-space:nowrap;margin-top:6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
 .card h2{margin:0 0 10px;font-size:17px}
+.card h3{margin:14px 0 6px;font-size:15px}
 .kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0;word-break:break-all}
@@ -37,15 +38,22 @@ th{color:var(--muted);font-weight:500}
 .err{background:rgba(229,72,77,.12);color:var(--bad);border:1px solid var(--bad);padding:12px;border-radius:10px;font-size:14px}
 .chart{width:100%;height:auto;display:block}
 .chart text{fill:var(--text);font-size:12px}
+.score{font-size:40px;font-weight:700;text-align:center;margin:4px 0}
+.radar{width:100%;max-width:300px;display:block;margin:0 auto}
+.radar .g{fill:none;stroke:var(--line)}
+.radar .s{fill:rgba(79,140,255,.25);stroke:var(--accent);stroke-width:2}
+.radar text{fill:var(--text);font-size:11px}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 </style>
 </head>
 <body>
-<header><h1>🔍 网站溯源 & VPN 检测</h1></header>
+<header><h1>🔍 网络测绘 · 网站溯源 · VPN 检测</h1></header>
 <nav>
-  <button class="tab on" data-t="dom">🌐 域名溯源</button>
-  <button class="tab" data-t="ip">📍 IP 溯源</button>
+  <button class="tab on" data-t="dom">🌐 域名测绘</button>
+  <button class="tab" data-t="ip">📍 IP 测绘</button>
+  <button class="tab" data-t="asn">🛰️ ASN 测绘</button>
   <button class="tab" data-t="vpn">🛡️ VPN 检测</button>
+  <button class="tab" data-t="ssl">🔐 证书与加密</button>
   <button class="tab" data-t="about">ℹ️ 关于</button>
 </nav>
 <div class="wrap">
@@ -67,8 +75,10 @@ const note = t => `<p class="muted">${esc(t)}</p>`;
 const pill = (t, cls = '') => `<span class="pill ${cls}">${esc(t)}</span>`;
 const isIP = s => /^(\d{1,3}\.){3}\d{1,3}$/.test(s) && s.split('.').every(n => +n <= 255);
 const isDom = s => /^(?=.{1,253}$)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i.test(s);
+const isASN = s => /^(AS)?\d{1,10}$/i.test(s);
 const valid = x => Date.parse(x.not_before) <= Date.now() && Date.parse(x.not_after) > Date.now();
 const orgOf = i => (i || '').match(/O=([^,]+)/)?.[1] || i || '未知';
+const list = (a, n = 40) => a.length ? a.slice(0, n).map(x => pill(x)).join(' ') + (a.length > n ? note(`… 共 ${a.length} 项`) : '') : note('无');
 
 // 每个区块独立渲染：某个数据源失败只影响该区块
 function sec(title) {
@@ -96,7 +106,7 @@ async function http(url, opt = {}, ms = 8000) {
     throw new Error(`${host}：${why}`);
   } finally { clearTimeout(tm); }
 }
-async function text(url, ms = 6000) {
+async function text(url, ms = 8000) {
   const c = new AbortController(), tm = setTimeout(() => c.abort(), ms);
   try {
     const r = await fetch(url, {signal: c.signal});
@@ -117,7 +127,7 @@ async function cached(key, ttl, fn) {
   return v;
 }
 
-/* ---------- DNS over HTTPS（多来源并发，取最先成功） ---------- */
+/* ---------- DNS over HTTPS ---------- */
 const DOH = ['https://dns.alidns.com/resolve', 'https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve', 'https://doh.pub/resolve'];
 const T = {A: 1, NS: 2, CNAME: 5, MX: 15, TXT: 16, AAAA: 28};
 const dns = (n, type) => cached(`d${type}:${n}`, 3600e3, () =>
@@ -137,11 +147,40 @@ const geo = ip => cached(`geo:${ip || 'me'}`, 3600e3, () => first([
   }),
 ]));
 
-/* ---------- 注册信息（RDAP） ---------- */
+/* ---------- 测绘类数据源（均无需 Key） ---------- */
+// HackerTarget 免费接口：子域名、同 IP 反查、HTTP 响应头
+const hackertarget = (path, q) => cached(`ht:${path}:${q}`, 6 * 3600e3, async () => {
+  const t = await text(`https://api.hackertarget.com/${path}/?q=${encodeURIComponent(q)}`, 10000);
+  if (t.length < 200 && /error|API count/i.test(t)) throw new Error('HackerTarget：' + t.trim().slice(0, 80));
+  return t;
+});
+const htSub = d => hackertarget('hostsearch', d).then(t => t.split('\n').filter(l => l.includes(',')).map(l => l.split(',')[0].trim().toLowerCase()));
+const htRev = ip => hackertarget('reverseiplookup', ip).then(t => t.split('\n').map(s => s.trim()).filter(s => isDom(s)));
+const htHeaders = d => hackertarget('httpheaders', 'https://' + d + '/');
+
+// urlscan 公开搜索：同 IP / 同 ASN 的站点
+const usQuery = (q, n = 100) => cached(`us:${q}`, 12 * 3600e3, async () => {
+  const j = await http(`https://urlscan.io/api/v1/search/?q=${encodeURIComponent(q)}&size=${n}`, {}, 12000);
+  return [...new Set((j.results || []).map(r => r.page?.domain).filter(Boolean))];
+});
+
+// Shodan InternetDB：开放端口、主机名、标签、漏洞（无需 Key，无记录返回 404）
+const idb = ip => cached(`idb:${ip}`, 6 * 3600e3, () => http(`https://internetdb.shodan.io/${ip}`, {}, 10000)
+  .catch(e => { if (/404/.test(e.message)) return null; throw e; }));
+
+// RIPEstat：ASN 概况、宣告前缀、网络归属
+const ripe = (path, res) => cached(`ripe:${path}:${res}`, 24 * 3600e3, async () =>
+  (await http(`https://stat.ripe.net/data/${path}/data.json?resource=${encodeURIComponent(res)}`, {}, 12000)).data);
+
+// Wayback Machine CDX：历史收录的 URL
+const wayback = d => cached(`wb:${d}`, 24 * 3600e3, async () => {
+  const rows = await http(`https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(d)}/*&output=json&fl=timestamp,original,statuscode&collapse=urlkey&limit=500`, {}, 15000);
+  return rows.slice(1).map(r => ({ts: r[0], url: r[1], status: r[2]}));
+});
+
+// 注册信息（RDAP）与证书
 const rdap = d => cached(`rdap:${d}`, 86400e3, () => http(`https://rdap.org/domain/${encodeURIComponent(d)}`, {}, 12000));
 const vcFn = e => (e?.vcardArray?.[1] || []).find(x => x[0] === 'fn')?.[3] || '';
-
-/* ---------- 证书与子域名（crt.sh 优先，失败回退 certspotter） ---------- */
 const certs = d => cached(`cert:${d}`, 6 * 3600e3, async () => {
   let rows = null;
   try { rows = await http(`https://crt.sh/?q=${encodeURIComponent(d)}&output=json`, {}, 12000); } catch {}
@@ -161,11 +200,29 @@ function bars(entries, color = '#4f8cff') {
     return `<text x="0" y="${y + 15}">${esc(k)}</text><rect x="${LW}" y="${y + 3}" width="${Math.max(w, 2)}" height="16" rx="4" fill="${color}"/><text x="${LW + w + 6}" y="${y + 15}">${v}</text>`;
   }).join('')}</svg>`;
 }
+function radar(D) {
+  const n = D.length, c = 130, r = 95;
+  const pt = (i, k) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + Math.cos(a) * r * k, c + Math.sin(a) * r * k]; };
+  const grid = [.25, .5, .75, 1].map(k => `<polygon class="g" points="${D.map((_, i) => pt(i, k).join(',')).join(' ')}"/>`).join('');
+  const axes = D.map((_, i) => { const [x, y] = pt(i, 1); return `<line class="g" x1="${c}" y1="${c}" x2="${x}" y2="${y}"/>`; }).join('');
+  const shape = `<polygon class="s" points="${D.map((d, i) => pt(i, d[2] ? d[1] / d[2] : 0).join(',')).join(' ')}"/>`;
+  const labels = D.map((d, i) => { const [x, y] = pt(i, 1.25); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle">${esc(d[0])}</text>`; }).join('');
+  return `<svg class="radar" viewBox="0 0 260 260">${grid}${axes}${shape}${labels}</svg>`;
+}
 
-/* ---------- 网站溯源 ---------- */
+/* ---------- 域名测绘 ---------- */
+const SEC_HDR = [['strict-transport-security', 'HSTS'], ['content-security-policy', 'CSP'], ['x-frame-options', 'X-Frame-Options'], ['x-content-type-options', 'X-Content-Type-Options'], ['referrer-policy', 'Referrer-Policy'], ['permissions-policy', 'Permissions-Policy']];
+const parseHeaders = raw => {
+  const lines = raw.split('\n'), H = {};
+  lines.slice(1).forEach(l => { const i = l.indexOf(':'); if (i > 0) H[l.slice(0, i).trim().toLowerCase()] = l.slice(i + 1).trim(); });
+  return {status: (lines[0] || '').trim(), H};
+};
+
 function dom(t) {
   const types = ['A', 'AAAA', 'NS', 'MX', 'TXT', 'CNAME'];
   const dnsP = Promise.all(types.map(k => dns(t, T[k]).then(j => [k, recs(j, T[k])]).catch(() => [k, null])));
+  const aP = dnsP.then(r => (r.find(x => x[0] === 'A')[1] || []));
+
   fill(sec('DNS 记录'), (async () => {
     const rows = [];
     (await dnsP).forEach(([k, v]) => {
@@ -175,16 +232,28 @@ function dom(t) {
     });
     return tbl(['类型', '值'], rows);
   })());
+
   fill(sec('IP 归属（A 记录）'), (async () => {
-    const ips = (await dnsP).find(x => x[0] === 'A')[1] || [];
+    const ips = await aP;
     if (!ips.length) return note('无 A 记录');
     const rows = await Promise.all(ips.slice(0, 5).map(async ip => {
       const g = await geo(ip).catch(() => null);
-      return [ip, g ? `${g.country || '—'} ${g.city || ''}` : '查询失败', g ? (g.asn ? 'AS' + g.asn : '—') : '—', g?.org || '—'];
+      return [ip, g ? `${g.country || '—'} ${g.city || ''}` : '查询失败', g?.asn ? 'AS' + g.asn : '—', g?.org || '—'];
     }));
-    return tbl(['IP', '地理位置', 'ASN', '运营商'], rows) +
-      note('同一域名解析到多个 IP 时，可能使用了 CDN、负载均衡或多地部署。');
+    return tbl(['IP', '地理位置', 'ASN', '运营商'], rows) + note('同一域名解析到多个 IP 时，可能使用了 CDN、负载均衡或多地部署。');
   })());
+
+  fill(sec('HTTP 响应头与安全评分（第三方抓取）'), (async () => {
+    const raw = await htHeaders(t);
+    const {status, H} = parseHeaders(raw);
+    const got = SEC_HDR.filter(([k]) => H[k]).length;
+    const grade = got >= 5 ? ['A', 'ok'] : got >= 3 ? ['B', 'warn'] : ['C', 'bad'];
+    const info = ['server', 'via', 'x-powered-by', 'cf-ray', 'x-cache'].filter(k => H[k]).map(k => [k, H[k]]);
+    return `<p>${pill('安全头评分 ' + grade[0] + '（' + got + '/' + SEC_HDR.length + '）', grade[1])} <span class="muted">${esc(status)}</span></p>` +
+      tbl(['安全头', '状态', '值'], SEC_HDR.map(([k, n]) => [n, H[k] ? '已设置' : '缺失', H[k] || '—'])) +
+      (info.length ? `<h3>服务端信息</h3>` + tbl(['响应头', '值'], info) : '');
+  })());
+
   fill(sec('注册信息（RDAP）'), (async () => {
     const j = await rdap(t);
     const ev = a => (j.events || []).find(e => e.eventAction === a)?.eventDate?.slice(0, 10);
@@ -199,31 +268,76 @@ function dom(t) {
       域名服务器: (j.nameservers || []).map(n => n.ldhName).join('，') || '—',
     }) + (age !== null && age < 180 ? `<p>${pill('注册不足半年，需谨慎对待', 'warn')}</p>` : '');
   })());
-  fill(sec('证书与子域名（证书透明度日志）'), (async () => {
-    const cs = await certs(t);
-    const subs = new Set();
+
+  fill(sec('子域名（证书日志 + HackerTarget）'), (async () => {
+    const [cs, hs] = await Promise.all([certs(t).catch(() => []), htSub(t).catch(() => null)]);
+    const fromCert = new Set(), fromHT = new Set(hs || []);
     cs.forEach(c => (c.name_value || '').split('\n').forEach(n => {
       const x = n.replace(/^\*\./, '').toLowerCase();
-      if (x === t || x.endsWith('.' + t)) subs.add(x);
+      if (x === t || x.endsWith('.' + t)) fromCert.add(x);
     }));
+    const all = new Set([...fromCert, ...fromHT]);
     const issuers = {};
     cs.forEach(c => { const o = orgOf(c.issuer_name); issuers[o] = (issuers[o] || 0) + 1; });
-    return kv({证书总数: cs.length, 当前有效: cs.filter(valid).length, 发现子域名: subs.size}) +
-      `<h3 style="font-size:15px">签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 8)) +
-      `<h3 style="font-size:15px">子域名（前 40）</h3>` + tbl(['子域名'], [...subs].sort().slice(0, 40).map(s => [s]));
+    return kv({'子域名总数': all.size, '证书日志发现': fromCert.size, 'HackerTarget 发现': hs ? fromHT.size : '不可用', '证书总数': cs.length, '当前有效证书': cs.filter(valid).length}) +
+      `<h3>子域名（前 60）</h3>` + tbl(['子域名', '来源'], [...all].sort().slice(0, 60).map(s => [s, (fromCert.has(s) ? '证书 ' : '') + (fromHT.has(s) ? 'HT' : '')])) +
+      `<h3>签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 8));
+  })());
+
+  fill(sec('历史收录 URL（Wayback Machine）'), (async () => {
+    const rows = await wayback(t);
+    if (!rows.length) return note('Wayback 中没有该域名的收录记录。');
+    const years = {};
+    rows.forEach(r => { const y = r.ts.slice(0, 4); years[y] = (years[y] || 0) + 1; });
+    const ys = Object.entries(years).sort((a, b) => a[0] - b[0]).slice(-15);
+    return kv({'收录 URL 数（去重后）': rows.length, '最早收录': rows[0].ts.slice(0, 8), '最近收录': rows[rows.length - 1].ts.slice(0, 8)}) +
+      `<h3>按年份收录数</h3>` + bars(ys, '#a78bfa') +
+      `<h3>样本（前 20）</h3>` + tbl(['时间', '状态', 'URL'], rows.slice(0, 20).map(r => [r.ts.slice(0, 8), r.status, r.url]));
+  })());
+
+  fill(sec('同 IP 上的其他站点'), (async () => {
+    const ips = await aP;
+    if (!ips.length) return note('无 A 记录');
+    const ip = ips[0];
+    const [hr, us] = await Promise.all([htRev(ip).catch(() => []), usQuery(`page.ip:${ip}`).catch(() => [])]);
+    const all = [...new Set([...hr, ...us])].filter(d => d !== t);
+    return kv({'检测 IP': ip, '站点数量': all.length, '来源': `HackerTarget ${hr.length} · urlscan ${us.length}`}) +
+      `<p>${list(all, 60)}</p>` + note('共享 IP 的站点越多，通常说明是共享主机或 CDN；这一结果仅供参考。');
   })());
 }
 
-/* ---------- IP 溯源 ---------- */
+/* ---------- IP 测绘 ---------- */
 function ip(t) {
   fill(sec('地理位置与 ASN'), (async () => {
     const g = await geo(t);
     return kv({IP: g.ip || t, 国家: g.country, 地区: g.region, 城市: g.city, 时区: g.tz, ASN: g.asn ? 'AS' + g.asn : '—', 运营商: g.org});
   })());
+
+  fill(sec('开放端口与漏洞（Shodan InternetDB）'), (async () => {
+    const d = await idb(t);
+    if (!d) return note('InternetDB 中没有该 IP 的记录（可能无公开暴露的服务）。');
+    return kv({'开放端口': (d.ports || []).join('，') || '无', '主机名': (d.hostnames || []).join('，') || '无', '标签': (d.tags || []).join('，') || '无'}) +
+      `<h3>已知漏洞（CVE）</h3>` + list(d.vulns || [], 40) +
+      `<h3>CPE（识别到的软件）</h3>` + list(d.cpes || [], 30) +
+      note('数据来自 Shodan 对公网的历史扫描快照，不是实时扫描结果。');
+  })());
+
   fill(sec('反向解析（PTR）'), (async () => {
     const p = await ptr(t);
     return p.length ? tbl(['主机名'], p.map(x => [x])) : note('无反向解析记录');
   })());
+
+  fill(sec('网络归属（RIPEstat）'), (async () => {
+    const d = await ripe('network-info', t);
+    return kv({'宣告前缀': d.prefix || '—', 'ASN': (d.asns || []).map(a => 'AS' + a).join('，') || '—'});
+  })());
+
+  fill(sec('同 IP 上的站点'), (async () => {
+    const [hr, us] = await Promise.all([htRev(t).catch(() => []), usQuery(`page.ip:${t}`).catch(() => [])]);
+    const all = [...new Set([...hr, ...us])];
+    return kv({'站点数量': all.length, '来源': `HackerTarget ${hr.length} · urlscan ${us.length}`}) + `<p>${list(all, 60)}</p>`;
+  })());
+
   fill(sec('注册信息（RDAP）'), (async () => {
     const j = await http(`https://rdap.org/ip/${t}`, {}, 12000);
     const reg = (j.entities || []).map(e => vcFn(e)).filter(Boolean);
@@ -231,19 +345,40 @@ function ip(t) {
   })());
 }
 
+/* ---------- ASN 测绘 ---------- */
+function asnView(input) {
+  const as = 'AS' + input.replace(/^AS/i, '');
+  fill(sec(`ASN 概况：${as}`), (async () => {
+    const d = await ripe('as-overview', as);
+    return kv({持有者: d.holder || '—', 是否宣告: d.announced === undefined ? '—' : d.announced ? '是' : '否', 资源: d.resource || as});
+  })());
+
+  fill(sec('宣告的前缀（RIPEstat）'), (async () => {
+    const d = await ripe('announced-prefixes', as);
+    const pre = (d.prefixes || []).map(p => p.prefix);
+    const v4 = pre.filter(p => !p.includes(':')), v6 = pre.filter(p => p.includes(':'));
+    const hist = {};
+    v4.forEach(p => { const l = '/' + p.split('/')[1]; hist[l] = (hist[l] || 0) + 1; });
+    const hEntries = Object.entries(hist).sort((a, b) => +a[0].slice(1) - +b[0].slice(1));
+    return kv({'IPv4 前缀数': v4.length, 'IPv6 前缀数': v6.length, '总前缀数': pre.length}) +
+      `<h3>IPv4 前缀长度分布</h3>` + bars(hEntries, '#2ea56b') +
+      `<h3>前缀列表（前 40）</h3>` + tbl(['前缀'], pre.slice(0, 40).map(p => [p]));
+  })());
+
+  fill(sec('该 ASN 上的站点（urlscan）'), (async () => {
+    const list2 = await usQuery(`page.asn:${as}`, 100);
+    return kv({'站点数量（样本内）': list2.length}) + `<p>${list(list2, 80)}</p>` +
+      note('urlscan 只包含被扫描过的站点，并不完整。');
+  })());
+}
+
 /* ---------- VPN 检测 ---------- */
 const DC_RE = /vpn|proxy|hosting|cloud|data ?center|digitalocean|vultr|linode|ovh|hetzner|amazon|aws|google cloud|azure|oracle|choopa|m247|datacamp|colo/i;
-
-// Tor 出口检测
 const torCheck = () => cached('tor', 600e3, () => http('https://check.torproject.org/api/ip', {}, 5000).then(j => !!j.IsTor).catch(() => null));
-
-// Cloudflare 边缘信息（warp=on 表示经过 WARP，gateway 表示经过 Zero Trust 网关）
 const cfTrace = () => cached('cft', 600e3, async () => {
-  const t = await text('https://www.cloudflare.com/cdn-cgi/trace');
+  const t = await text('https://www.cloudflare.com/cdn-cgi/trace', 6000);
   return Object.fromEntries(t.trim().split('\n').map(l => l.split('=')));
 });
-
-// WebRTC：收集本机候选地址，检测 STUN 反射出的公网 IP（VPN 环境下常与真实出口不一致）
 function webrtc() {
   return new Promise(res => {
     const local = new Set(), pub = new Set();
@@ -267,10 +402,7 @@ function webrtc() {
 }
 
 function vpnView() {
-  const selfG = geo(null);
-  const cfP = cfTrace().catch(() => null);
-  const torP = torCheck();
-  const rtcP = webrtc();
+  const selfG = geo(null), cfP = cfTrace().catch(() => null), torP = torCheck(), rtcP = webrtc();
 
   fill(sec('你的出口身份'), (async () => {
     const g = await selfG;
@@ -280,7 +412,7 @@ function vpnView() {
   fill(sec('Cloudflare 边缘信息'), (async () => {
     const c = await cfP;
     if (!c) return note('无法访问 Cloudflare 边缘接口（可能被拦截）。');
-    return kv({IP: c.ip, 地点: c.loc, 边缘节点: c.colo, 'WARP': c.warp || '—', '网关（Gateway）': c.gateway || '—', 'TLS 版本': c.tls || '—'});
+    return kv({IP: c.ip, 地点: c.loc, 边缘节点: c.colo, WARP: c.warp || '—', '网关（Gateway）': c.gateway || '—', 'TLS 版本': c.tls || '—'});
   })());
 
   fill(sec('WebRTC 检测'), (async () => {
@@ -306,37 +438,188 @@ function vpnView() {
     const score = checked.reduce((s, x) => s + (x.hit ? x.w : 0), 0);
     const maxScore = checked.reduce((s, x) => s + x.w, 0);
     const level = score >= 50 ? ['很可能在使用 VPN / 代理', 'bad'] : score >= 20 ? ['可能在使用 VPN / 代理', 'warn'] : ['未发现明显 VPN / 代理特征', 'ok'];
+    const D = [['Tor', tr ? 100 : 0, 100], ['WARP', c && (c.warp === 'on' || c.warp === 'plus') ? 100 : 0, 100], ['数据中心', g.org && DC_RE.test(g.org) ? 100 : 0, 100], ['WebRTC', r && r.pub.length && !r.pub.includes(g.ip) ? 100 : 0, 100], ['时区', g.tz && browserTz !== g.tz ? 100 : 0, 100], ['语言', lang && g.cc && lang !== g.cc.toUpperCase() ? 100 : 0, 100]];
     return `<p class="verdict">${pill(level[0], level[1])}</p>` +
       note(`基于 ${checked.length} 项可检测信号，风险分 ${score}/${maxScore}。启发式结果，无法做到百分之百准确。`) +
+      radar(D.map(d => [d[0], d[1], d[2]])) +
       tbl(['信号', '结果', '说明'], sig.map(s => [s.name, s.hit === null ? '无法检测' : s.hit ? '命中' : '未命中', s.detail]));
   })());
 
   out.insertAdjacentHTML('beforeend', '<button class="btn" id="re">🔄 重新检测</button>');
 }
 
+/* ---------- 证书与加密 ---------- */
+const fmtDate = ms => ms ? new Date(ms).toISOString().slice(0, 10) : '—';
+const dayDiff = ms => Math.floor((ms - Date.now()) / 864e5);
+function timelineSvg(nb, na) {
+  const W = 560, pad = 20, span = Math.max(na - nb, 1);
+  const pct = Math.min(1, Math.max(0, (Date.now() - nb) / span));
+  const x = pad + (W - 2 * pad) * pct;
+  return `<svg class="chart" viewBox="0 0 ${W} 70">
+    <rect x="${pad}" y="28" width="${W - 2 * pad}" height="14" rx="7" fill="var(--line)"/>
+    <rect x="${pad}" y="28" width="${Math.max(x - pad, 0)}" height="14" rx="7" fill="var(--accent)"/>
+    <line x1="${x}" x2="${x}" y1="18" y2="50" stroke="var(--text)" stroke-width="2"/>
+    <text x="${pad}" y="16">签发 ${fmtDate(nb)}</text>
+    <text x="${W - pad}" y="16" text-anchor="end">到期 ${fmtDate(na)}</text>
+    <text x="${x}" y="66" text-anchor="middle">今天</text></svg>`;
+}
+
+// 证书申请与到期：来自证书透明日志（crt.sh / certspotter）
+function sslCertSec(t) {
+  return (async () => {
+    const cs = await certs(t);
+    if (!cs.length) return note('证书日志中没有该域名的记录。');
+    const ce = cs.find(valid) || cs[0];
+    const nb = Date.parse(ce.not_before), na = Date.parse(ce.not_after);
+    const left = dayDiff(na);
+    const st = left < 0 ? ['已过期', 'bad'] : left <= 14 ? [`${left} 天后到期，请尽快续期`, 'bad'] : left <= 30 ? [`${left} 天后到期`, 'warn'] : [`有效，剩余 ${left} 天`, 'ok'];
+    const dates = [...new Set(cs.map(c => Date.parse(c.not_before)))].sort((a, b) => a - b);
+    const gaps = dates.slice(1).map((d, i) => (d - dates[i]) / 864e5);
+    const avg = gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+    const byYear = {}, issuers = {};
+    cs.forEach(c => {
+      const y = (c.not_before || '').slice(0, 4);
+      byYear[y] = (byYear[y] || 0) + 1;
+      const o = orgOf(c.issuer_name); issuers[o] = (issuers[o] || 0) + 1;
+    });
+    return `<p>${pill(st[0], st[1])} ${valid(ce) ? '' : pill('最新证书未生效或已失效', 'bad')}</p>` +
+      kv({
+        '签发机构': orgOf(ce.issuer_name),
+        '签发日期': fmtDate(nb),
+        '到期日期': fmtDate(na),
+        '有效期': `${Math.round((na - nb) / 864e5)} 天`,
+        '续期平均间隔': avg ? `约 ${avg} 天` : '数据不足',
+        '历史证书数量': cs.length,
+      }) +
+      `<h3>有效期进度</h3>` + timelineSvg(nb, na) +
+      `<h3>每年签发数量（续期节奏）</h3>` + bars(Object.entries(byYear).sort((a, b) => a[0] - b[0]).slice(-10), '#e0a526') +
+      `<h3>签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 6));
+  })();
+}
+
+// SSL Labs 服务端扫描（免 Key）。首次扫描约 1–3 分钟，结果会缓存
+const SSLL = 'https://api.ssllabs.com/api/v3/analyze?host=';
+async function sslLabs(host, elId) {
+  const q = SSLL + encodeURIComponent(host);
+  const show = m => { const n = document.getElementById(elId); if (n) n.innerHTML = `<p class="muted">${esc(m)}</p>`; return !!n; };
+  let j = await http(q + '&fromCache=on&maxAge=24&all=done', {}, 15000);
+  if (!j.status || j.status === 'ERROR') j = await http(q + '&startNew=on&all=done', {}, 15000);
+  for (let i = 0; i < 90 && j.status !== 'READY' && j.status !== 'ERROR'; i++) {
+    if (!show(`服务端扫描中（${j.status || '准备'}），通常需要 1–3 分钟，请稍候…`)) return null;
+    await new Promise(r => setTimeout(r, 5000));
+    j = await http(q + '&all=done', {}, 15000);
+  }
+  if (j.status === 'ERROR') throw new Error('SSL Labs：' + (j.statusMessage || '扫描失败'));
+  if (j.status !== 'READY') throw new Error('SSL Labs：等待超时，请稍后重试');
+  return j;
+}
+
+function sslRender(j) {
+  const ep = (j.endpoints || [])[0] || {};
+  const d = ep.details || {};
+  const c = (j.certs || [])[0] || {};
+  const pr = new Set((d.protocols || []).map(p => `${p.name} ${p.version}`));
+  const suites = [], seen = new Set();
+  const walk = x => {
+    if (!x || typeof x !== 'object') return;
+    if (Array.isArray(x)) return x.forEach(walk);
+    if (x.name && x.cipherStrength !== undefined) { if (!seen.has(x.name)) { seen.add(x.name); suites.push(x); } return; }
+    Object.values(x).forEach(walk);
+  };
+  walk(d.suites);
+  const g = ep.grade || '';
+  const gcol = /^A/.test(g) ? 'ok' : /^B/.test(g) ? 'warn' : g ? 'bad' : 'no';
+  const strong = suites.filter(s => s.cipherStrength >= 256).length;
+  const medium = suites.filter(s => s.cipherStrength >= 128 && s.cipherStrength < 256).length;
+  const weak = suites.filter(s => s.cipherStrength < 128).length;
+  const fsOf = s => /ECDHE|DHE/.test(s.name);
+  const fs = suites.filter(fsOf).length;
+  const bad = suites.filter(s => /RC4|3DES|NULL|EXPORT|MD5|_DES_/i.test(s.name)).map(s => s.name);
+  const legacy = ['SSL 3.0', 'TLS 1.0', 'TLS 1.1'].filter(p => pr.has(p));
+  const left = c.notAfter ? dayDiff(c.notAfter) : null;
+  const key = c.keyAlg ? `${c.keyAlg}${c.keySize ? ' ' + c.keySize + ' 位' : ''}` : '—';
+  const protoRows = ['SSL 3.0', 'TLS 1.0', 'TLS 1.1', 'TLS 1.2', 'TLS 1.3'].map(p => {
+    const on = pr.has(p), old = ['SSL 3.0', 'TLS 1.0', 'TLS 1.1'].includes(p);
+    return [p, on ? '支持' : '不支持', old ? (on ? '已淘汰，应关闭' : '良好') : (on ? '安全' : '建议开启')];
+  });
+  return `<p class="verdict">${pill('综合评级 ' + (g || '—'), gcol)} ${legacy.length ? pill('仍支持旧协议：' + legacy.join('、'), 'bad') : pill('未发现已淘汰协议', 'ok')}</p>` +
+    kv({
+      '证书主体': c.subject || '—',
+      '签发机构': c.issuerLabel || '—',
+      '签发时间': fmtDate(c.notBefore),
+      '到期时间': fmtDate(c.notAfter),
+      '距到期': left === null ? '—' : left + ' 天',
+      '签名算法': c.sigAlg || '—',
+      '公钥算法': key,
+      '备用名称数': (c.altNames || []).length,
+    }) +
+    (c.notBefore && c.notAfter ? `<h3>有效期进度</h3>` + timelineSvg(c.notBefore, c.notAfter) : '') +
+    `<h3>TLS 协议</h3>` + tbl(['协议', '状态', '评价'], protoRows) +
+    `<h3>密码套件（共 ${suites.length} 个）</h3>` +
+    bars([['强（≥256 位）', strong], ['中（128–255 位）', medium], ['弱（<128 位）', weak], ['带前向保密（ECDHE/DHE）', fs]], '#2ea56b') +
+    (bad.length ? `<p>${pill('包含不安全套件：' + bad.slice(0, 5).join('、'), 'bad')}</p>` : `<p>${pill('未发现 RC4 / 3DES / NULL 等不安全套件', 'ok')}</p>`) +
+    `<h3>套件列表（前 20）</h3>` + tbl(['套件名', '强度（位）', '前向保密'], suites.slice(0, 20).map(s => [s.name, s.cipherStrength, fsOf(s) ? '是' : '否'])) +
+    note('结果为 SSL Labs 对服务器的探测，24 小时内的结果会被缓存。若此处无法获取，可直接在 ssllabs.com 查看同一域名。');
+}
+
+const SSL_GLOSSARY = '<dl class="kv">' + [
+  ['证书', '网站的身份凭证，由 CA（证书颁发机构）签发，证明域名确实属于该服务器，并附带用于加密的公钥。'],
+  ['签发 / 到期', '证书有效期的起止时间。到期后浏览器会报错，因此需要定期续期。Let\'s Encrypt 证书有效期约 90 天，常配合自动续期。'],
+  ['CA', '如 Let\'s Encrypt、DigiCert、Sectigo。它在验证你确实控制该域名后签发证书。'],
+  ['签名算法', 'CA 对证书盖的“印章”，例如 SHA256withRSA、ECDSA-SHA256。SHA-1、MD5 已不安全。'],
+  ['公钥算法与长度', '服务器的加密钥匙。RSA 2048 位或 ECDSA P-256 是目前常见的安全选择。'],
+  ['TLS 协议', '客户端与服务器建立加密通道的规则版本。SSL 3.0、TLS 1.0、1.1 已淘汰；TLS 1.2 与 1.3 为现行标准，1.3 更快更安全。'],
+  ['密码套件', '一组算法的组合，例如 ECDHE-RSA-AES128-GCM-SHA256，分别负责密钥交换、身份认证、对称加密和完整性校验。'],
+  ['前向保密（ECDHE / DHE）', '即使服务器私钥将来泄露，过去的通信也无法被解密。'],
+  ['AEAD（如 GCM）', '同时完成加密与校验，是目前推荐的对称加密方式。'],
+  ['证书透明日志（CT）', '公开记录所有已签发证书的日志。本页用它查找证书历史和子域名。'],
+].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+
+function sslView(t) {
+  fill(sec('证书申请与到期（证书透明日志）'), sslCertSec(t));
+  const id = sec('TLS 协议与加密算法（SSL Labs 服务端扫描）');
+  fill(id, (async () => { const j = await sslLabs(t, id); return j ? sslRender(j) : ''; })());
+  fill(sec('术语速查'), SSL_GLOSSARY);
+}
+
 function about() {
   fill(sec('关于'),
     '<p>本工具为纯前端网页，没有自建服务器，也不包含任何 API Key。</p>' +
-    '<ul><li>DNS：阿里 DNS、Cloudflare、Google、DNSPod 的 DNS over HTTPS，取最先成功的结果</li><li>IP 归属：ipapi.co、ipinfo.io 互为备份</li><li>注册信息：RDAP（rdap.org）</li><li>证书与子域名：crt.sh，失败回退 certspotter</li><li>Tor 检测：Tor Project 官方接口</li><li>WARP 与边缘信息：Cloudflare trace 接口</li><li>WebRTC：浏览器本地 STUN 候选地址</li></ul>' +
-    '<h3>纯前端做不到的功能</h3>' +
-    '<ul><li>读取任意网站的 HTTP 响应头与页面源码（浏览器跨域限制）</li><li>反向 IP 查询（同一 IP 上的其他域名）：需要付费数据源</li><li>真实的 DNS 泄露测试：需要自建的探测服务器</li></ul>' +
-    '<p class="muted">VPN 检测是基于多个信号的启发式判断，无法百分之百准确。部分接口可能因网络环境被阻断，页面会显示具体原因。</p>');
+    '<h3>数据来源（均为公开、免 Key 接口）</h3>' +
+    '<ul><li>DNS：阿里 DNS、Cloudflare、Google、DNSPod 的 DNS over HTTPS，取最先成功的结果</li>' +
+    '<li>IP 归属：ipapi.co、ipinfo.io 互为备份</li>' +
+    '<li>开放端口与漏洞：Shodan InternetDB（internetdb.shodan.io）</li>' +
+    '<li>子域名、同 IP 反查、HTTP 响应头：HackerTarget 免费接口（有每日次数限制）</li>' +
+    '<li>同 IP / 同 ASN 站点、扫描记录：urlscan.io 公开搜索</li>' +
+    '<li>ASN 概况与宣告前缀：RIPEstat</li>' +
+    '<li>历史收录 URL：Wayback Machine（CDX API）</li>' +
+    '<li>证书与子域名：crt.sh，失败回退 certspotter</li>' +
+    '<li>注册信息：RDAP（rdap.org）</li>' +
+    '<li>VPN 检测：Tor Project 接口、Cloudflare trace、WebRTC</li></ul>' +
+    '<h3>纯前端无法实现或需要 Key 的测绘能力</h3>' +
+    '<ul><li>Shodan 完整搜索、Censys、FOFA、ZoomEye、Quake、Hunter：需要 API Key 或付费，放进前端会泄露</li>' +
+    '<li>实时端口扫描、服务指纹识别：需要服务端发起连接，浏览器做不到</li>' +
+    '<li>任意网站的页面源码与网页截图：浏览器跨域限制</li>' +
+    '<li>全球多节点 Ping、实时可达性测试：需要分布在各地的服务器</li></ul>' +
+    '<p class="muted">部分接口有每日调用次数限制，或因网络环境被阻断，页面会显示具体原因。结果仅为公开数据的汇总，不构成安全结论。</p>');
 }
 
 /* ---------- 调度 ---------- */
-const VIEWS = {dom, ip, vpn: vpnView};
+const VIEWS = {dom, ip, asn: asnView, vpn: vpnView, ssl: sslView};
 function go() {
-  const t = inp.value.trim().toLowerCase();
+  const t = inp.value.trim().toLowerCase().replace(/\s+/g, '');
   if (!VIEWS[cur] || cur === 'vpn') return;
-  if (cur === 'dom' && !isDom(t)) { out.innerHTML = '<div class="err">请输入有效的域名</div>'; return; }
+  if ((cur === 'dom' || cur === 'ssl') && !isDom(t)) { out.innerHTML = '<div class="err">请输入有效的域名，例如 example.com</div>'; return; }
   if (cur === 'ip' && !isIP(t)) { out.innerHTML = '<div class="err">请输入有效的 IPv4 地址（暂不支持 IPv6）</div>'; return; }
+  if (cur === 'asn' && !isASN(t)) { out.innerHTML = '<div class="err">请输入有效的 ASN，例如 AS13335 或 13335</div>'; return; }
   out.innerHTML = '';
   VIEWS[cur](t);
 }
+const PH = {ssl: '输入域名，例如 example.com', dom:'输入域名，例如 example.com', ip: '输入 IPv4 地址，例如 1.1.1.1', asn: '输入 ASN，例如 AS13335'};
 function setup() {
-  const need = cur === 'dom' || cur === 'ip';
+  const need = !!PH[cur];
   inp.disabled = !need;
-  inp.placeholder = cur === 'ip' ? '输入 IPv4 地址，例如 1.1.1.1' : need ? '输入域名，例如 example.com' : '此页面无需输入';
+  inp.placeholder = need ? PH[cur] : '此页面无需输入';
   out.innerHTML = '';
   if (cur === 'vpn') vpnView();
   if (cur === 'about') about();
