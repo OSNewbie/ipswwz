@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>网络溯源工具箱</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--text:#e6e8ee;--muted:#8a90a0;--line:#2a2f3a;--accent:#4f8cff;--ok:#2ea56b;--no:#6b7280;--bad:#e5484d;--warn:#e0a526}
+@media(prefers-color-scheme:light){:root{--bg:#f6f7fb;--card:#fff;--text:#1d2330;--muted:#6b7385;--line:#e3e6ee}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}
+header{text-align:center;padding:20px 16px 4px}
+h1{margin:0;font-size:22px}
+nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--text);padding:6px 12px;border-radius:999px;cursor:pointer;font-size:14px}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrap{max-width:900px;margin:0 auto;padding:0 12px 24px}
+.bar{display:flex;gap:8px;margin:14px 0}
+input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
+input:disabled{opacity:.5}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.card h2{margin:0 0 10px;font-size:17px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-all}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;background:var(--no);color:#fff;margin:2px 4px 2px 0}
+.pill.ok{background:var(--ok)}
+.pill.warn{background:var(--warn)}
+.pill.bad{background:var(--bad)}
+.muted{color:var(--muted);font-size:13px}
+.verdict{font-weight:600;margin:10px 0 0}
+.err{background:rgba(229,72,77,.12);color:var(--bad);border:1px solid var(--bad);padding:12px;border-radius:10px}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--text);font-size:12px}
+.chart .lbl{fill:var(--muted)}
+.radar{width:100%;max-width:300px;display:block;margin:0 auto}
+.radar .g{fill:none;stroke:var(--line)}
+.radar .s{fill:rgba(79,140,255,.25);stroke:var(--accent);stroke-width:2}
+.radar text{fill:var(--text);font-size:11px}
+.score{font-size:40px;font-weight:700;text-align:center;margin:4px 0}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
+</style>
+</head>
+<body>
+<header><h1>🔍 网络溯源工具箱</h1></header>
+<nav>
+  <button class="tab on" data-t="uni">📍 统一溯源</button>
+  <button class="tab" data-t="cdn">🔒 证书 / CDN</button>
+  <button class="tab" data-t="ad">📄 广告 / 技术栈</button>
+  <button class="tab" data-t="env">🌐 网络环境</button>
+  <button class="tab" data-t="intel">🕵️ 社区情报</button>
+  <button class="tab" data-t="prof">📋 整体画像</button>
+  <button class="tab" data-t="about">ℹ️ 关于</button>
+</nav>
+<div class="wrap">
+  <div class="bar"><input id="t" placeholder="输入域名或 IPv4" autocomplete="off" spellcheck="false"><button id="go" class="btn">查询</button></div>
+  <main id="out"></main>
+</div>
+<footer>所有查询在浏览器中完成，数据来自公开接口，结果仅供参考。</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const out = $('#out'), inp = $('#t');
+let cur = 'uni';
+
+const esc = s => String(s ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const card = (t, b) => `<section class="card"><h2>${esc(t)}</h2>${b}</section>`;
+const kv = o => `<dl class="kv">${Object.entries(o).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+const tbl = (h, rows) => `<div class="scroll"><table><tr>${h.map(x => `<th>${esc(x)}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const note = t => `<p class="muted">${esc(t)}</p>`;
+const pill = (on, t, cls) => `<span class="pill ${cls || (on ? 'ok' : '')}">${esc(t)}</span>`;
+const isIP = s => /^(\d{1,3}\.){3}\d{1,3}$/.test(s) && s.split('.').every(n => +n <= 255);
+const isDom = s => /^(?=.{1,253}$)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i.test(s);
+const valid = x => Date.parse(x.not_before) <= Date.now() && Date.parse(x.not_after) > Date.now();
+const org = i => (i || '').match(/O=([^,]+)/)?.[1] || i || '未知';
+
+/* ---------- 图表 ---------- */
+// 水平柱状图（SVG）
+function bars(entries, color = '#4f8cff') {
+  if (!entries.length) return note('无数据');
+  const W = 560, rowH = 24, LW = 150, max = Math.max(...entries.map(e => e[1]), 1);
+  const H = entries.length * rowH + 4;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${entries.map(([k, v], i) => {
+    const y = i * rowH + 4, w = (W - LW - 50) * v / max;
+    return `<text x="0" y="${y + 15}">${esc(k)}</text><rect x="${LW}" y="${y + 3}" width="${Math.max(w, 2)}" height="16" rx="4" fill="${color}"/><text x="${LW + w + 6}" y="${y + 15}">${v}</text>`;
+  }).join('')}</svg>`;
+}
+// 环形图（SVG），用于签发机构占比
+function donut(entries) {
+  if (!entries.length) return note('无数据');
+  const total = entries.reduce((s, e) => s + e[1], 0);
+  const colors = ['#4f8cff', '#2ea56b', '#e0a526', '#e5484d', '#a78bfa', '#14b8a6', '#f97316', '#64748b'];
+  let a0 = -Math.PI / 2, paths = '', legend = '';
+  entries.forEach(([k, v], i) => {
+    const a1 = a0 + 2 * Math.PI * v / total, large = a1 - a0 > Math.PI ? 1 : 0;
+    const p = (r, a) => [80 + r * Math.cos(a), 80 + r * Math.sin(a)];
+    const [x0, y0] = p(70, a0), [x1, y1] = p(70, a1), [x2, y2] = p(40, a1), [x3, y3] = p(40, a0);
+    paths += `<path d="M${x0},${y0} A70,70 0 ${large} 1 ${x1},${y1} L${x2},${y2} A40,40 0 ${large} 0 ${x3},${y3}Z" fill="${colors[i % colors.length]}"/>`;
+    legend += `<text x="170" y="${i * 18 + 12}" style="fill:${colors[i % colors.length]}">■</text><text x="186" y="${i * 18 + 12}">${esc(k)}：${v}（${Math.round(v / total * 100)}%）</text>`;
+    a0 = a1;
+  });
+  return `<svg class="chart" viewBox="0 0 480 160">${paths}<g>${legend}</g></svg>`;
+}
+// 雷达图（SVG）
+function radar(D) {
+  const n = D.length, c = 130, r = 95;
+  const pt = (i, k) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + Math.cos(a) * r * k, c + Math.sin(a) * r * k]; };
+  const grid = [.25, .5, .75, 1].map(k => `<polygon class="g" points="${D.map((_, i) => pt(i, k).join(',')).join(' ')}"/>`).join('');
+  const axes = D.map((_, i) => { const [x, y] = pt(i, 1); return `<line class="g" x1="${c}" y1="${c}" x2="${x}" y2="${y}"/>`; }).join('');
+  const shape = `<polygon class="s" points="${D.map((d, i) => pt(i, d[2] ? d[1] / d[2] : 0).join(',')).join(' ')}"/>`;
+  const labels = D.map((d, i) => { const [x, y] = pt(i, 1.25); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle">${esc(d[0])}</text>`; }).join('');
+  return `<svg class="radar" viewBox="0 0 260 260">${grid}${axes}${shape}${labels}</svg>`;
+}
+
+/* ---------- DNS / ASN（DNS over HTTPS，浏览器直连） ---------- */
+const T = {A: 1, CNAME: 5, PTR: 12, TXT: 16, AAAA: 28};
+const RESOLVERS = [
+  ['Cloudflare', 'https://cloudflare-dns.com/dns-query'],
+  ['Google', 'https://dns.google/resolve'],
+  ['Quad9', 'https://dns.quad9.net/dns-query'],
+  ['AdGuard', 'https://dns.adguard-dns.com/dns-query'],
+];
+async function dohAt(base, name, type) {
+  const r = await fetch(`${base}?name=${encodeURIComponent(name)}&type=${type}`, {headers: {accept: 'application/dns-json'}});
+  if (!r.ok) throw new Error('DNS ' + r.status);
+  return r.json();
+}
+const recs = (j, t) => (j.Answer || []).filter(a => a.type === t).map(a => a.data.replace(/\.$/, '').replace(/^"|"$/g, ''));
+const doh = (name, type) => dohAt(RESOLVERS[0][1], name, type);
+async function resolve(d) {
+  const [a, q] = await Promise.all([doh(d, T.A), doh(d, T.AAAA)]);
+  return {v4: recs(a, T.A), v6: recs(q, T.AAAA), cn: [...new Set(recs(a, T.CNAME))]};
+}
+// 多个解析器的 A 记录对比（替代多地 Ping：不同解析器所在地区不同，返回结果不同说明有就近解析）
+async function multiResolve(d) {
+  return Promise.all(RESOLVERS.map(async ([name, base]) => {
+    try { return {name, ips: recs(await dohAt(base, d, T.A), T.A).sort()}; }
+    catch { return {name, ips: null}; }
+  }));
+}
+function multiInfo(list) {
+  const ok = list.filter(x => x.ips && x.ips.length);
+  const distinct = new Set(ok.map(x => x.ips.join(','))).size;
+  return {ok: ok.length, distinct, differ: ok.length >= 2 && distinct > 1};
+}
+async function ptr(ip) {
+  return recs(await doh(ip.split('.').reverse().join('.') + '.in-addr.arpa', T.PTR), T.PTR);
+}
+async function asn(ip) {
+  const line = recs(await doh(ip.split('.').reverse().join('.') + '.origin.asn.cymru.com', T.TXT), T.TXT)[0];
+  if (!line) return null;
+  const [n, pre, cc, reg] = line.split('|').map(s => s.trim());
+  const nl = recs(await doh(`AS${n}.asn.cymru.com`, T.TXT), T.TXT)[0] || '';
+  return {asn: n, prefix: pre, country: cc, registry: reg, name: (nl.split('|')[4] || '').trim()};
+}
+
+/* ---------- 证书：crt.sh 优先，失败则回退到 certspotter ---------- */
+async function certs(d) {
+  let rows = null;
+  try {
+    const r = await fetch(`https://crt.sh/?q=${encodeURIComponent(d)}&output=json`);
+    if (r.ok) rows = await r.json();
+  } catch {}
+  if (!rows) {
+    const r = await fetch(`https://api.certspotter.com/v1/issuances?domain=${encodeURIComponent(d)}&expand=dns_names&expand=issuer`);
+    if (!r.ok) throw new Error('证书查询失败：crt.sh 与 certspotter 均不可用');
+    rows = (await r.json()).map(x => ({
+      id: x.id,
+      not_before: x.not_before,
+      not_after: x.not_after,
+      name_value: (x.dns_names || []).join('\n'),
+      issuer_name: x.issuer?.friendly_name ? `O=${x.issuer.friendly_name}` : (x.issuer?.name || ''),
+    }));
+  }
+  return [...new Map(rows.map(x => [x.id, x])).values()].sort((a, b) => Date.parse(b.not_before) - Date.parse(a.not_before));
+}
+
+/* ---------- urlscan.io 公开扫描记录（只读，无需 Key） ---------- */
+async function urlscan(t) {
+  const s = await fetch(`https://urlscan.io/api/v1/search/?q=domain:${encodeURIComponent(t)}&size=1`);
+  if (!s.ok) throw new Error('urlscan.io 查询失败（' + s.status + '）');
+  const hit = (await s.json()).results?.[0];
+  if (!hit) return null;
+  const id = hit._id || hit.task?.uuid;
+  const r = await fetch(`https://urlscan.io/api/v1/result/${id}/`);
+  if (!r.ok) return null;
+  const x = await r.json();
+  return {
+    date: hit.task?.time || '',
+    server: x.page?.server || '',
+    ip: x.page?.ip || '',
+    asn: x.page?.asnname || '',
+    country: x.page?.country || '',
+    domains: x.lists?.domains || [],
+  };
+}
+
+/* ---------- CDN 证据 ---------- */
+const CDN_ASN = {13335: 'Cloudflare', 16509: 'Amazon CloudFront', 54113: 'Fastly', 20940: 'Akamai', 16625: 'Akamai', 8075: 'Azure'};
+const CDN_CN = [[/\.cloudflare\.net$/, 'Cloudflare'], [/\.cloudfront\.net$/, 'Amazon CloudFront'], [/\.fastly\.net$/, 'Fastly'], [/\.(akamaiedge|akamai|edgekey|edgesuite)\.net$/, 'Akamai'], [/\.azureedge\.net$/, 'Azure CDN']];
+const CDN_SRV = /cloudflare|fastly|akamai|cloudfront|azure/i;
+function cdnAnalyze(r, as, mi, u) {
+  const L = [];
+  const a = [...new Set(as.filter(Boolean).map(x => CDN_ASN[x.asn]).filter(Boolean))];
+  L.push(['ASN 归属（核心）', a.length > 0, a.length ? '命中：' + a.join('、') : '未匹配已知 CDN 的 ASN']);
+  const c = [...new Set(r.cn.flatMap(x => CDN_CN.filter(([re]) => re.test(x)).map(([, n]) => n)))];
+  L.push(['CNAME 特征', c.length > 0, c.length ? '解析链包含：' + c.join('、') : '无厂商专属域名']);
+  if (u) {
+    const s = CDN_SRV.test(u.server || '');
+    L.push(['服务器标识（urlscan）', s, u.server ? '服务器：' + u.server : '无记录']);
+  }
+  if (mi) L.push(['多解析器对比', mi.differ, mi.differ ? '不同解析器返回的 IP 不一致，可能为就近解析' : (mi.ok ? '结果一致' : '数据不足')]);
+  const h = L.filter(x => x[1]).length;
+  return {L, h, v: h >= 2 ? '较可能使用了 CDN' : h === 1 ? '有一定线索，证据不足' : '未发现 CDN 迹象'};
+}
+
+/* ---------- 威胁清单（静态数据文件） ---------- */
+let intelCache = null;
+async function getIntel() {
+  if (!intelCache) {
+    const r = await fetch('data/intel.json', {cache: 'no-cache'});
+    if (!r.ok) throw new Error('威胁清单加载失败');
+    const j = await r.json();
+    intelCache = {updated: j.updated, source: j.source, ips: new Set(j.ips || []), hosts: j.hosts || []};
+  }
+  return intelCache;
+}
+const hitOf = (j, t) => isIP(t) ? j.ips.has(t) : j.hosts.some(h => t === h || t.endsWith('.' + h));
+
+/* ---------- 各功能 ---------- */
+async function uni(t) {
+  if (isIP(t)) {
+    const [p, a] = await Promise.all([ptr(t), asn(t)]);
+    out.innerHTML = card('IP 溯源', kv({IP: t, 反向解析: p.join('，') || '无', ASN: a ? `AS${a.asn}（${a.name}）` : '无', 网段: a?.prefix, '国家 / 注册机构': a ? `${a.country} / ${a.registry}` : '—'}));
+    return;
+  }
+  const [r, m] = await Promise.all([resolve(t), multiResolve(t)]);
+  const rows = await Promise.all(r.v4.slice(0, 8).map(async ip => [ip, await asn(ip).catch(() => null)]));
+  const mi = multiInfo(m);
+  out.innerHTML =
+    card('域名解析', kv({域名: t, 'CNAME 链': r.cn.join(' → ') || '无', 'IPv4 数量': r.v4.length, IPv6: r.v6.join('，') || '无'})) +
+    card('IP 与 ASN', tbl(['IP', 'ASN', '名称', '网段'], rows.map(([ip, a]) => [ip, a ? 'AS' + a.asn : '—', a?.name, a?.prefix]))) +
+    card('多解析器对比', tbl(['解析器', '返回 IP'], m.map(x => [x.name, x.ips ? (x.ips.join('，') || '无记录') : '查询失败'])) +
+      `<p class="verdict">${mi.differ ? '结果不一致：可能存在就近解析（CDN 或多地部署）' : mi.ok ? '各解析器结果一致' : '数据不足'}</p>`);
+}
+
+async function cdn(t) {
+  const [cs, r, m, u] = await Promise.all([certs(t), resolve(t), multiResolve(t), urlscan(t).catch(() => null)]);
+  const as = await Promise.all(r.v4.slice(0, 8).map(ip => asn(ip).catch(() => null)));
+  const c = cdnAnalyze(r, as, multiInfo(m), u);
+  const years = {}, orgs = {};
+  cs.forEach(x => {
+    const y = (x.not_before || '').slice(0, 4);
+    if (y) years[y] = (years[y] || 0) + 1;
+    const o = org(x.issuer_name);
+    orgs[o] = (orgs[o] || 0) + 1;
+  });
+  const yearEntries = Object.entries(years).sort((a, b) => b[0] - a[0]).slice(0, 12).reverse();
+  const orgEntries = Object.entries(orgs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  out.innerHTML =
+    card('证书（证书透明度日志）', kv({证书总数: cs.length, 当前有效: cs.filter(valid).length, 最近签发: cs[0]?.not_before?.slice(0, 10) || '—'})) +
+    card('签发年份分布（近 12 年）', bars(yearEntries)) +
+    card('签发机构占比', donut(orgEntries)) +
+    card('最近证书', tbl(['签发', '到期', '域名', '机构'], cs.slice(0, 10).map(x => [x.not_before?.slice(0, 10), x.not_after?.slice(0, 10), (x.name_value || '').replace(/\n/g, ', '), org(x.issuer_name)]))) +
+    card('CDN 证据链', tbl(['检测层', '结果', '依据'], c.L.map(([n, h, d]) => [n, h ? '命中' : '未命中', d])) + `<p class="verdict">${esc(c.v)}</p>`);
+}
+
+async function adTech(t) {
+  const u = await urlscan(t);
+  if (!u) {
+    out.innerHTML = card('广告 / 技术栈', note('urlscan.io 中暂无该站点的公开扫描记录，因此无法自动检测。'));
+    return;
+  }
+  const ADS = [['Google AdSense', /pagead2\.googlesyndication\.com|adsbygoogle/], ['Google Ad Manager', /doubleclick\.net|googletagservices\.com/], ['Google Analytics / GTM', /google-analytics\.com|googletagmanager\.com/], ['百度统计', /hm\.baidu\.com/], ['百度广告', /cpro\.baidu\.com/], ['Facebook Pixel', /connect\.facebook\.net/], ['Taboola', /taboola\.com/], ['Outbrain', /outbrain\.com/]];
+  const ads = ADS.filter(([, re]) => u.domains.some(d => re.test(d))).map(x => x[0]);
+  const top = Object.entries(u.domains.reduce((m, d) => { const k = d.split('.').slice(-2).join('.'); m[k] = (m[k] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  out.innerHTML =
+    card('广告与统计脚本（按页面实际请求的域名判断）', ads.length ? ads.map(a => pill(1, a)).join(' ') : note('未发现常见广告或统计脚本特征')) +
+    card('请求最多的第三方域名（前 10）', bars(top, '#e0a526')) +
+    card('服务器信息', kv({服务器: u.server || '—', IP: u.ip || '—', 'ASN 名称': u.asn || '—', 国家: u.country || '—', 扫描时间: u.date || '—'})) +
+    note(`共记录到 ${u.domains.length} 个被请求的域名。数据来自 urlscan.io 的历史扫描，不是实时结果。`);
+}
+
+async function env() {
+  const r = await fetch('https://ipapi.co/json/');
+  if (!r.ok) throw new Error('出口信息查询失败（' + r.status + '）');
+  const j = await r.json();
+  if (j.error) throw new Error(j.reason || '出口信息查询失败');
+  let tor = null;
+  try {
+    const t = await fetch('https://check.torproject.org/api/ip');
+    if (t.ok) tor = (await t.json()).IsTor;
+  } catch {}
+  const o = j.org || '';
+  const dc = /vpn|proxy|hosting|cloud|data ?center|digitalocean|vultr|linode|ovh|hetzner/i.test(o);
+  const verdict = tor === true ? ['疑似 Tor 出口', 'bad'] : dc ? ['疑似数据中心 / VPN / 代理', 'warn'] : ['看起来是普通家庭或移动网络', 'ok'];
+  out.innerHTML =
+    card('当前出口', kv({IP: j.ip, 国家: j.country_name, 地区: j.region, 城市: j.city, 时区: j.timezone, ASN: j.asn, 运营商: o})) +
+    card('网络环境判断（启发式）',
+      `<p>${pill(0, verdict[0], verdict[1])}</p>` +
+      tbl(['检测项', '结果'], [
+        ['Tor 出口', tor === null ? '无法检测' : tor ? '是' : '否'],
+        ['数据中心 / VPN 关键字（运营商名称）', dc ? '命中' : '未命中'],
+      ]) + note('无法精确识别所有 VPN 或代理，结果仅供参考。')) +
+    '<button class="btn" id="re">🔄 重新检测</button>';
+  $('#re').onclick = env;
+}
+
+async function intel(t) {
+  const j = await getIntel();
+  const never = !j.updated;
+  out.innerHTML =
+    card('威胁清单比对', kv({结果: never ? '清单尚未生成' : hitOf(j, t) ? '命中已知恶意清单' : '未命中', 数据更新: j.updated || '—', 来源: j.source})) +
+    note('清单为静态快照，不是实时数据。VirusTotal、AbuseIPDB 等需要 API Key 的评分，纯前端无法安全提供。');
+}
+
+async function prof(t) {
+  const ip = isIP(t);
+  const [cs, r, m, j] = await Promise.all([
+    ip ? null : certs(t).catch(() => null),
+    ip ? {v4: [t], v6: [], cn: []} : resolve(t),
+    ip ? null : multiResolve(t),
+    getIntel().catch(() => null),
+  ]);
+  const as = await Promise.all(r.v4.slice(0, 8).map(x => asn(x).catch(() => null)));
+  const u = ip ? null : await urlscan(t).catch(() => null);
+  const mi = m ? multiInfo(m) : null;
+  const D = [];
+  if (cs) {
+    const v = cs.filter(valid).length;
+    D.push(['证书有效', v ? 20 : 0, 20, `当前有效 ${v} 张`]);
+    D.push(['证书历史', cs.length >= 10 ? 15 : cs.length >= 3 ? 10 : cs.length ? 5 : 0, 15, `历史 ${cs.length} 张`]);
+  }
+  const ok = as.some(Boolean);
+  D.push(['归属可识别', ok ? 10 : 0, 10, ok ? '能查到 ASN' : '未查到 ASN']);
+  if (!ip) {
+    const c = cdnAnalyze(r, as, mi, u);
+    D.push(['CDN 防护', c.h >= 2 ? 15 : c.h === 1 ? 8 : 0, 15, `${c.h} 层证据命中`]);
+    D.push(['解析一致', mi && mi.differ ? 5 : 10, 10, mi && mi.differ ? '不同解析器结果不一致' : '结果一致或数据不足']);
+  }
+  if (j && j.updated) {
+    const h = hitOf(j, t);
+    D.push(['威胁清单', h ? 0 : 20, 20, h ? '命中已知清单' : '未命中']);
+  }
+  const e = D.reduce((s, x) => s + x[1], 0), mx = D.reduce((s, x) => s + x[2], 0);
+  const sc = mx ? Math.round(e / mx * 100) : 0;
+  const band = sc >= 80 ? '良好' : sc >= 60 ? '一般' : '需关注';
+  const cls = sc >= 80 ? 'ok' : sc >= 60 ? 'warn' : 'bad';
+  out.innerHTML =
+    card('整体画像', `<div class="score">${sc}</div><p style="text-align:center">${pill(0, band, cls)}</p>` +
+      note('启发式评分，仅反映可自动获取的指标，不构成安全结论。') + radar(D) +
+      tbl(['维度', '得分', '说明'], D.map(x => [x[0], `${x[1]}/${x[2]}`, x[3]])));
+}
+
+function about() {
+  out.innerHTML = card('关于',
+    '<p>本工具为纯前端网页，没有自建服务器，也不包含任何 API Key。所有查询都在浏览器中完成。</p>' +
+    '<ul><li>DNS 解析与多解析器对比：Cloudflare、Google、Quad9、AdGuard 的 DNS over HTTPS</li><li>ASN 归属：Team Cymru DNS 服务</li><li>证书：crt.sh，失败时回退到 certspotter</li><li>广告与技术栈：urlscan.io 公开扫描记录</li><li>出口与 Tor：ipapi.co、Tor Project 检测接口</li><li>威胁清单：Feodo Tracker 与 URLhaus（abuse.ch）静态快照</li></ul>' +
+    '<h3>无法在纯前端实现的功能</h3>' +
+    '<ul><li>任意网站的真实 HTTP 响应头：浏览器跨域限制</li><li>VirusTotal、AbuseIPDB 评分：需要 API Key</li><li>全球节点实时 Ping：需要分布在各地的服务器</li></ul>' +
+    '<p class="muted">各数据源均为公开接口，可能有跨域或频率限制；所有结论仅为基于公开数据的推断。</p>');
+}
+
+/* ---------- 调度 ---------- */
+const H = {uni, cdn, ad: adTech, intel, prof};
+async function go() {
+  const t = inp.value.trim().toLowerCase();
+  if (!H[cur]) return;
+  if (!isIP(t) && !isDom(t)) { out.innerHTML = '<div class="err">请输入有效的域名或 IPv4（暂不支持 IPv6）</div>'; return; }
+  out.innerHTML = '<p class="muted">查询中…</p>';
+  try { await H[cur](t); } catch (e) { out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+function setup() {
+  const need = ['uni', 'cdn', 'ad', 'intel', 'prof'].includes(cur);
+  inp.disabled = !need;
+  inp.placeholder = need ? '输入域名或 IPv4' : '此页面无需输入';
+  out.innerHTML = '';
+  if (cur === 'env') env().catch(e => out.innerHTML = `<div class="err">${esc(e.message)}</div>`);
+  if (cur === 'about') about();
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  cur = b.dataset.t;
+  setup();
+});
+$('#go').onclick = go;
+inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+setup();
+</script>
+</body>
+</html>
