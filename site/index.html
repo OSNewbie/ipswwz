@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>网络溯源工具箱</title>
+<title>网站溯源 & VPN 检测</title>
 <style>
 :root{--bg:#0f1115;--card:#171a21;--text:#e6e8ee;--muted:#8a90a0;--line:#2a2f3a;--accent:#4f8cff;--ok:#2ea56b;--no:#6b7280;--bad:#e5484d;--warn:#e0a526}
 @media(prefers-color-scheme:light){:root{--bg:#f6f7fb;--card:#fff;--text:#1d2330;--muted:#6b7385;--line:#e3e6ee}}
@@ -16,9 +16,9 @@ nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px}
 .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .wrap{max-width:900px;margin:0 auto;padding:0 12px 24px}
 .bar{display:flex;gap:8px;margin:14px 0}
-input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;min-width:0}
+input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
 input:disabled{opacity:.5}
-.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;white-space:nowrap;margin-top:6px}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;white-space:nowrap}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
 .card h2{margin:0 0 10px;font-size:17px}
 .kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
@@ -26,40 +26,30 @@ input:disabled{opacity:.5}
 .kv dd{margin:0;word-break:break-all}
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-all}
 th{color:var(--muted);font-weight:500}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;background:var(--no);color:#fff;margin:2px 4px 2px 0}
 .pill.ok{background:var(--ok)}
 .pill.warn{background:var(--warn)}
 .pill.bad{background:var(--bad)}
 .muted{color:var(--muted);font-size:13px}
-.verdict{font-weight:600;margin:10px 0 0}
+.verdict{font-size:18px;font-weight:700;text-align:center;margin:8px 0}
 .err{background:rgba(229,72,77,.12);color:var(--bad);border:1px solid var(--bad);padding:12px;border-radius:10px;font-size:14px}
 .chart{width:100%;height:auto;display:block}
 .chart text{fill:var(--text);font-size:12px}
-.chart .lbl{fill:var(--muted)}
-.radar{width:100%;max-width:300px;display:block;margin:0 auto}
-.radar .g{fill:none;stroke:var(--line)}
-.radar .s{fill:rgba(79,140,255,.25);stroke:var(--accent);stroke-width:2}
-.radar text{fill:var(--text);font-size:11px}
-.score{font-size:40px;font-weight:700;text-align:center;margin:4px 0}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 </style>
 </head>
 <body>
-<header><h1>🔍 网络溯源工具箱</h1></header>
+<header><h1>🔍 网站溯源 & VPN 检测</h1></header>
 <nav>
-  <button class="tab on" data-t="uni">📍 统一溯源</button>
-  <button class="tab" data-t="cdn">🔒 证书 / CDN</button>
-  <button class="tab" data-t="ad">📄 广告 / 技术栈</button>
-  <button class="tab" data-t="env">🌐 网络环境</button>
-  <button class="tab" data-t="intel">🕵️ 社区情报</button>
-  <button class="tab" data-t="prof">📋 整体画像</button>
-  <button class="tab" data-t="self">🧪 接口自检</button>
+  <button class="tab on" data-t="dom">🌐 域名溯源</button>
+  <button class="tab" data-t="ip">📍 IP 溯源</button>
+  <button class="tab" data-t="vpn">🛡️ VPN 检测</button>
   <button class="tab" data-t="about">ℹ️ 关于</button>
 </nav>
 <div class="wrap">
-  <div class="bar"><input id="t" placeholder="输入域名或 IPv4" autocomplete="off" spellcheck="false"><button id="go" class="btn">查询</button></div>
+  <div class="bar"><input id="t" placeholder="输入域名，例如 example.com" autocomplete="off" spellcheck="false"><button id="go" class="btn">查询</button></div>
   <main id="out"></main>
 </div>
 <footer>所有查询在浏览器中完成，数据来自公开接口，结果仅供参考。</footer>
@@ -67,7 +57,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:16px}
 <script>
 const $ = s => document.querySelector(s);
 const out = $('#out'), inp = $('#t');
-let cur = 'uni', seq = 0;
+let cur = 'dom', seq = 0;
 
 /* ---------- 基础工具 ---------- */
 const esc = s => String(s ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -80,7 +70,7 @@ const isDom = s => /^(?=.{1,253}$)([a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i.test(s);
 const valid = x => Date.parse(x.not_before) <= Date.now() && Date.parse(x.not_after) > Date.now();
 const orgOf = i => (i || '').match(/O=([^,]+)/)?.[1] || i || '未知';
 
-// 每个功能区块独立渲染：某个数据源失败只影响该区块，不会让整页空白
+// 每个区块独立渲染：某个数据源失败只影响该区块
 function sec(title) {
   const id = 's' + (++seq);
   out.insertAdjacentHTML('beforeend', `<section class="card"><h2>${esc(title)}</h2><div id="${id}"><p class="muted">加载中…</p></div></section>`);
@@ -88,13 +78,12 @@ function sec(title) {
 }
 async function fill(id, p) {
   const el = document.getElementById(id);
-  if (!el) return; // 用户已切换查询，丢弃旧结果
+  if (!el) return; // 已切换查询，丢弃旧结果
   try { el.innerHTML = await p; }
   catch (e) { el.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; }
 }
 
 /* ---------- 网络层 ---------- */
-// 带超时的 JSON 请求；失败时给出可读原因
 async function http(url, opt = {}, ms = 8000) {
   const c = new AbortController(), tm = setTimeout(() => c.abort(), ms);
   try {
@@ -107,9 +96,17 @@ async function http(url, opt = {}, ms = 8000) {
     throw new Error(`${host}：${why}`);
   } finally { clearTimeout(tm); }
 }
-// 多个来源并发请求，取最先成功的一个
+async function text(url, ms = 6000) {
+  const c = new AbortController(), tm = setTimeout(() => c.abort(), ms);
+  try {
+    const r = await fetch(url, {signal: c.signal});
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.text();
+  } catch (e) {
+    throw new Error(`${new URL(url).host}：${e.name === 'AbortError' ? '超时' : '请求失败（可能被拦截或跨域受限）'}`);
+  } finally { clearTimeout(tm); }
+}
 const first = ps => Promise.any(ps).catch(es => { throw new Error((es.errors || []).map(e => e.message).join('；') || '全部失败'); });
-// 结果缓存到 sessionStorage，减少重复请求；失败不缓存
 async function cached(key, ttl, fn) {
   try {
     const h = sessionStorage.getItem(key);
@@ -120,374 +117,232 @@ async function cached(key, ttl, fn) {
   return v;
 }
 
-/* ---------- DNS over HTTPS ---------- */
-const DOH = [
-  ['阿里 DNS', 'https://dns.alidns.com/resolve'],
-  ['DNSPod', 'https://doh.pub/resolve'],
-  ['Cloudflare', 'https://cloudflare-dns.com/dns-query'],
-  ['Google', 'https://dns.google/resolve'],
-];
-const dohGet = (b, name, type) => http(`${b}?name=${encodeURIComponent(name)}&type=${type}`, {headers: {accept: 'application/dns-json'}});
-const dns = (name, type) => cached(`dns${type}:${name}`, 3600e3, () => first(DOH.map(([, b]) => dohGet(b, name, type))));
+/* ---------- DNS over HTTPS（多来源并发，取最先成功） ---------- */
+const DOH = ['https://dns.alidns.com/resolve', 'https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve', 'https://doh.pub/resolve'];
+const T = {A: 1, NS: 2, CNAME: 5, MX: 15, TXT: 16, AAAA: 28};
+const dns = (n, type) => cached(`d${type}:${n}`, 3600e3, () =>
+  first(DOH.map(b => http(`${b}?name=${encodeURIComponent(n)}&type=${type}`, {headers: {accept: 'application/dns-json'}}))));
 const recs = (j, t) => (j?.Answer || []).filter(a => a.type === t).map(a => a.data.replace(/\.$/, '').replace(/^"|"$/g, ''));
-// 多个解析器各查一次 A 记录，不同结果说明可能存在就近解析（替代多地 Ping）
-const multi = d => cached(`multi:${d}`, 3600e3, () => Promise.all(DOH.map(async ([n, b]) => {
-  try { return {name: n, ips: recs(await dohGet(b, d, 1), 1).sort()}; }
-  catch { return {name: n, ips: null}; }
-})));
-function multiInfo(list) {
-  const ok = list.filter(x => x.ips && x.ips.length);
-  const distinct = new Set(ok.map(x => x.ips.join(','))).size;
-  return {ok: ok.length, distinct, differ: ok.length >= 2 && distinct > 1};
-}
 const ptr = ip => dns(ip.split('.').reverse().join('.') + '.in-addr.arpa', 12).then(j => recs(j, 12));
 
-// ASN：优先 Team Cymru（经 DoH 查询），失败则回退到 ipinfo
-async function asn(ip) {
-  return cached(`asn:${ip}`, 86400e3, async () => {
-    try {
-      const line = recs(await dns(ip.split('.').reverse().join('.') + '.origin.asn.cymru.com', 16), 16)[0];
-      if (!line) throw new Error('无记录');
-      const [n, pre, cc, reg] = line.split('|').map(s => s.trim());
-      const nl = recs(await dns(`AS${n}.asn.cymru.com`, 16), 16)[0] || '';
-      return {asn: n, prefix: pre, country: cc, registry: reg, name: (nl.split('|')[4] || '').trim()};
-    } catch {
-      const j = await http(`https://ipinfo.io/${ip}/json`);
-      const m = (j.org || '').match(/^AS(\d+)\s*(.*)$/);
-      if (!m) return null;
-      return {asn: m[1], prefix: '—', country: j.country || '—', registry: '—', name: m[2]};
-    }
-  });
-}
+/* ---------- IP 归属（多来源备份） ---------- */
+const geo = ip => cached(`geo:${ip || 'me'}`, 3600e3, () => first([
+  http(`https://ipapi.co/${ip ? ip + '/' : ''}json/`).then(j => {
+    if (j.error) throw new Error(j.reason || 'ipapi 错误');
+    return {ip: j.ip, country: j.country_name, cc: j.country_code, region: j.region, city: j.city, tz: j.timezone, asn: (j.asn || '').replace(/^AS/, ''), org: j.org || ''};
+  }),
+  http(ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json').then(j => {
+    const m = (j.org || '').match(/^AS(\d+)\s*(.*)$/);
+    return {ip: j.ip, country: j.country, cc: j.country, region: j.region, city: j.city, tz: j.timezone, asn: m ? m[1] : '', org: m ? m[2] : (j.org || '')};
+  }),
+]));
 
-/* ---------- 证书：crt.sh 优先，失败回退 certspotter ---------- */
+/* ---------- 注册信息（RDAP） ---------- */
+const rdap = d => cached(`rdap:${d}`, 86400e3, () => http(`https://rdap.org/domain/${encodeURIComponent(d)}`, {}, 12000));
+const vcFn = e => (e?.vcardArray?.[1] || []).find(x => x[0] === 'fn')?.[3] || '';
+
+/* ---------- 证书与子域名（crt.sh 优先，失败回退 certspotter） ---------- */
 const certs = d => cached(`cert:${d}`, 6 * 3600e3, async () => {
   let rows = null;
   try { rows = await http(`https://crt.sh/?q=${encodeURIComponent(d)}&output=json`, {}, 12000); } catch {}
   if (!rows) {
     const a = await http(`https://api.certspotter.com/v1/issuances?domain=${encodeURIComponent(d)}&expand=dns_names&expand=issuer`, {}, 12000);
-    rows = a.map(x => ({
-      id: x.id,
-      not_before: x.not_before,
-      not_after: x.not_after,
-      name_value: (x.dns_names || []).join('\n'),
-      issuer_name: x.issuer?.friendly_name ? `O=${x.issuer.friendly_name}` : (x.issuer?.name || ''),
-    }));
+    rows = a.map(x => ({id: x.id, not_before: x.not_before, not_after: x.not_after, name_value: (x.dns_names || []).join('\n'), issuer_name: x.issuer?.friendly_name ? `O=${x.issuer.friendly_name}` : (x.issuer?.name || '')}));
   }
   return [...new Map(rows.map(x => [x.id, x])).values()].sort((a, b) => Date.parse(b.not_before) - Date.parse(a.not_before));
 });
 
-/* ---------- urlscan.io 公开扫描记录 ---------- */
-const urlscan = t => cached(`us:${t}`, 12 * 3600e3, async () => {
-  const s = await http(`https://urlscan.io/api/v1/search/?q=domain:${encodeURIComponent(t)}&size=1`);
-  const hit = s.results?.[0];
-  if (!hit) return null;
-  const x = await http(`https://urlscan.io/api/v1/result/${hit._id || hit.task?.uuid}/`);
-  return {
-    date: hit.task?.time || '',
-    server: x.page?.server || '',
-    ip: x.page?.ip || '',
-    asn: x.page?.asnname || '',
-    country: x.page?.country || '',
-    domains: x.lists?.domains || [],
-  };
-});
-
-/* ---------- 出口信息 / Tor ---------- */
-const me = () => cached('me', 600e3, () => first([
-  http('https://ipapi.co/json/').then(j => {
-    if (j.error) throw new Error(j.reason || 'ipapi 错误');
-    return {ip: j.ip, country: j.country_name, region: j.region, city: j.city, timezone: j.timezone, asn: (j.asn || '').replace(/^AS/, ''), org: j.org || ''};
-  }),
-  http('https://ipinfo.io/json').then(j => {
-    const m = (j.org || '').match(/^AS(\d+)\s*(.*)$/);
-    return {ip: j.ip, country: j.country, region: j.region, city: j.city, timezone: j.timezone, asn: m ? m[1] : '', org: m ? m[2] : (j.org || '')};
-  }),
-]));
-const tor = () => cached('tor', 600e3, () => http('https://check.torproject.org/api/ip', {}, 5000).then(j => !!j.IsTor).catch(() => null));
-
-/* ---------- 威胁清单（静态快照） ---------- */
-let intelCache = null;
-async function getIntel() {
-  if (!intelCache) {
-    const j = await http('data/intel.json', {cache: 'no-cache'});
-    intelCache = {updated: j.updated, source: j.source, ips: new Set(j.ips || []), hosts: j.hosts || []};
-  }
-  return intelCache;
-}
-const hitOf = (j, t) => isIP(t) ? j.ips.has(t) : j.hosts.some(h => t === h || t.endsWith('.' + h));
-
 /* ---------- 图表 ---------- */
 function bars(entries, color = '#4f8cff') {
   if (!entries.length) return note('无数据');
-  const W = 560, rowH = 24, LW = 150, max = Math.max(...entries.map(e => e[1]), 1);
-  const H = entries.length * rowH + 4;
+  const W = 560, rowH = 24, LW = 170, max = Math.max(...entries.map(e => e[1]), 1), H = entries.length * rowH + 4;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${entries.map(([k, v], i) => {
     const y = i * rowH + 4, w = (W - LW - 50) * v / max;
     return `<text x="0" y="${y + 15}">${esc(k)}</text><rect x="${LW}" y="${y + 3}" width="${Math.max(w, 2)}" height="16" rx="4" fill="${color}"/><text x="${LW + w + 6}" y="${y + 15}">${v}</text>`;
   }).join('')}</svg>`;
 }
-function donut(entries) {
-  if (!entries.length) return note('无数据');
-  const total = entries.reduce((s, e) => s + e[1], 0);
-  const colors = ['#4f8cff', '#2ea56b', '#e0a526', '#e5484d', '#a78bfa', '#14b8a6', '#f97316', '#64748b'];
-  let a0 = -Math.PI / 2, paths = '', legend = '';
-  entries.forEach(([k, v], i) => {
-    const a1 = a0 + 2 * Math.PI * v / total, large = a1 - a0 > Math.PI ? 1 : 0;
-    const p = (r, a) => [80 + r * Math.cos(a), 80 + r * Math.sin(a)];
-    const [x0, y0] = p(70, a0), [x1, y1] = p(70, a1), [x2, y2] = p(40, a1), [x3, y3] = p(40, a0);
-    const col = colors[i % colors.length];
-    paths += `<path d="M${x0},${y0} A70,70 0 ${large} 1 ${x1},${y1} L${x2},${y2} A40,40 0 ${large} 0 ${x3},${y3}Z" fill="${col}"/>`;
-    legend += `<text x="170" y="${i * 18 + 12}" style="fill:${col}">■</text><text x="186" y="${i * 18 + 12}">${esc(k)}：${v}（${Math.round(v / total * 100)}%）</text>`;
-    a0 = a1;
-  });
-  return `<svg class="chart" viewBox="0 0 480 160">${paths}<g>${legend}</g></svg>`;
-}
-function radar(D) {
-  const n = D.length, c = 130, r = 95;
-  const pt = (i, k) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + Math.cos(a) * r * k, c + Math.sin(a) * r * k]; };
-  const grid = [.25, .5, .75, 1].map(k => `<polygon class="g" points="${D.map((_, i) => pt(i, k).join(',')).join(' ')}"/>`).join('');
-  const axes = D.map((_, i) => { const [x, y] = pt(i, 1); return `<line class="g" x1="${c}" y1="${c}" x2="${x}" y2="${y}"/>`; }).join('');
-  const shape = `<polygon class="s" points="${D.map((d, i) => pt(i, d[2] ? d[1] / d[2] : 0).join(',')).join(' ')}"/>`;
-  const labels = D.map((d, i) => { const [x, y] = pt(i, 1.25); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle">${esc(d[0])}</text>`; }).join('');
-  return `<svg class="radar" viewBox="0 0 260 260">${grid}${axes}${shape}${labels}</svg>`;
-}
 
-/* ---------- CDN 证据 ---------- */
-const CDN_ASN = {13335: 'Cloudflare', 16509: 'Amazon CloudFront', 54113: 'Fastly', 20940: 'Akamai', 16625: 'Akamai', 8075: 'Azure'};
-const CDN_CN = [[/\.cloudflare\.net$/, 'Cloudflare'], [/\.cloudfront\.net$/, 'Amazon CloudFront'], [/\.fastly\.net$/, 'Fastly'], [/\.(akamaiedge|akamai|edgekey|edgesuite)\.net$/, 'Akamai'], [/\.azureedge\.net$/, 'Azure CDN']];
-const CDN_SRV = /cloudflare|fastly|akamai|cloudfront|azure/i;
-function cdnAnalyze(r, as, mi, u) {
-  const L = [];
-  const a = [...new Set(as.filter(Boolean).map(x => CDN_ASN[x.asn]).filter(Boolean))];
-  L.push(['ASN 归属（核心）', a.length > 0, a.length ? '命中：' + a.join('、') : '未匹配已知 CDN 的 ASN']);
-  const c = [...new Set(r.cn.flatMap(x => CDN_CN.filter(([re]) => re.test(x)).map(([, n]) => n)))];
-  L.push(['CNAME 特征', c.length > 0, c.length ? '解析链包含：' + c.join('、') : '无厂商专属域名']);
-  if (u) L.push(['服务器标识（urlscan）', CDN_SRV.test(u.server || ''), u.server ? '服务器：' + u.server : '无记录']);
-  if (mi) L.push(['多解析器对比', mi.differ, mi.differ ? '不同解析器返回的 IP 不一致，可能为就近解析' : (mi.ok ? '结果一致' : '可用解析器不足')]);
-  const h = L.filter(x => x[1]).length;
-  return {L, h, v: h >= 2 ? '较可能使用了 CDN' : h === 1 ? '有一定线索，证据不足' : '未发现 CDN 迹象'};
-}
-
-/* ---------- 各功能视图 ---------- */
-function uni(t) {
-  if (isIP(t)) {
-    const id = sec('IP 溯源');
-    fill(id, (async () => {
-      const [p, a] = await Promise.all([ptr(t).catch(() => []), asn(t).catch(() => null)]);
-      return kv({IP: t, 反向解析: p.join('，') || '无', ASN: a ? `AS${a.asn}（${a.name}）` : '无', 网段: a?.prefix || '—', '国家 / 注册机构': a ? `${a.country} / ${a.registry}` : '—'});
-    })());
-    return;
-  }
-  const a4 = dns(t, 1), a6 = dns(t, 28).catch(() => null);
-  fill(sec('域名解析'), (async () => {
-    const [a, q] = await Promise.all([a4, a6]);
-    const cn = [...new Set(recs(a, 5))];
-    return kv({域名: t, 'CNAME 链': cn.join(' → ') || '无', 'IPv4 数量': recs(a, 1).length, IPv6: recs(q, 28).join('，') || '无'});
+/* ---------- 网站溯源 ---------- */
+function dom(t) {
+  const types = ['A', 'AAAA', 'NS', 'MX', 'TXT', 'CNAME'];
+  const dnsP = Promise.all(types.map(k => dns(t, T[k]).then(j => [k, recs(j, T[k])]).catch(() => [k, null])));
+  fill(sec('DNS 记录'), (async () => {
+    const rows = [];
+    (await dnsP).forEach(([k, v]) => {
+      if (v === null) rows.push([k, '查询失败']);
+      else if (!v.length) rows.push([k, '无记录']);
+      else v.forEach(x => rows.push([k, x]));
+    });
+    return tbl(['类型', '值'], rows);
   })());
-  fill(sec('IP 与 ASN'), (async () => {
-    const v4 = recs(await a4, 1).slice(0, 8);
-    if (!v4.length) return note('无 A 记录');
-    const rows = await Promise.all(v4.map(async ip => [ip, await asn(ip).catch(() => null)]));
-    return tbl(['IP', 'ASN', '名称', '网段'], rows.map(([ip, a]) => [ip, a ? 'AS' + a.asn : '—', a?.name, a?.prefix]));
-  })());
-  fill(sec('多解析器对比'), (async () => {
-    const m = await multi(t), mi = multiInfo(m);
-    return tbl(['解析器', '返回 IP'], m.map(x => [x.name, x.ips ? (x.ips.join('，') || '无记录') : '不可用'])) +
-      `<p class="verdict">${mi.differ ? '结果不一致：可能存在就近解析（CDN 或多地部署）' : mi.ok ? '各解析器结果一致' : '可用解析器不足，无法对比'}</p>`;
-  })());
-}
-
-function cdn(t) {
-  const cP = certs(t);
-  const rP = dns(t, 1).then(j => ({v4: recs(j, 1), cn: [...new Set(recs(j, 5))]}));
-  const mP = multi(t).catch(() => null);
-  const uP = urlscan(t).catch(() => null);
-  const asP = rP.then(r => Promise.all(r.v4.slice(0, 8).map(ip => asn(ip).catch(() => null))));
-  fill(sec('证书概览'), (async () => {
-    const cs = await cP;
-    return kv({证书总数: cs.length, 当前有效: cs.filter(valid).length, 最近签发: cs[0]?.not_before?.slice(0, 10) || '—'});
-  })());
-  fill(sec('签发年份分布（近 12 年）'), (async () => {
-    const y = {};
-    (await cP).forEach(x => { const k = (x.not_before || '').slice(0, 4); if (k) y[k] = (y[k] || 0) + 1; });
-    return bars(Object.entries(y).sort((a, b) => b[0] - a[0]).slice(0, 12).reverse());
-  })());
-  fill(sec('签发机构占比'), (async () => {
-    const o = {};
-    (await cP).forEach(x => { const k = orgOf(x.issuer_name); o[k] = (o[k] || 0) + 1; });
-    return donut(Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8));
-  })());
-  fill(sec('最近证书'), (async () => {
-    const cs = await cP;
-    return tbl(['签发', '到期', '域名', '机构'], cs.slice(0, 10).map(x => [x.not_before?.slice(0, 10), x.not_after?.slice(0, 10), (x.name_value || '').replace(/\n/g, ', '), orgOf(x.issuer_name)]));
-  })());
-  fill(sec('CDN 证据链'), (async () => {
-    const [r, as, m, u] = await Promise.all([rP, asP, mP, uP]);
-    const c = cdnAnalyze(r, as, m ? multiInfo(m) : null, u);
-    return tbl(['检测层', '结果', '依据'], c.L.map(([n, h, d]) => [n, h ? '命中' : '未命中', d])) + `<p class="verdict">${esc(c.v)}</p>`;
-  })());
-}
-
-function adTech(t) {
-  const uP = urlscan(t);
-  const ADS = [['Google AdSense', /pagead2\.googlesyndication\.com|adsbygoogle/], ['Google Ad Manager', /doubleclick\.net|googletagservices\.com/], ['Google Analytics / GTM', /google-analytics\.com|googletagmanager\.com/], ['百度统计', /hm\.baidu\.com/], ['百度广告', /cpro\.baidu\.com/], ['Facebook Pixel', /connect\.facebook\.net/], ['Taboola', /taboola\.com/], ['Outbrain', /outbrain\.com/]];
-  fill(sec('广告与统计脚本（按页面实际请求的域名判断）'), (async () => {
-    const u = await uP;
-    if (!u) return note('urlscan.io 暂无该站点的公开扫描记录，无法自动检测。');
-    const ads = ADS.filter(([, re]) => u.domains.some(d => re.test(d))).map(x => x[0]);
-    return ads.length ? ads.map(a => pill(a, 'ok')).join(' ') : note('未发现常见广告或统计脚本特征');
-  })());
-  fill(sec('请求最多的第三方域名（前 10）'), (async () => {
-    const u = await uP;
-    if (!u) return note('无数据');
-    const cnt = {};
-    u.domains.forEach(d => { const k = d.split('.').slice(-2).join('.'); cnt[k] = (cnt[k] || 0) + 1; });
-    return bars(Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 10), '#e0a526');
-  })());
-  fill(sec('服务器信息'), (async () => {
-    const u = await uP;
-    if (!u) return note('无数据');
-    return kv({服务器: u.server || '—', IP: u.ip || '—', 'ASN 名称': u.asn || '—', 国家: u.country || '—', 扫描时间: u.date || '—'}) +
-      note(`共记录 ${u.domains.length} 个被请求的域名。数据来自 urlscan.io 的历史扫描，不是实时结果。`);
-  })());
-}
-
-function env() {
-  const mP = me(), torP = tor();
-  fill(sec('当前出口'), (async () => {
-    const m = await mP;
-    return kv({IP: m.ip, 国家: m.country, 地区: m.region, 城市: m.city, 时区: m.timezone, ASN: m.asn ? 'AS' + m.asn : '—', 运营商: m.org});
-  })());
-  fill(sec('网络环境判断（启发式）'), (async () => {
-    const m = await mP, t = await torP;
-    const dc = /vpn|proxy|hosting|cloud|data ?center|digitalocean|vultr|linode|ovh|hetzner/i.test(m.org);
-    const v = t === true ? ['疑似 Tor 出口', 'bad'] : dc ? ['疑似数据中心 / VPN / 代理', 'warn'] : ['看起来是普通家庭或移动网络', 'ok'];
-    return `<p>${pill(v[0], v[1])}</p>` +
-      tbl(['检测项', '结果'], [['Tor 出口', t === null ? '无法检测' : t ? '是' : '否'], ['数据中心 / VPN 关键字（运营商名称）', dc ? '命中' : '未命中']]) +
-      note('无法精确识别所有 VPN 或代理，结果仅供参考。');
-  })());
-  out.insertAdjacentHTML('beforeend', '<button class="btn" id="re">🔄 重新检测</button>');
-}
-
-function intelView(t) {
-  fill(sec('威胁清单比对'), (async () => {
-    const j = await getIntel();
-    if (!j.updated) return note('清单尚未生成（data/intel.json 为空）。');
-    return kv({结果: hitOf(j, t) ? '命中已知恶意清单' : '未命中', 数据更新: j.updated, 来源: j.source}) + note('清单为静态快照，不是实时数据。');
-  })());
-  fill(sec('说明'), note('VirusTotal、AbuseIPDB 等需要 API Key 的评分，纯前端无法安全提供。'));
-}
-
-async function score(t) {
-  const ip = isIP(t), missing = [], D = [];
-  const cP = ip ? Promise.resolve(null) : certs(t).catch(() => null);
-  const rP = ip ? Promise.resolve({v4: [t], cn: []}) : dns(t, 1).then(j => ({v4: recs(j, 1), cn: [...new Set(recs(j, 5))]})).catch(() => null);
-  const mP = ip ? Promise.resolve(null) : multi(t).catch(() => null);
-  const uP = ip ? Promise.resolve(null) : urlscan(t).catch(() => null);
-  const jP = getIntel().catch(() => null);
-  const [cs, r, m, u, j] = await Promise.all([cP, rP, mP, uP, jP]);
-  const as = r ? await Promise.all(r.v4.slice(0, 8).map(x => asn(x).catch(() => null))) : [];
-  if (!ip) {
-    if (!cs) missing.push('证书');
-    if (!r) missing.push('DNS');
-    if (!m) missing.push('多解析器');
-    if (!u) missing.push('urlscan');
-  }
-  if (!j || !j.updated) missing.push('威胁清单');
-  if (cs) {
-    const v = cs.filter(valid).length;
-    D.push(['证书有效', v ? 20 : 0, 20, `当前有效 ${v} 张`]);
-    D.push(['证书历史', cs.length >= 10 ? 15 : cs.length >= 3 ? 10 : cs.length ? 5 : 0, 15, `历史 ${cs.length} 张`]);
-  }
-  if (r) {
-    const ok = as.some(Boolean);
-    D.push(['归属可识别', ok ? 10 : 0, 10, ok ? '能查到 ASN' : '未查到 ASN']);
-  }
-  if (!ip && r) {
-    const c = cdnAnalyze(r, as, m ? multiInfo(m) : null, u);
-    D.push(['CDN 防护', c.h >= 2 ? 15 : c.h === 1 ? 8 : 0, 15, `${c.h} 层证据命中`]);
-  }
-  if (!ip && m) {
-    const mi = multiInfo(m);
-    D.push(['解析一致', mi.differ ? 5 : 10, 10, mi.differ ? '不同解析器结果不一致' : '结果一致或数据不足']);
-  }
-  if (j && j.updated) {
-    const h = hitOf(j, t);
-    D.push(['威胁清单', h ? 0 : 20, 20, h ? '命中已知清单' : '未命中']);
-  }
-  if (!D.length) return note('所有数据源均不可用，无法生成画像。');
-  const e = D.reduce((s, x) => s + x[1], 0), mx = D.reduce((s, x) => s + x[2], 0);
-  const sc = Math.round(e / mx * 100);
-  const band = sc >= 80 ? '良好' : sc >= 60 ? '一般' : '需关注';
-  const cls = sc >= 80 ? 'ok' : sc >= 60 ? 'warn' : 'bad';
-  return `<div class="score">${sc}</div><p style="text-align:center">${pill(band, cls)}</p>` +
-    note('启发式评分，仅反映可自动获取的指标，不构成安全结论。') +
-    (missing.length ? note('未计入（数据源不可用）：' + missing.join('、')) : '') +
-    radar(D) + tbl(['维度', '得分', '说明'], D.map(x => [x[0], `${x[1]}/${x[2]}`, x[3]]));
-}
-
-const TESTS = [
-  ['阿里 DNS（DoH）', 'https://dns.alidns.com/resolve?name=example.com&type=A', true],
-  ['DNSPod（DoH）', 'https://doh.pub/resolve?name=example.com&type=A', true],
-  ['Cloudflare（DoH）', 'https://cloudflare-dns.com/dns-query?name=example.com&type=A', true],
-  ['Google（DoH）', 'https://dns.google/resolve?name=example.com&type=A', true],
-  ['crt.sh', 'https://crt.sh/?q=example.com&output=json', false],
-  ['certspotter', 'https://api.certspotter.com/v1/issuances?domain=example.com', false],
-  ['urlscan.io', 'https://urlscan.io/api/v1/search/?q=domain:example.com&size=1', false],
-  ['ipapi.co', 'https://ipapi.co/json/', false],
-  ['ipinfo.io', 'https://ipinfo.io/json', false],
-  ['Tor 检测', 'https://check.torproject.org/api/ip', false],
-  ['威胁清单文件（本站）', 'data/intel.json', false],
-];
-function selftest() {
-  fill(sec('接口自检（在你的浏览器中实际测试）'), (async () => {
-    const rows = await Promise.all(TESTS.map(async ([n, u, isDoh]) => {
-      const t0 = performance.now();
-      try {
-        await http(u, isDoh ? {headers: {accept: 'application/dns-json'}} : {}, 8000);
-        return [n, '✓ 可用', Math.round(performance.now() - t0) + ' ms'];
-      } catch (e) {
-        return [n, '✗ ' + e.message, '—'];
-      }
+  fill(sec('IP 归属（A 记录）'), (async () => {
+    const ips = (await dnsP).find(x => x[0] === 'A')[1] || [];
+    if (!ips.length) return note('无 A 记录');
+    const rows = await Promise.all(ips.slice(0, 5).map(async ip => {
+      const g = await geo(ip).catch(() => null);
+      return [ip, g ? `${g.country || '—'} ${g.city || ''}` : '查询失败', g ? (g.asn ? 'AS' + g.asn : '—') : '—', g?.org || '—'];
     }));
-    return tbl(['接口', '状态', '耗时'], rows) +
-      note('✗ 表示浏览器无法访问或被跨域拦截。只影响对应功能，其他功能不受影响。') +
-      '<button class="btn" id="rt">🔁 重新测试</button>';
+    return tbl(['IP', '地理位置', 'ASN', '运营商'], rows) +
+      note('同一域名解析到多个 IP 时，可能使用了 CDN、负载均衡或多地部署。');
   })());
+  fill(sec('注册信息（RDAP）'), (async () => {
+    const j = await rdap(t);
+    const ev = a => (j.events || []).find(e => e.eventAction === a)?.eventDate?.slice(0, 10);
+    const reg = (j.entities || []).find(e => (e.roles || []).includes('registrar'));
+    const created = ev('registration'), age = created ? Math.floor((Date.now() - Date.parse(created)) / 86400e3) : null;
+    return kv({
+      注册商: vcFn(reg) || '—',
+      注册时间: created || '—',
+      到期时间: ev('expiration') || '—',
+      域名年龄: age === null ? '—' : `${age} 天（约 ${(age / 365).toFixed(1)} 年）`,
+      状态: (j.status || []).join('，') || '—',
+      域名服务器: (j.nameservers || []).map(n => n.ldhName).join('，') || '—',
+    }) + (age !== null && age < 180 ? `<p>${pill('注册不足半年，需谨慎对待', 'warn')}</p>` : '');
+  })());
+  fill(sec('证书与子域名（证书透明度日志）'), (async () => {
+    const cs = await certs(t);
+    const subs = new Set();
+    cs.forEach(c => (c.name_value || '').split('\n').forEach(n => {
+      const x = n.replace(/^\*\./, '').toLowerCase();
+      if (x === t || x.endsWith('.' + t)) subs.add(x);
+    }));
+    const issuers = {};
+    cs.forEach(c => { const o = orgOf(c.issuer_name); issuers[o] = (issuers[o] || 0) + 1; });
+    return kv({证书总数: cs.length, 当前有效: cs.filter(valid).length, 发现子域名: subs.size}) +
+      `<h3 style="font-size:15px">签发机构</h3>` + bars(Object.entries(issuers).sort((a, b) => b[1] - a[1]).slice(0, 8)) +
+      `<h3 style="font-size:15px">子域名（前 40）</h3>` + tbl(['子域名'], [...subs].sort().slice(0, 40).map(s => [s]));
+  })());
+}
+
+/* ---------- IP 溯源 ---------- */
+function ip(t) {
+  fill(sec('地理位置与 ASN'), (async () => {
+    const g = await geo(t);
+    return kv({IP: g.ip || t, 国家: g.country, 地区: g.region, 城市: g.city, 时区: g.tz, ASN: g.asn ? 'AS' + g.asn : '—', 运营商: g.org});
+  })());
+  fill(sec('反向解析（PTR）'), (async () => {
+    const p = await ptr(t);
+    return p.length ? tbl(['主机名'], p.map(x => [x])) : note('无反向解析记录');
+  })());
+  fill(sec('注册信息（RDAP）'), (async () => {
+    const j = await http(`https://rdap.org/ip/${t}`, {}, 12000);
+    const reg = (j.entities || []).map(e => vcFn(e)).filter(Boolean);
+    return kv({网段: j.startAddress && j.endAddress ? `${j.startAddress} - ${j.endAddress}` : '—', 名称: j.name || '—', 类型: j.type || '—', 注册方: reg.join('，') || '—', 国家: j.country || '—'});
+  })());
+}
+
+/* ---------- VPN 检测 ---------- */
+const DC_RE = /vpn|proxy|hosting|cloud|data ?center|digitalocean|vultr|linode|ovh|hetzner|amazon|aws|google cloud|azure|oracle|choopa|m247|datacamp|colo/i;
+
+// Tor 出口检测
+const torCheck = () => cached('tor', 600e3, () => http('https://check.torproject.org/api/ip', {}, 5000).then(j => !!j.IsTor).catch(() => null));
+
+// Cloudflare 边缘信息（warp=on 表示经过 WARP，gateway 表示经过 Zero Trust 网关）
+const cfTrace = () => cached('cft', 600e3, async () => {
+  const t = await text('https://www.cloudflare.com/cdn-cgi/trace');
+  return Object.fromEntries(t.trim().split('\n').map(l => l.split('=')));
+});
+
+// WebRTC：收集本机候选地址，检测 STUN 反射出的公网 IP（VPN 环境下常与真实出口不一致）
+function webrtc() {
+  return new Promise(res => {
+    const local = new Set(), pub = new Set();
+    let pc;
+    try {
+      pc = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.cloudflare.com:3478'}, {urls: 'stun:stun.l.google.com:19302'}]});
+    } catch { return res(null); }
+    pc.createDataChannel('x');
+    const finish = () => { try { pc.close(); } catch {} res({local: [...local], pub: [...pub]}); };
+    const timer = setTimeout(finish, 5000);
+    pc.onicecandidate = e => {
+      if (!e.candidate) { clearTimeout(timer); return finish(); }
+      const p = e.candidate.candidate.split(' ');
+      const addr = p[4], typ = p[7];
+      if (!addr || addr.endsWith('.local')) return;
+      if (typ === 'host') local.add(addr);
+      else if (typ === 'srflx') pub.add(addr);
+    };
+    pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => { clearTimeout(timer); finish(); });
+  });
+}
+
+function vpnView() {
+  const selfG = geo(null);
+  const cfP = cfTrace().catch(() => null);
+  const torP = torCheck();
+  const rtcP = webrtc();
+
+  fill(sec('你的出口身份'), (async () => {
+    const g = await selfG;
+    return kv({IP: g.ip, 国家: g.country, 城市: g.city, 时区: g.tz, ASN: g.asn ? 'AS' + g.asn : '—', 运营商: g.org});
+  })());
+
+  fill(sec('Cloudflare 边缘信息'), (async () => {
+    const c = await cfP;
+    if (!c) return note('无法访问 Cloudflare 边缘接口（可能被拦截）。');
+    return kv({IP: c.ip, 地点: c.loc, 边缘节点: c.colo, 'WARP': c.warp || '—', '网关（Gateway）': c.gateway || '—', 'TLS 版本': c.tls || '—'});
+  })());
+
+  fill(sec('WebRTC 检测'), (async () => {
+    const r = await rtcP, g = await selfG;
+    if (!r) return note('浏览器不支持 WebRTC 或已禁用。');
+    return kv({'本机内网地址': r.local.join('，') || '未获取到', 'STUN 反射的公网地址': r.pub.join('，') || '未获取到', '与出口 IP 对比': r.pub.length ? (r.pub.includes(g.ip) ? '一致' : '不一致') : '无法对比'}) +
+      note('WebRTC 可能暴露真实公网 IP。若与出口 IP 不一致，说明网络层与应用层出口可能不同。');
+  })());
+
+  fill(sec('综合检测结果'), (async () => {
+    const [g, c, tr, r] = await Promise.all([selfG, cfP, torP, rtcP]);
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const lang = (navigator.language || '').split('-')[1]?.toUpperCase() || '';
+    const sig = [
+      {name: 'Tor 出口', w: 60, hit: tr, detail: tr === null ? '无法检测' : tr ? '出口是 Tor 节点' : '不是 Tor 出口'},
+      {name: 'WARP / Zero Trust 网关', w: 40, hit: c ? (c.warp === 'on' || c.warp === 'plus' || (!!c.gateway && c.gateway !== 'off')) : null, detail: c ? `warp=${c.warp || '—'}，gateway=${c.gateway || '—'}` : '无法检测'},
+      {name: '数据中心 / 托管 ASN', w: 30, hit: g.org ? DC_RE.test(g.org) : null, detail: g.org || '无运营商信息'},
+      {name: 'WebRTC 公网地址与出口不一致', w: 25, hit: r && r.pub.length ? !r.pub.includes(g.ip) : null, detail: r ? (r.pub.length ? `反射 ${r.pub.join('，')}` : '未获取到公网地址') : '无法检测'},
+      {name: '浏览器时区与 IP 所在地不一致', w: 15, hit: g.tz ? browserTz !== g.tz : null, detail: `浏览器 ${browserTz} / IP ${g.tz || '—'}`},
+      {name: '浏览器语言地区与 IP 国家不一致', w: 10, hit: lang && g.cc ? lang !== g.cc.toUpperCase() : null, detail: `语言地区 ${lang || '—'} / IP ${g.cc || '—'}`},
+    ];
+    const checked = sig.filter(s => s.hit !== null);
+    const score = checked.reduce((s, x) => s + (x.hit ? x.w : 0), 0);
+    const maxScore = checked.reduce((s, x) => s + x.w, 0);
+    const level = score >= 50 ? ['很可能在使用 VPN / 代理', 'bad'] : score >= 20 ? ['可能在使用 VPN / 代理', 'warn'] : ['未发现明显 VPN / 代理特征', 'ok'];
+    return `<p class="verdict">${pill(level[0], level[1])}</p>` +
+      note(`基于 ${checked.length} 项可检测信号，风险分 ${score}/${maxScore}。启发式结果，无法做到百分之百准确。`) +
+      tbl(['信号', '结果', '说明'], sig.map(s => [s.name, s.hit === null ? '无法检测' : s.hit ? '命中' : '未命中', s.detail]));
+  })());
+
+  out.insertAdjacentHTML('beforeend', '<button class="btn" id="re">🔄 重新检测</button>');
 }
 
 function about() {
   fill(sec('关于'),
-    '<p>本工具为纯前端网页，没有自建服务器，也不包含任何 API Key。所有查询都在浏览器中完成。</p>' +
-    '<ul><li>DNS 解析与多解析器对比：阿里 DNS、DNSPod、Cloudflare、Google 的 DNS over HTTPS</li><li>ASN 归属：Team Cymru（经 DoH），失败回退 ipinfo</li><li>证书：crt.sh，失败回退 certspotter</li><li>广告与技术栈：urlscan.io 公开扫描记录</li><li>出口与 Tor：ipapi.co / ipinfo.io、Tor Project 检测接口</li><li>威胁清单：Feodo Tracker 与 URLhaus（abuse.ch）静态快照</li></ul>' +
-    '<h3>无法在纯前端实现的功能</h3>' +
-    '<ul><li>任意网站的真实 HTTP 响应头：浏览器跨域限制</li><li>VirusTotal、AbuseIPDB 评分：需要 API Key</li><li>全球节点实时 Ping：需要分布在各地的服务器</li></ul>' +
-    '<p class="muted">各数据源均为公开接口，可能有跨域、频率限制或网络阻断；可用"接口自检"页面查看哪些可以正常访问。</p>');
+    '<p>本工具为纯前端网页，没有自建服务器，也不包含任何 API Key。</p>' +
+    '<ul><li>DNS：阿里 DNS、Cloudflare、Google、DNSPod 的 DNS over HTTPS，取最先成功的结果</li><li>IP 归属：ipapi.co、ipinfo.io 互为备份</li><li>注册信息：RDAP（rdap.org）</li><li>证书与子域名：crt.sh，失败回退 certspotter</li><li>Tor 检测：Tor Project 官方接口</li><li>WARP 与边缘信息：Cloudflare trace 接口</li><li>WebRTC：浏览器本地 STUN 候选地址</li></ul>' +
+    '<h3>纯前端做不到的功能</h3>' +
+    '<ul><li>读取任意网站的 HTTP 响应头与页面源码（浏览器跨域限制）</li><li>反向 IP 查询（同一 IP 上的其他域名）：需要付费数据源</li><li>真实的 DNS 泄露测试：需要自建的探测服务器</li></ul>' +
+    '<p class="muted">VPN 检测是基于多个信号的启发式判断，无法百分之百准确。部分接口可能因网络环境被阻断，页面会显示具体原因。</p>');
 }
 
 /* ---------- 调度 ---------- */
-const VIEWS = {uni, cdn, ad: adTech, intel: intelView, prof: t => fill(sec('整体画像'), score(t))};
+const VIEWS = {dom, ip, vpn: vpnView};
 function go() {
   const t = inp.value.trim().toLowerCase();
-  if (!VIEWS[cur]) return;
-  if (!isIP(t) && !isDom(t)) { out.innerHTML = '<div class="err">请输入有效的域名或 IPv4（暂不支持 IPv6）</div>'; return; }
+  if (!VIEWS[cur] || cur === 'vpn') return;
+  if (cur === 'dom' && !isDom(t)) { out.innerHTML = '<div class="err">请输入有效的域名</div>'; return; }
+  if (cur === 'ip' && !isIP(t)) { out.innerHTML = '<div class="err">请输入有效的 IPv4 地址（暂不支持 IPv6）</div>'; return; }
   out.innerHTML = '';
   VIEWS[cur](t);
 }
 function setup() {
-  const need = !!VIEWS[cur];
+  const need = cur === 'dom' || cur === 'ip';
   inp.disabled = !need;
-  inp.placeholder = need ? '输入域名或 IPv4' : '此页面无需输入';
+  inp.placeholder = cur === 'ip' ? '输入 IPv4 地址，例如 1.1.1.1' : need ? '输入域名，例如 example.com' : '此页面无需输入';
   out.innerHTML = '';
-  if (cur === 'env') env();
-  if (cur === 'self') selftest();
+  if (cur === 'vpn') vpnView();
   if (cur === 'about') about();
 }
-// 动态按钮统一用事件委托处理
 out.addEventListener('click', e => {
-  if (e.target.id === 're') { sessionStorage.removeItem('me'); sessionStorage.removeItem('tor'); setup(); }
-  if (e.target.id === 'rt') setup();
+  if (e.target.id === 're') { sessionStorage.removeItem('tor'); sessionStorage.removeItem('cft'); setup(); }
 });
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
