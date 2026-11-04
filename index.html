@@ -49,6 +49,9 @@ summary:hover{color:#64748b}
 details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;overflow:auto}
 .empty{text-align:center;color:#94a3b8;font-size:.82rem;padding:2.5rem 1rem;background:#fff;border-radius:10px;border:1px dashed #e2e8f0}
 
+.copy-btn{margin-top:.6rem;padding:.45rem 1rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.8rem;cursor:pointer;font-weight:500}
+.copy-btn:hover{background:#f1f5f9}
+
 .about-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.25rem;margin-bottom:.65rem}
 .about-card h3{font-size:.9rem;font-weight:650;color:#0f172a;margin-bottom:.5rem}
 .about-card p,.about-card li{font-size:.82rem;color:#475569;line-height:1.8}
@@ -75,6 +78,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
       <button class="tab" data-tab="cert">🔒 证书 / CDN</button>
       <button class="tab" data-tab="proxy">🛡️ 代理与出口</button>
       <button class="tab" data-tab="intel">🕵️ 社区情报</button>
+      <button class="tab" data-tab="profile">📋 整体画像</button>
       <button class="tab" data-tab="privacy">👤 隐私自检</button>
       <button class="tab" data-tab="about">ℹ️ 关于</button>
     </nav>
@@ -111,6 +115,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div id="out-intel"><p class="empty">输入 IP 或域名后点击查询</p></div>
   </section>
 
+  <section class="page" id="page-profile">
+    <div class="page-head"><h2>整体画像</h2><p>基于已有查询结果自动生成的用途推断说明</p></div>
+    <div id="out-profile"><p class="empty">输入 IP 或域名查询后，这里会生成画像说明</p></div>
+  </section>
+
   <section class="page" id="page-privacy">
     <div class="page-head"><h2>隐私自检</h2><p>浏览器出口、WebRTC 泄露、指纹一致性（与查询目标无关，可独立运行）</p></div>
     <div id="out-privacy"></div>
@@ -134,10 +143,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div class="about-card">
       <h3>⚙️ 使用说明</h3>
       <ul>
-        <li>输入 IP：运行 IP 溯源、代理与出口、社区情报</li>
-        <li>输入域名：运行域名溯源、证书/CDN、社区情报</li>
+        <li>输入 IP：运行 IP 溯源、代理与出口、社区情报、整体画像</li>
+        <li>输入域名：运行域名溯源、证书/CDN、社区情报、整体画像</li>
         <li>输入 URL：运行社区情报（URL 维度）</li>
         <li>“代理与出口”和“隐私自检”页签留空即运行自身自检</li>
+        <li>整体画像复用本次查询数据生成文字说明，可一键复制</li>
       </ul>
     </div>
     <div class="about-card">
@@ -148,6 +158,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
 </main>
 
 <script>
+/* ============================================================
+   全局状态：供画像引擎复用本次查询结果
+   ============================================================ */
+const state = {};
+
 /* ============================================================
    字段名中文化映射
    ============================================================ */
@@ -267,6 +282,7 @@ async function mTcpIp(q) {
   const d = await res.json();
   if (d.code !== 200) return `<pre>${esc(d.msg || "查询失败")}</pre>`;
   const x = d.data || {};
+  state.ipGeo = x;
   return `<pre><strong>归属地</strong> ${esc(x.country ?? "—")} ${esc(x.province ?? "")} ${esc(x.city ?? "")}
 <strong>运营商</strong> ${esc(x.isp ?? "—")}
 <strong>ASN</strong> ${esc(x.asn ?? "—")} ${esc(x.as_name ?? "")}
@@ -278,6 +294,7 @@ async function mIpSb(q) {
   const res = await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const d = await res.json();
+  if (!state.ipGeo) state.ipGeo = d;
   return `<pre><strong>国家</strong> ${esc(d.country ?? "—")}
 <strong>城市</strong> ${esc(d.city ?? "—")}
 <strong>运营商</strong> ${esc(d.isp ?? "—")}
@@ -290,6 +307,7 @@ async function mInternetDB(q) {
   if (res.status === 404) return `<pre>该 IP 暂无 InternetDB 记录</pre>`;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const d = await res.json();
+  state.ipDb = d;
   return `<pre><strong>开放端口</strong> ${esc(d.ports?.join(", ") || "—")}
 <strong>主机名</strong> ${esc(d.hostnames?.join(", ") || "—")}
 <strong>标签</strong> ${esc(d.tags?.join(", ") || "—")}
@@ -302,7 +320,9 @@ async function mReverseDns(q) {
   const res = await fetchT(`https://myip.helpmek.com/api/v1/reverse-dns?ip=${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>反向 DNS 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
-  return `<pre><strong>PTR 主机名</strong> ${esc(d.hostname ?? d.ptr ?? d.result ?? "—")}</pre>${rawJson(d)}`;
+  const ptr = d.hostname || d.ptr || d.result || "";
+  state.ptr = ptr;
+  return `<pre><strong>PTR 主机名</strong> ${esc(ptr || "—")}</pre>${rawJson(d)}`;
 }
 
 async function mReverseIp(q) {
@@ -311,6 +331,7 @@ async function mReverseIp(q) {
   if (!res.ok) return `<pre>反向 IP 返回 HTTP ${res.status}</pre>`;
   const text = await res.text();
   if (text.includes("error") || text.includes("API count exceeded")) return `<pre>${esc(text)}</pre>`;
+  state.reverseDomains = text.trim().split("\n").filter(Boolean);
   return `<pre><strong>同 IP 绑定的域名</strong>
 ${esc(text.trim() || "未发现")}</pre>`;
 }
@@ -321,6 +342,7 @@ async function mContrast(q) {
   if (!res.ok) return `<pre>威胁情报返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
   const a = d.abuseipdb || {};
+  if (typeof a.abuse_score === "number") state.abuseScore = a.abuse_score;
   return `<pre><strong>滥用评分</strong> ${esc(a.abuse_score ?? "—")}
 <strong>举报总数</strong> ${esc(a.total_reports ?? "—")}</pre>${rawJson(d)}`;
 }
@@ -333,6 +355,7 @@ async function mTcpWhois(q) {
   const res = await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>Whois 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  state.whois = d;
   const dt = d.dates || {};
   return `<pre><strong>是否注册</strong> ${d.isRegistered ? "是" : "否"}
 <strong>注册商</strong> ${esc(d.registrar?.name ?? "—")}
@@ -351,6 +374,7 @@ async function mDnsMulti(q) {
       const d = await r.json();
       const ans = (d.Answer || []).map(a => a.data).join("; ") || "—";
       out += `<strong>${name}</strong> ${esc(ans)}\n`;
+      if (name === "MX" && (d.Answer || []).length > 0) state.dnsHasMx = true;
     } catch (e) { out += `<strong>${name}</strong> 查询失败\n`; }
   }
   return `<pre>${out}</pre>`;
@@ -361,15 +385,17 @@ async function mMailSecurity(q) {
   const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=TXT`);
   const d = await r.json();
   const txt = (d.Answer || []).map(a => a.data).join(" ");
-  const spf = (txt.match(/v=spf1[^"]+/) || ["—"])[0];
-  let dmarc = "—";
+  const spf = (txt.match(/v=spf1[^"]+/) || [""])[0];
+  let dmarc = "";
   try {
     const r2 = await fetchT(`https://dns.google/resolve?name=_dmarc.${encodeURIComponent(q)}&type=TXT`);
     const d2 = await r2.json();
-    dmarc = (d2.Answer || []).map(a => a.data).join(" ") || "—";
+    dmarc = (d2.Answer || []).map(a => a.data).join(" ") || "";
   } catch (e) {}
-  return `<pre><strong>SPF</strong> ${esc(spf)}
-<strong>DMARC</strong> ${esc(dmarc)}</pre>`;
+  state.spf = spf;
+  state.dmarc = dmarc;
+  return `<pre><strong>SPF</strong> ${esc(spf || "—")}
+<strong>DMARC</strong> ${esc(dmarc || "—")}</pre>`;
 }
 
 async function mCrtSh(q) {
@@ -378,6 +404,8 @@ async function mCrtSh(q) {
   if (!res.ok) return `<pre>crt.sh 返回 HTTP ${res.status}（可能过载，请稍后重试）</pre>`;
   const list = await res.json();
   const subs = [...new Set(list.map(x => x.name_value).join("\n").split("\n").filter(Boolean))];
+  state.subCount = subs.length;
+  state.subSample = subs.slice(0, 10).join(" ");
   return `<pre><strong>子域名</strong> 共 ${subs.length} 个
 ${esc(subs.slice(0, 30).join("\n"))}
 ${subs.length > 30 ? "…（仅显示前 30 个）" : ""}</pre>`;
@@ -389,6 +417,7 @@ async function mTcpIcp(q) {
   if (!res.ok) return `<pre>ICP 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
   if (d.code !== 200 || !d.data) return `<pre>未查询到 ICP 备案（或当日额度已用尽）</pre>`;
+  state.icp = d.data;
   return `<pre><strong>备案号</strong> ${esc(d.data.icp_code ?? d.data.icp ?? "—")}
 <strong>主办单位</strong> ${esc(d.data.unit_name ?? d.data.unit ?? "—")}
 <strong>性质</strong> ${esc(d.data.unit_nature ?? d.data.type ?? "—")}
@@ -474,6 +503,7 @@ async function mCdnDetect(q) {
       else if (a === 13 && b === 32) hits.push(`A → ${ip}（CloudFront IP 段）`);
     }
   } catch (e) {}
+  state.cdnHits = hits;
   if (!hits.length) return `<pre>未从 CNAME / A 记录中发现明确的 CDN 特征。
 （HTTP 响应头检测需通过代理转发才能读取）</pre>`;
   return `<pre><strong>CDN 判定信号</strong>
@@ -488,6 +518,7 @@ async function mVpnDetection(q) {
   const res = await fetchT(`https://vpndetection.io/api/v1/lookup?ip=${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>VPNDetection 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  state.vpn = d;
   return `<pre><strong>是否 VPN</strong> ${d.isVpn ? "⚠️ 是" : "✅ 否"}
 <strong>是否代理</strong> ${d.isProxy ? "⚠️ 是" : "✅ 否"}
 <strong>是否 Tor</strong> ${d.isTor ? "⚠️ 是" : "✅ 否"}
@@ -500,6 +531,7 @@ async function mNetRiskScan(q) {
   const res = await fetchT(`https://api.netriskscan.com/v1/ip/${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>NetRiskScan 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  state.netrisk = d;
   const r = d.risk || {}, f = d.flags || {}, n = d.network || {};
   return `<pre><strong>清洁度评分</strong> ${esc(r.index ?? "—")} / 100（越高越干净）
 <strong>风险等级</strong> ${esc(r.band ?? "—")}
@@ -513,6 +545,7 @@ async function mProxyCheck(q) {
   const res = await fetchT(`https://proxycheck.io/v3/${encodeURIComponent(q)}?vpn=1&asn=1&risk=1`);
   if (!res.ok) return `<pre>ProxyCheck 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  state.proxycheck = d;
   const det = d.detections || {};
   return `<pre><strong>VPN</strong> ${det.vpn ? "⚠️ 是" : "✅ 否"} · <strong>代理</strong> ${det.proxy ? "⚠️ 是" : "✅ 否"} · <strong>Tor</strong> ${det.tor ? "⚠️ 是" : "✅ 否"}
 <strong>托管/机房</strong> ${det.hosting ? "是" : "否"}
@@ -548,6 +581,7 @@ async function mUrlhaus(q) {
   const res = await fetchT("https://urlhaus-api.abuse.ch/v1/host/", { method: "POST", body });
   if (!res.ok) return `<pre>URLhaus 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  state.urlhausHit = d.query_status !== "no_results" && (d.urls?.length || 0) > 0;
   if (d.query_status === "no_results") return `<pre>✅ 该主机在 URLhaus 中无恶意 URL 记录</pre>`;
   const urls = (d.urls || []).slice(0, 8).map(u => `${u.url_status === "online" ? "🔴" : "⚪"} ${u.url}`).join("\n");
   return `<pre><strong>关联恶意 URL</strong> 共 ${esc(d.urls?.length ?? 0)} 条
@@ -564,6 +598,7 @@ async function mOtxPulse(q) {
   if (!res.ok) return `<pre>OTX 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
   const pi = d.pulse_info || {};
+  state.otxPulseCount = pi.count || 0;
   const pulses = (pi.pulses || []).slice(0, 8);
   const lines = pulses.map(p => `- ${p.name}  ${(p.tags || []).slice(0, 3).join(", ")}`).join("\n");
   return `<pre><strong>威胁 Pulse 数量</strong> ${esc(pi.count ?? 0)}
@@ -603,6 +638,7 @@ async function mFeodoC2(q) {
   if (!res.ok) return `<pre>Feodo Tracker 返回 HTTP ${res.status}</pre>`;
   const list = await res.json();
   const hit = list.find(x => x.ip_address === q);
+  state.feodoHit = !!hit;
   if (hit) return `<pre>${tag("⚠️ 命中 Feodo C2 黑名单", "warn")}
 <strong>恶意家族</strong> ${esc(hit.malware ?? "—")}
 <strong>首次发现</strong> ${esc(hit.first_seen ?? "—")}
@@ -698,6 +734,144 @@ function setEmpty(pageId, msg) {
 }
 
 /* ============================================================
+   画像推断引擎
+   ============================================================ */
+function inferIpType() {
+  if (!state.ipDb && !state.ipGeo) return "未知";
+  const tags = (state.ipDb?.tags || []).map(t => t.toLowerCase());
+  const ports = state.ipDb?.ports || [];
+  const asnName = (state.ipGeo?.as_name || state.ipGeo?.isp || "").toLowerCase();
+
+  if (tags.includes("cdn")) return "CDN 边缘节点";
+  if (tags.includes("cloud")) return "云服务基础设施";
+  if (tags.includes("vpn") || tags.includes("tor")) return "匿名网络出口";
+  if (tags.includes("ics") || tags.includes("scada")) return "工业控制系统";
+  if (tags.includes("honeypot")) return "蜜罐/欺骗主机";
+
+  const serverPorts = [22, 80, 443, 3389, 3306, 5432];
+  const openServer = ports.filter(p => serverPorts.includes(p)).length;
+  if (openServer >= 2) return "服务器/托管环境";
+
+  if (/cloud|hosting|datacenter|idc|server/i.test(asnName)) return "数据中心/托管网络";
+  if (/mobile|cellular|wireless/i.test(asnName)) return "移动网络出口";
+  if (/broadband|telecom|unicom|comcast|verizon/i.test(asnName)) return "住宅宽带网络";
+
+  return "常规网络（未进一步细分）";
+}
+
+function inferDomainPurpose() {
+  const icp = state.icp;
+  const cdn = state.cdnHits?.length > 0;
+  const hasMx = state.dnsHasMx;
+  const subCount = state.subCount || 0;
+  const mailOk = !!(state.spf && state.spf !== "" && state.dmarc && state.dmarc !== "");
+
+  let base = "未分类站点";
+  if (icp) {
+    const nature = (icp.unit_nature || icp.type || "").toString();
+    if (/个人/.test(nature)) base = "个人站点（博客/作品展示等）";
+    else if (/政府|机关/.test(nature)) base = "政府/公共服务站点";
+    else if (/事业|教育|学校/.test(nature)) base = "教育/科研/事业单位站点";
+    else if (/社会团体|民办|基金会/.test(nature)) base = "非营利/社会组织站点";
+    else if (/企业|公司/.test(nature)) base = "企业官网/商业服务站点";
+    else base = "备案主体存在，性质未明确";
+  } else if (cdn && hasMx) {
+    base = "正式运营站点（有 CDN 与邮件服务）";
+  } else if (cdn) {
+    base = "接入 CDN 的站点（用途待定）";
+  } else if (hasMx) {
+    base = "有邮件服务的站点";
+  }
+
+  if (subCount > 5 && /api|app|admin|dev|test/i.test(state.subSample || "")) {
+    base += "，疑似包含业务系统或后台";
+  }
+  if (mailOk) base += "；邮件安全配置较完整";
+  else if (hasMx) base += "；邮件安全配置不完整";
+
+  return base;
+}
+
+function threatSummary() {
+  const signals = [];
+  if (state.urlhausHit) signals.push("URLhaus 存在在线恶意 URL");
+  if (state.feodoHit) signals.push("命中 Feodo C2 黑名单");
+  if ((state.otxPulseCount || 0) > 0) signals.push(`OTX 关联 ${state.otxPulseCount} 个威胁 Pulse`);
+  if ((state.abuseScore || 0) >= 50) signals.push(`AbuseIPDB 滥用评分 ${state.abuseScore}`);
+  return signals;
+}
+
+function buildProfileText() {
+  const q = state.query;
+  const isIpAddr = /^[\d\.]+$/.test(q) || q.includes(":");
+  const lines = [];
+
+  lines.push(`目标：${q}（${isIpAddr ? "IP 地址" : "域名"}）`);
+  lines.push("");
+
+  if (isIpAddr) {
+    const type = inferIpType();
+    lines.push(`【网络类型】${type}`);
+    const geo = state.ipGeo || {};
+    const loc = [geo.country, geo.province, geo.city].filter(Boolean).join(" ");
+    if (loc) lines.push(`【归属】${loc}`);
+    if (geo.isp || geo.as_name) lines.push(`【运营商/ASN】${geo.isp || geo.as_name}`);
+    if (state.ipDb?.ports?.length) lines.push(`【开放端口】${state.ipDb.ports.join(", ")}`);
+    if (state.ipDb?.vulns?.length) lines.push(`【标记漏洞】${state.ipDb.vulns.join(", ")}`);
+    if (state.ptr) lines.push(`【PTR 反向解析】${state.ptr}`);
+    const threats = threatSummary();
+    lines.push(`【威胁态势】${threats.length ? "⚠️ " + threats.join("；") : "✅ 未发现明显恶意信号"}`);
+    lines.push("");
+    lines.push(`【画像结论】该 IP 属于${type}${loc ? "，位于" + loc : ""}。`);
+    if (threats.length) lines.push(`当前存在威胁情报命中，需谨慎对待，建议结合具体业务场景进一步核实。`);
+    else lines.push(`未命中公开威胁黑名单，推测为常规基础设施或服务节点。`);
+  } else {
+    const purpose = inferDomainPurpose();
+    lines.push(`【站点性质】${purpose}`);
+    if (state.icp) lines.push(`【ICP 备案】${state.icp.unit_name || "—"}（${state.icp.unit_nature || "—"}）`);
+    if (state.whois?.registrar?.name) lines.push(`【注册商】${state.whois.registrar.name}`);
+    if (state.cdnHits?.length) lines.push(`【CDN 信号】${state.cdnHits.join("；")}`);
+    else lines.push(`【CDN 信号】未从 CNAME/A 记录中发现明确 CDN 特征`);
+    if (state.subCount) lines.push(`【子域名】证书透明日志中共 ${state.subCount} 个`);
+    lines.push(`【邮件安全】SPF ${state.spf && state.spf !== "" ? "已配置" : "缺失"}；DMARC ${state.dmarc && state.dmarc !== "" ? "已配置" : "缺失"}`);
+    const threats = threatSummary();
+    lines.push(`【威胁态势】${threats.length ? "⚠️ " + threats.join("；") : "✅ 未发现明显恶意信号"}`);
+    lines.push("");
+    lines.push(`【画像结论】${purpose}。`);
+    if (threats.length) lines.push(`存在威胁情报命中，建议进一步审查该站点的安全状况。`);
+    else lines.push(`公开情报中未见明显恶意关联。`);
+  }
+
+  lines.push("");
+  lines.push(`（生成时间：${new Date().toLocaleString("zh-CN")}）`);
+  return lines.join("\n");
+}
+
+function renderProfile() {
+  const text = buildProfileText();
+  const out = document.getElementById("out-profile");
+  out.innerHTML = `
+    <div class="card">
+      <div class="card-header"><span class="card-title">画像说明</span>${tag("已生成", "ok")}</div>
+      <pre id="profile-text">${esc(text)}</pre>
+      <button class="copy-btn" onclick="copyProfile(this)">📋 复制说明</button>
+    </div>`;
+}
+
+function copyProfile(btn) {
+  const el = document.getElementById("profile-text");
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const old = btn.textContent;
+    btn.textContent = "✅ 已复制";
+    setTimeout(() => btn.textContent = old, 1500);
+  }).catch(() => {
+    btn.textContent = "❌ 复制失败";
+    setTimeout(() => btn.textContent = "📋 复制说明", 1500);
+  });
+}
+
+/* ============================================================
    主查询流程
    ============================================================ */
 const whoisThrottle = throttle(mTcpWhois, 6500);
@@ -712,6 +886,10 @@ async function runQuery() {
     return;
   }
   $btn.disabled = true;
+
+  // 重置状态，避免上一次查询残留
+  for (const k of Object.keys(state)) delete state[k];
+  state.query = q;
 
   const ipOnly = isIP(q), domOnly = isDomain(q), urlOnly = isUrl(q);
 
@@ -760,6 +938,7 @@ async function runQuery() {
   }
   if (!ipOnly) setEmpty("proxy", "输入 IP 查询目标；留空运行出口自检");
   if (!ipOnly && !domOnly && !urlOnly) setEmpty("intel", "请输入 IP、域名或 URL 后查询社区情报");
+  setEmpty("profile", "正在根据查询结果生成画像…");
 
   await Promise.all([
     ipTasks.length ? runTasks("ip", ipTasks) : Promise.resolve(),
@@ -769,9 +948,13 @@ async function runQuery() {
     intelTasks.length ? runTasks("intel", intelTasks) : Promise.resolve(),
   ]);
 
-  if (ipOnly) switchTab("ip");
-  else if (domOnly) switchTab("domain");
-  else if (urlOnly) switchTab("intel");
+  // 画像生成（复用 state）
+  if (ipOnly || domOnly) {
+    renderProfile();
+    switchTab("profile");
+  } else if (urlOnly) {
+    switchTab("intel");
+  }
 
   $btn.disabled = false;
 }
