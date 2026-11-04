@@ -8,27 +8,23 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:#f1f5f9;color:#1e293b;line-height:1.6;min-height:100vh}
 
-/* 顶部 */
 .header{background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.03)}
 .header-inner{max-width:1000px;margin:0 auto;padding:.9rem 1rem .5rem}
 .header h1{font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:.6rem;letter-spacing:-.01em}
 .header h1 span{color:#3b82f6}
 
-/* 导航页签 */
 .tabs{display:flex;gap:.25rem;overflow-x:auto;margin-bottom:.6rem;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:none;padding:.5rem .85rem;border:none;background:transparent;color:#64748b;font-size:.83rem;font-weight:500;cursor:pointer;border-radius:6px;white-space:nowrap;transition:all .15s}
 .tab:hover{background:#f1f5f9;color:#334155}
 .tab.active{background:#eff6ff;color:#2563eb;font-weight:600}
 
-/* 查询栏 */
 .query-bar{display:flex;gap:.5rem;padding-bottom:.9rem}
 .query-bar input{flex:1;min-width:0;padding:.65rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;font-size:.9rem;outline:none}
 .query-bar input:focus{border-color:#3b82f6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 .query-bar button{padding:.65rem 1.4rem;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;white-space:nowrap}
 .query-bar button:disabled{opacity:.4;cursor:not-allowed}
 
-/* 页面 */
 main{max-width:1000px;margin:0 auto;padding:1.25rem 1rem 3rem}
 .page{display:none}
 .page.active{display:block}
@@ -36,7 +32,6 @@ main{max-width:1000px;margin:0 auto;padding:1.25rem 1rem 3rem}
 .page-head h2{font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:.2rem}
 .page-head p{font-size:.8rem;color:#94a3b8}
 
-/* 卡片 */
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.9rem 1.1rem;margin-bottom:.65rem}
 .card-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
 .card-title{font-size:.85rem;font-weight:650;color:#0f172a}
@@ -54,7 +49,6 @@ summary:hover{color:#64748b}
 details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;overflow:auto}
 .empty{text-align:center;color:#94a3b8;font-size:.82rem;padding:2.5rem 1rem;background:#fff;border-radius:10px;border:1px dashed #e2e8f0}
 
-/* 关于页 */
 .about-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.25rem;margin-bottom:.65rem}
 .about-card h3{font-size:.9rem;font-weight:650;color:#0f172a;margin-bottom:.5rem}
 .about-card p,.about-card li{font-size:.82rem;color:#475569;line-height:1.8}
@@ -79,8 +73,9 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
       <button class="tab active" data-tab="ip">📍 IP 溯源</button>
       <button class="tab" data-tab="domain">🌐 域名溯源</button>
       <button class="tab" data-tab="cert">🔒 证书 / CDN</button>
-      <button class="tab" data-tab="intel">🛡️ 社区情报</button>
-      <button class="tab" data-tab="privacy">🕵️ 隐私自检</button>
+      <button class="tab" data-tab="proxy">🛡️ 代理与出口</button>
+      <button class="tab" data-tab="intel">🕵️ 社区情报</button>
+      <button class="tab" data-tab="privacy">👤 隐私自检</button>
       <button class="tab" data-tab="about">ℹ️ 关于</button>
     </nav>
     <div class="query-bar">
@@ -106,6 +101,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
+  <section class="page" id="page-proxy">
+    <div class="page-head"><h2>代理与出口检测</h2><p>出口 IP 一致性、VPN / 代理 / Tor 标记、WebRTC 泄露</p></div>
+    <div id="out-proxy"><p class="empty">输入 IP 检测目标；留空则运行自身出口自检</p></div>
+  </section>
+
   <section class="page" id="page-intel">
     <div class="page-head"><h2>社区情报</h2><p>恶意 URL、威胁 Pulse、IOC 聚合与 C2 比对</p></div>
     <div id="out-intel"><p class="empty">输入 IP 或域名后点击查询</p></div>
@@ -121,23 +121,23 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div class="about-card">
       <h3>📌 数据来源</h3>
       <ul>
-        <li><code>tcp.lc</code>：IP 归属、DNS、Whois、ICP、SSL（允许跨域，日额度 1000 / 50 / 10每分钟 / 20 / 100）</li>
-        <li><code>ip.sb</code>：备用地理与出口 IP（100 次/分钟）</li>
-        <li><code>Shodan InternetDB</code>：端口与漏洞测绘（无密钥，约 1 req/s）</li>
-        <li><code>Google DoH</code>：DNS 综合解析（A/AAAA/MX/NS/TXT）</li>
+        <li><code>tcp.lc</code>：IP 归属、DNS、Whois、ICP、SSL</li>
+        <li><code>ip.sb</code>：备用地理与出口 IP</li>
+        <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
+        <li><code>Google DoH</code>：DNS 综合解析</li>
         <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>URLhaus / OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报（无密钥）</li>
-        <li><code>Domainee</code>：SSL 证书检测（无密钥，30 次/分钟）</li>
+        <li><code>Domainee</code>：SSL 证书检测</li>
+        <li><code>URLhaus / OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
+        <li><code>VPNDetection / NetRiskScan / ProxyCheck</code>：VPN / 代理 / Tor 检测</li>
       </ul>
     </div>
     <div class="about-card">
       <h3>⚙️ 使用说明</h3>
       <ul>
-        <li>输入 IP：运行 IP 溯源、社区情报（IP 维度）</li>
-        <li>输入域名：运行域名溯源、证书/CDN、社区情报（域名维度）</li>
+        <li>输入 IP：运行 IP 溯源、代理与出口、社区情报</li>
+        <li>输入域名：运行域名溯源、证书/CDN、社区情报</li>
         <li>输入 URL：运行社区情报（URL 维度）</li>
-        <li>隐私自检页面不依赖输入，打开即运行</li>
-        <li>原始数据默认中文标签，字段名已翻译</li>
+        <li>“代理与出口”和“隐私自检”页签留空即运行自身自检</li>
       </ul>
     </div>
     <div class="about-card">
@@ -189,8 +189,12 @@ const KEY_CN = {
   connection:"连接信息", security:"安全信息",
   cdn:"CDN", company:"公司", network:"网络",
   is_vpn:"是否VPN", is_proxy:"是否代理", is_tor:"是否Tor", is_abuser:"是否滥用",
-  is_datacenter:"是否数据中心",
-  nameserver:"DNS服务器", mx:"邮件交换", ns:"域名服务器", txt:"文本记录",
+  is_datacenter:"是否数据中心", isVpn:"是否VPN", isProxy:"是否代理",
+  isTor:"是否Tor", isHosting:"是否托管", vpn:"VPN信息",
+  provider:"服务商", risk:"风险", index:"清洁度", band:"风险等级",
+  flags:"标记", proxy:"代理", vpn:"VPN", tor:"Tor",
+  datacenter:"机房", scanner:"扫描器", connection_type:"连接类型",
+  detections:"检测结果", confidence:"置信度", hosting:"托管",
 };
 
 function cnKeys(obj, seen = new WeakSet()) {
@@ -241,7 +245,6 @@ function throttle(fn, ms) {
 /* ============================================================
    页签切换
    ============================================================ */
-let currentTab = "ip";
 document.getElementById("tabs").addEventListener("click", e => {
   const btn = e.target.closest(".tab");
   if (!btn) return;
@@ -249,7 +252,9 @@ document.getElementById("tabs").addEventListener("click", e => {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   btn.classList.add("active");
   document.getElementById("page-" + btn.dataset.tab).classList.add("active");
-  currentTab = btn.dataset.tab;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (btn.dataset.tab === "privacy") runPrivacy();
+  if (btn.dataset.tab === "proxy") runProxySelfCheck();
 });
 
 /* ============================================================
@@ -438,7 +443,6 @@ async function mTcpSsl(q) {
 async function mCdnDetect(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
   const hits = [];
-  // CNAME 特征
   try {
     const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`);
     const d = await r.json();
@@ -458,7 +462,6 @@ async function mCdnDetect(q) {
       if (re.test(cname)) hits.push(`CNAME → ${vendor}`);
     }
   } catch (e) {}
-  // A 记录 IP 段判断
   try {
     const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`);
     const d = await r.json();
@@ -475,6 +478,65 @@ async function mCdnDetect(q) {
 （HTTP 响应头检测需通过代理转发才能读取）</pre>`;
   return `<pre><strong>CDN 判定信号</strong>
 ${hits.map(h => "• " + h).join("\n")}</pre>`;
+}
+
+/* ============================================================
+   代理与出口检测
+   ============================================================ */
+async function mVpnDetection(q) {
+  if (!isIP(q)) return { skip: true, reason: "仅支持 IP" };
+  const res = await fetchT(`https://vpndetection.io/api/v1/lookup?ip=${encodeURIComponent(q)}`);
+  if (!res.ok) return `<pre>VPNDetection 返回 HTTP ${res.status}</pre>`;
+  const d = await res.json();
+  return `<pre><strong>是否 VPN</strong> ${d.isVpn ? "⚠️ 是" : "✅ 否"}
+<strong>是否代理</strong> ${d.isProxy ? "⚠️ 是" : "✅ 否"}
+<strong>是否 Tor</strong> ${d.isTor ? "⚠️ 是" : "✅ 否"}
+<strong>是否托管/机房</strong> ${d.isHosting ? "是" : "否"}
+${d.vpn?.provider ? `<strong>VPN 服务商</strong> ${esc(d.vpn.provider)}` : ""}</pre>${rawJson(d)}`;
+}
+
+async function mNetRiskScan(q) {
+  if (!isIP(q)) return { skip: true, reason: "仅支持 IP" };
+  const res = await fetchT(`https://api.netriskscan.com/v1/ip/${encodeURIComponent(q)}`);
+  if (!res.ok) return `<pre>NetRiskScan 返回 HTTP ${res.status}</pre>`;
+  const d = await res.json();
+  const r = d.risk || {}, f = d.flags || {}, n = d.network || {};
+  return `<pre><strong>清洁度评分</strong> ${esc(r.index ?? "—")} / 100（越高越干净）
+<strong>风险等级</strong> ${esc(r.band ?? "—")}
+<strong>连接类型</strong> ${esc(n.connection_type ?? "—")}
+<strong>代理</strong> ${f.proxy ? "⚠️ 是" : "✅ 否"} · <strong>VPN</strong> ${f.vpn ? "⚠️ 是" : "✅ 否"} · <strong>Tor</strong> ${f.tor ? "⚠️ 是" : "✅ 否"}
+<strong>机房</strong> ${f.datacenter ? "是" : "否"} · <strong>扫描器</strong> ${f.scanner ? "是" : "否"}</pre>${rawJson(d)}`;
+}
+
+async function mProxyCheck(q) {
+  if (!isIP(q)) return { skip: true, reason: "仅支持 IP" };
+  const res = await fetchT(`https://proxycheck.io/v3/${encodeURIComponent(q)}?vpn=1&asn=1&risk=1`);
+  if (!res.ok) return `<pre>ProxyCheck 返回 HTTP ${res.status}</pre>`;
+  const d = await res.json();
+  const det = d.detections || {};
+  return `<pre><strong>VPN</strong> ${det.vpn ? "⚠️ 是" : "✅ 否"} · <strong>代理</strong> ${det.proxy ? "⚠️ 是" : "✅ 否"} · <strong>Tor</strong> ${det.tor ? "⚠️ 是" : "✅ 否"}
+<strong>托管/机房</strong> ${det.hosting ? "是" : "否"}
+<strong>风险评分</strong> ${esc(det.risk ?? "—")} / 100
+<strong>置信度</strong> ${esc(det.confidence ?? "—")}%</pre>${rawJson(d)}`;
+}
+
+async function pExitMulti() {
+  const sources = [
+    { name: "ip.sb", url: "https://api.ip.sb/ip" },
+    { name: "ipify", url: "https://api.ipify.org" },
+  ];
+  const results = [];
+  for (const s of sources) {
+    try {
+      const r = await fetchT(s.url);
+      results.push({ name: s.name, ip: (await r.text()).trim() });
+    } catch { results.push({ name: s.name, ip: "失败" }); }
+  }
+  const unique = [...new Set(results.map(r => r.ip).filter(ip => ip !== "失败"))];
+  const consistent = unique.length <= 1;
+  const lines = results.map(r => `<strong>${r.name}</strong> ${esc(r.ip)}`).join("\n");
+  return `<pre>${lines}
+${consistent && unique.length ? "✅ 出口 IP 一致" : tag("⚠️ 出口 IP 不一致，可能存在分流或代理", "warn")}</pre>`;
 }
 
 /* ============================================================
@@ -551,16 +613,6 @@ async function mFeodoC2(q) {
 /* ============================================================
    隐私自检模块
    ============================================================ */
-async function pExitCompare() {
-  const r = {};
-  try { r.a = await (await fetchT("https://api.ip.sb/ip")).text(); } catch { r.a = "失败"; }
-  try { r.b = (await (await fetchT("https://api.ipify.org?format=json")).json()).ip; } catch { r.b = "失败"; }
-  const ok = r.a === r.b && r.a !== "失败" && r.b !== "失败";
-  return `<pre><strong>ip.sb</strong> ${esc(r.a)}
-<strong>ipify</strong> ${esc(r.b)}
-${ok ? "✅ 出口 IP 一致" : tag("⚠️ 出口 IP 不一致，可能存在分流或代理", "warn")}</pre>`;
-}
-
 async function pWebRTC() {
   return new Promise(res => {
     const ips = new Set();
@@ -618,10 +670,6 @@ async function pTimeLang() {
 /* ============================================================
    渲染助手
    ============================================================ */
-function setOut(pageId, html) {
-  document.getElementById("out-" + pageId).innerHTML = html;
-}
-
 async function runTasks(pageId, tasks) {
   const out = document.getElementById("out-" + pageId);
   out.innerHTML = "";
@@ -645,6 +693,10 @@ async function runTasks(pageId, tasks) {
   }
 }
 
+function setEmpty(pageId, msg) {
+  document.getElementById("out-" + pageId).innerHTML = `<p class="empty">${msg}</p>`;
+}
+
 /* ============================================================
    主查询流程
    ============================================================ */
@@ -654,8 +706,8 @@ const sslThrottle = throttle(mTcpSsl, 6500);
 async function runQuery() {
   const q = $in.value.trim();
   if (!q) {
-    // 空输入：直接运行隐私自检
-    switchTab("privacy");
+    switchTab("proxy");
+    await runProxySelfCheck();
     await runPrivacy();
     return;
   }
@@ -687,6 +739,12 @@ async function runQuery() {
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
   ] : [];
 
+  const proxyTasks = ipOnly ? [
+    { title: "VPNDetection · VPN / 代理 / Tor", fn: () => mVpnDetection(q) },
+    { title: "NetRiskScan · 风险评分 / 连接类型", fn: () => mNetRiskScan(q) },
+    { title: "ProxyCheck · 代理标记 / 风险分", fn: () => mProxyCheck(q) },
+  ] : [];
+
   const intelTasks = (ipOnly || domOnly || urlOnly) ? [
     { title: "URLhaus · 恶意 URL 反查", fn: () => mUrlhaus(q) },
     { title: "OTX · 关联威胁 Pulse", fn: () => mOtxPulse(q) },
@@ -695,25 +753,22 @@ async function runQuery() {
     ...(ipOnly ? [{ title: "Feodo Tracker · C2 比对", fn: () => mFeodoC2(q) }] : []),
   ] : [];
 
-  // 首次显示占位
-  if (!ipOnly) setOut("ip", `<p class="empty">请输入 IP 后查询 IP 溯源</p>`);
+  if (!ipOnly) setEmpty("ip", "请输入 IP 后查询 IP 溯源");
   if (!domOnly) {
-    setOut("domain", `<p class="empty">请输入域名后查询域名溯源</p>`);
-    setOut("cert", `<p class="empty">请输入域名后查询证书 / CDN</p>`);
+    setEmpty("domain", "请输入域名后查询域名溯源");
+    setEmpty("cert", "请输入域名后查询证书 / CDN");
   }
-  if (!ipOnly && !domOnly && !urlOnly) {
-    setOut("intel", `<p class="empty">请输入 IP、域名或 URL 后查询社区情报</p>`);
-  }
+  if (!ipOnly) setEmpty("proxy", "输入 IP 查询目标；留空运行出口自检");
+  if (!ipOnly && !domOnly && !urlOnly) setEmpty("intel", "请输入 IP、域名或 URL 后查询社区情报");
 
-  // 并发执行各页面任务
   await Promise.all([
     ipTasks.length ? runTasks("ip", ipTasks) : Promise.resolve(),
     domainTasks.length ? runTasks("domain", domainTasks) : Promise.resolve(),
     certTasks.length ? runTasks("cert", certTasks) : Promise.resolve(),
+    proxyTasks.length ? runTasks("proxy", proxyTasks) : Promise.resolve(),
     intelTasks.length ? runTasks("intel", intelTasks) : Promise.resolve(),
   ]);
 
-  // 自动切换到最相关页面
   if (ipOnly) switchTab("ip");
   else if (domOnly) switchTab("domain");
   else if (urlOnly) switchTab("intel");
@@ -728,28 +783,29 @@ function switchTab(name) {
 }
 
 /* ============================================================
-   隐私自检页面自动运行
+   自身自检：代理与出口 / 隐私
    ============================================================ */
+let proxySelfDone = false;
+async function runProxySelfCheck() {
+  if (proxySelfDone) return;
+  proxySelfDone = true;
+  await runTasks("proxy", [
+    { title: "出口 IP 多源对比", fn: () => pExitMulti() },
+    { title: "WebRTC 泄露检测", fn: () => pWebRTC() },
+  ]);
+}
+
 let privacyDone = false;
 async function runPrivacy() {
   if (privacyDone) return;
   privacyDone = true;
   await runTasks("privacy", [
-    { title: "出口 IP 对比", fn: () => pExitCompare() },
+    { title: "出口 IP 对比", fn: () => pExitMulti() },
     { title: "WebRTC 泄露检测", fn: () => pWebRTC() },
     { title: "时区 / 语言信息", fn: () => pTimeLang() },
     { title: "浏览器指纹", fn: () => pFingerprint() },
   ]);
 }
-
-// 切换到隐私页时自动运行
-document.getElementById("tabs").addEventListener("click", e => {
-  const btn = e.target.closest(".tab");
-  if (btn && btn.dataset.tab === "privacy") runPrivacy();
-});
-
-// 首次加载：如果直接打开隐私页
-if (document.getElementById("page-privacy").classList.contains("active")) runPrivacy();
 
 $in.addEventListener("keydown", e => { if (e.key === "Enter" && !$btn.disabled) runQuery(); });
 </script>
