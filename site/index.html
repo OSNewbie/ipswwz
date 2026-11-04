@@ -49,7 +49,6 @@ summary{cursor:pointer;color:#94a3b8;font-size:.72rem;user-select:none}
 summary:hover{color:#64748b}
 details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;overflow:auto}
 .empty{text-align:center;color:#94a3b8;font-size:.82rem;padding:2.5rem 1rem;background:#fff;border-radius:10px;border:1px dashed #e2e8f0}
-
 .alert-box{padding:.75rem 1rem;border-radius:10px;margin:.5rem 0;border:1px solid;font-size:.8rem;line-height:1.7}
 .alert-box.danger{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
 .alert-box.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
@@ -58,7 +57,6 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .alert-title{font-size:.9rem;font-weight:700;margin-bottom:.4rem;display:flex;align-items:center;gap:.35rem}
 .alert-section{margin-top:.35rem}
 .alert-section strong{display:inline-block;font-weight:700;margin-bottom:.15rem}
-
 .score-circle{width:132px;height:132px;border-radius:50%;background:conic-gradient(var(--color) calc(var(--score) * 1%),#e2e8f0 0);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;transition:background .8s ease}
 .score-circle::before{content:'';position:absolute;inset:11px;background:#fff;border-radius:50%}
 .score-inner{position:relative;z-index:1;text-align:center}
@@ -82,7 +80,6 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .about-card ul{padding-left:1.2rem;margin:.3rem 0}
 .relation-box{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:.8rem;color:#6b21a8}
 .relation-box strong{color:#7c3aed}
-
 .ssl-visual{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
 .ssl-ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0}
 .ssl-ring-svg{width:110px;height:110px;display:block}
@@ -113,7 +110,6 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .cipher-name.show{opacity:1}
 .ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6;opacity:0;transition:opacity .4s ease 1.5s}
 .ssl-note.show{opacity:1}
-
 .cdn-evidence{display:flex;flex-direction:column;gap:.45rem;margin:.5rem 0}
 .cdn-evidence-row{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;border-radius:8px;font-size:.78rem;border:1px solid #e2e8f0;background:#f8fafc;opacity:0;transform:translateX(-6px);transition:all .35s ease}
 .cdn-evidence-row.show{opacity:1;transform:translateX(0)}
@@ -125,13 +121,13 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .cdn-verdict-card{padding:.8rem 1rem;border-radius:8px;margin-top:.6rem;font-size:.82rem;line-height:1.7}
 .cdn-verdict-card.hit{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
 .cdn-verdict-card.no{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.cdn-verdict-card.niche{background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8}
 .cdn-ip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.4rem;margin:.5rem 0}
 .cdn-ip-node{padding:.5rem;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:.72rem;text-align:center;opacity:0;transform:scale(.92);transition:all .3s ease}
 .cdn-ip-node.show{opacity:1;transform:scale(1)}
 .cdn-ip-node.hit{border-color:currentColor;background:#fff}
 .cdn-ip-addr{font-family:ui-monospace,monospace;font-weight:600;color:#0f172a;margin-bottom:.15rem;font-size:.72rem}
 .cdn-ip-vendor{font-weight:700;font-size:.66rem}
-
 .ad-tools{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;align-items:center}
 .ad-tools .dur-btn{padding:.3rem .7rem;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#334155;font-size:.74rem;cursor:pointer;font-weight:500}
 .ad-tools .dur-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
@@ -173,7 +169,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-cert">
-    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 图形化检测、CDN 多地探测识别、广告联盟信号、用户视角广告检测</p></div>
+    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 完整检测（主检测 + 交叉验证）、CDN 多地探测、广告联盟与用户视角广告检测</p></div>
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
@@ -187,7 +183,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-intel">
-    <div class="page-head"><h2>社区情报</h2><p>恶意域名评分、威胁 Pulse、IOC 聚合与 C2 比对</p></div>
+    <div class="page-head"><h2>社区情报</h2><p>恶意域名评分、威胁 Pulse、恶意样本、C2 比对 —— 每条告警附中文解释与处置建议</p></div>
     <div id="out-intel"><p class="empty">输入 IP 或域名后点击查询</p></div>
   </section>
 
@@ -199,43 +195,19 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   <section class="page" id="page-about">
     <div class="page-head"><h2>关于</h2><p>数据来源、使用说明</p></div>
     <div class="about-card">
-      <h3>📌 数据来源（全部免费、无强制密钥）</h3>
-      <ul>
-        <li><code>tcp.lc</code>：IP 归属、Whois、ICP 备案、SSL</li>
-        <li><code>ip.sb</code>：备用地理与出口 IP</li>
-        <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
-        <li><code>Google DoH</code>：DNS 综合解析</li>
-        <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>Domainee</code>：SSL 深度检测</li>
-        <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分</li>
-        <li><code>PhishDestroy</code>：恶意域名风险评分</li>
-        <li><code>OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
-        <li><code>Globalping</code>：全球多地 Ping 探测</li>
-        <li><code>ipinfo.app</code>：ASN 查询</li>
-      </ul>
+      <h3>📌 SSL 检测说明</h3>
+      <p><strong>主检测</strong>：Domainee SSL Checker API，免费、无需密钥、CORS 已启用，返回协议、加密套件、颁发机构、有效期、SAN 全字段[reference:3]。</p>
+      <p><strong>交叉验证</strong>：web-doctor，免费 HTTP API，返回 TLS 证书有效期、颁发机构、SAN、过期检测与 A–F 评级，30 次/小时/IP[reference:4]。</p>
+      <p>tcp.lc 的 `/tls/check` 已移除——该接口返回字段不完整，无法提供有效的交叉验证。</p>
     </div>
     <div class="about-card">
-      <h3>🌐 CDN 多地探测识别</h3>
+      <h3>🕵️ 社区情报中文解释</h3>
+      <p>OTX Pulse 是围绕特定攻击活动、恶意软件家族或威胁行为者整理的 IOC 集合，包含威胁描述、相关指标和参考信息[reference:5]。每条告警均给出：</p>
       <ul>
-        <li><strong>CNAME 链</strong>：解析链中出现厂商专属域名</li>
-        <li><strong>ASN 归属</strong>：Cloudflare AS13335 / CloudFront AS16509 / Fastly AS54113 / Akamai AS20940 / Azure AS8075</li>
-        <li><strong>多地 Ping</strong>：Globalping 从全球多地并发探测，收集不同地区解析到的 IP</li>
-        <li>只要 CNAME 或 ASN 任一命中即可判定厂商</li>
+        <li><strong>这意味着什么</strong>：用通俗中文解释情报的含义</li>
+        <li><strong>为什么会出现</strong>：可能的原因</li>
+        <li><strong>你应该怎么做</strong>：具体的处置步骤</li>
       </ul>
-    </div>
-    <div class="about-card">
-      <h3>🔐 SSL 安全评分规则（满分 100）</h3>
-      <ul>
-        <li>证书有效且未过期：+60</li>
-        <li>协商协议 TLSv1.3：+20；TLSv1.2：+10</li>
-        <li>剩余有效期 &gt; 30 天：+10</li>
-        <li>加密套件包含 GCM 或 CHACHA20：+10</li>
-        <li>等级：A≥90 / B≥75 / C≥60 / D&lt;60</li>
-      </ul>
-    </div>
-    <div class="about-card">
-      <h3>🕵️ 社区情报告警说明</h3>
-      <p>每条告警包含问题描述、可能原因、建议处理。</p>
     </div>
     <div class="about-card">
       <h3>📊 质量评分规则</h3>
@@ -273,7 +245,6 @@ const KEY_CN = {
   vpn:"是否 VPN", proxy:"是否代理", tor:"是否 Tor", hosting:"是否托管",
   risk:"风险评分", score:"风险评分", severity:"严重程度",
   matched_keywords:"匹配关键词", multi_source_confirmed:"是否多源确认",
-  tls_version:"TLS 版本", http2:"是否支持 HTTP/2",
 };
 
 const ENUM_CN = {
@@ -295,7 +266,13 @@ const CDN_ASN_MAP = {
   "16509": { name: "Amazon CloudFront", color: "#ff9900" },
   "54113": { name: "Fastly", color: "#ff282d" },
   "20940": { name: "Akamai", color: "#009bde" },
+  "16625": { name: "Akamai", color: "#009bde" },
   "8075":  { name: "Azure CDN", color: "#0078d4" },
+  "24429": { name: "阿里云 CDN", color: "#ff6a00" },
+  "139341": { name: "腾讯云 CDN", color: "#00a4ff" },
+  "45090": { name: "腾讯云 CDN", color: "#00a4ff" },
+  "38365": { name: "百度云加速", color: "#2932e1" },
+  "55967": { name: "百度云加速", color: "#2932e1" },
 };
 
 const CNAME_SIGNS = [
@@ -304,6 +281,9 @@ const CNAME_SIGNS = [
   { re: /\.fastly\.net|\.fastlylb\.net/i, name: "Fastly" },
   { re: /\.akamaiedge\.net|\.akamai\.net|\.edgesuite\.net|\.edgekey\.net/i, name: "Akamai" },
   { re: /\.azureedge\.net|\.azurefd\.net|\.trafficmanager\.net/i, name: "Azure CDN" },
+  { re: /\.alikunlun\.com|\.kunluncan\.com|\.cdngslb\.com/i, name: "阿里云 CDN" },
+  { re: /\.cdn\.dnsv1\.com|\.qcloudcdn\.com/i, name: "腾讯云 CDN" },
+  { re: /\.bdydns\.com|\.yunjiasu\.com/i, name: "百度云加速" },
 ];
 
 function cnValue(key, val) {
@@ -362,8 +342,8 @@ function fmtPorts(ports) {
 function alertBox(level, title, why, suggestion) {
   const icons = { danger: "❗", warn: "⚠️", info: "ℹ️", ok: "✅" };
   const icon = icons[level] || icons.info;
-  const whyHTML = why ? `<div class="alert-section"><strong>可能原因：</strong>${why}</div>` : "";
-  const sugHTML = suggestion ? `<div class="alert-section"><strong>建议处理：</strong>${suggestion}</div>` : "";
+  const whyHTML = why ? `<div class="alert-section"><strong>这意味着什么：</strong>${why}</div>` : "";
+  const sugHTML = suggestion ? `<div class="alert-section"><strong>你应该怎么做：</strong>${suggestion}</div>` : "";
   return `<div class="alert-box ${level}">
     <div class="alert-title">${icon} ${esc(title)}</div>
     ${whyHTML}${sugHTML}
@@ -556,6 +536,7 @@ async function mRdap(q) {
 ${esc(events || "—")}</pre>${rawJson(d)}`;
 }
 
+/* ============ SSL 完整检测 ============ */
 function renderSslVisual(d) {
   const fromRaw = d.validFrom || d.notBefore;
   const toRaw = d.validTo || d.notAfter;
@@ -686,6 +667,7 @@ async function mSslDomainee(q) {
   if (!res.ok) return `<pre>Domainee SSL 返回 HTTP ${res.status}</pre>`;
   const json = await res.json();
   if (!json.ok) return `<pre>SSL 检测失败：${esc(json.error?.message ?? "未知错误")}</pre>`;
+
   const d = json.data;
   state.sslInvalid = d.expired || !d.authorized;
   state.sslDaysLeft = d.daysUntilExpiry;
@@ -693,14 +675,24 @@ async function mSslDomainee(q) {
   state.sslFrom = d.validFrom || d.notBefore;
   state.sslTo = d.validTo || d.notAfter;
   state.sslCipher = d.cipher?.name;
+  state.sslIssuer = d.issuer?.O || d.issuer?.CN || "—";
+  state.sslSubject = d.subject?.CN || "—";
+  state.sslSan = d.altNames || [];
+
   const issuerOrg = d.issuer?.O || d.issuer?.CN || "—";
   const issuerCountry = d.issuer?.C ? `（${d.issuer.C}）` : "";
+  const expireHint = d.daysUntilExpiry <= 0
+    ? "⚠️ 已过期"
+    : d.daysUntilExpiry <= 30
+      ? `⚠️ ${d.daysUntilExpiry} 天后过期`
+      : `✅ ${d.daysUntilExpiry} 天后过期`;
+
   return `
     <pre>
 <strong>是否有效</strong> ${d.authorized && !d.expired ? "✅ 有效" : "❌ 无效"}
 <strong>生效时间</strong> ${esc((d.validFrom || "").slice(0, 10))}
 <strong>到期时间</strong> ${esc((d.validTo || "").slice(0, 10))}
-<strong>剩余有效期</strong> ${d.daysUntilExpiry <= 0 ? "⚠️ 已过期" : d.daysUntilExpiry <= 30 ? `⚠️ ${d.daysUntilExpiry} 天后过期` : `✅ ${d.daysUntilExpiry} 天后过期`}
+<strong>剩余有效期</strong> ${expireHint}
 <strong>协商协议</strong> ${esc(d.protocol ?? "—")}
 <strong>加密套件</strong> ${esc(d.cipher?.name ?? "—")}
 <strong>颁发机构</strong> ${esc(issuerOrg)} ${issuerCountry}
@@ -711,55 +703,46 @@ async function mSslDomainee(q) {
     ${rawJson(d)}`;
 }
 
-async function mTcpSsl(q) {
+/* 交叉验证：web-doctor，返回 A–F 评级 + 证书有效期 + 颁发机构 + SAN */
+async function mSslWebDoctor(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
   try {
-    const res = await fetchT("https://tcp.lc/api/v2/tls/check", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host: q }),
-    });
+    const res = await fetchT(`https://web-doctor.vercel.app/check?target=${encodeURIComponent(q)}`, {}, 10000);
     if (!res.ok) {
       return `<pre>${tag("✅ 交叉验证跳过", "ok")}
-<em>tcp.lc SSL 接口暂不可用（HTTP ${res.status}），以 Domainee 的检测结果为准。</em></pre>`;
+<em>web-doctor 返回 HTTP ${res.status}（30 次/小时/IP 限流），以 Domainee 的检测结果为准。</em></pre>`;
     }
     const d = await res.json();
-    if (d.code !== 200) {
-      return `<pre>${tag("✅ 交叉验证跳过", "ok")}
-<em>tcp.lc 接口参数已变更或当前不支持该域名，以 Domainee 的检测结果为准。</em></pre>`;
-    }
-    const x = d.data || {};
-    if (x.valid === false) state.sslInvalid = true;
-    else if (x.valid === true && state.sslInvalid === undefined) state.sslInvalid = false;
-    if (!state.sslProtocol && x.tls_version) state.sslProtocol = x.tls_version;
-    if (!state.sslTo && (x.expires_at || x.not_after)) state.sslTo = x.expires_at || x.not_after;
 
-    const altVisual = {
-      protocol: x.tls_version,
-      validTo: x.expires_at || x.not_after,
-      authorized: x.valid !== false,
-      expired: x.valid === false,
-      cipher: { name: "" },
-      altNames: x.san || [],
-      issuer: { CN: x.issuer },
-    };
+    // web-doctor 返回结构可能是 { grade, tls: {...}, ... } 或扁平化
+    const tls = d.tls || d.tlsCertificate || d;
+    const grade = d.grade || d.overallGrade || "—";
+    const protocol = tls.protocol || tls.tlsVersion || "—";
+    const issuer = tls.issuer || tls.certificateIssuer || "—";
+    const daysLeft = tls.daysUntilExpiry ?? tls.expiresInDays ?? null;
+    const san = tls.sans || tls.subjectAltNames || [];
+    const valid = tls.valid !== false && tls.expired !== true;
 
-    return `
-      <pre>
-<strong>是否有效</strong> ${x.valid ? "✅ 有效（交叉验证）" : "❌ 无效"}
-<strong>到期时间</strong> ${esc((x.expires_at || x.not_after || "").slice(0, 10) || "—")}
-<strong>颁发机构</strong> ${esc(x.issuer ?? "—")}
-<strong>SAN</strong> ${esc((x.san || []).join(", ") || "—")}
-<strong>TLS 版本</strong> ${esc(x.tls_version ?? "—")}
-<strong>HTTP/2</strong> ${x.http2 ? "是" : "否"}
+    if (!state.sslProtocol && protocol !== "—") state.sslProtocol = protocol;
+    if (!state.sslIssuer && issuer !== "—") state.sslIssuer = issuer;
+    if (daysLeft !== null && state.sslDaysLeft === undefined) state.sslDaysLeft = daysLeft;
+
+    return `<pre>
+<strong>综合评级</strong> ${esc(String(grade))} <em>（A–F，越高越好）</em>
+<strong>证书有效性</strong> ${valid ? "✅ 有效" : "❌ 无效"}
+<strong>协商协议</strong> ${esc(protocol)}
+<strong>颁发机构</strong> ${esc(issuer)}
+<strong>剩余天数</strong> ${daysLeft !== null ? `${daysLeft} 天` : "—"}
+<strong>SAN 覆盖</strong> ${esc(san.length ? san.slice(0, 10).join(", ") + (san.length > 10 ? "…" : "") : "—")}
 </pre>
-      ${renderSslVisual(altVisual)}
-      ${rawJson(d)}`;
+<details><summary>原始 JSON</summary><pre>${esc(JSON.stringify(d, null, 2).slice(0, 2000))}</pre></details>`;
   } catch (e) {
     return `<pre>${tag("✅ 交叉验证跳过", "ok")}
-<em>网络异常（${esc(e.message)}），以 Domainee 的检测结果为准。</em></pre>`;
+<em>web-doctor 请求异常（${esc(e.message)}），以 Domainee 的检测结果为准。</em></pre>`;
   }
 }
 
+/* ============ CDN ============ */
 async function globalpingPing(domain) {
   const locations = [{ country: "US" }, { country: "DE" }, { country: "JP" }, { country: "SG" }];
   try {
@@ -867,7 +850,20 @@ async function mCdnDetect(q) {
   const cnameVendors = cnameResult.hits;
   const allVendors = [...new Set([...cnameVendors, ...asnVendors])];
 
+  let isNiche = false;
+  let nicheReason = "";
+  if (allVendors.length === 0) {
+    if (allIps.length <= 2) {
+      isNiche = true;
+      nicheReason = `解析到的唯一 IP 数量仅 ${allIps.length} 个，且未命中已知厂商 ASN/CNAME`;
+    } else if (cnameResult.chain.length > 0) {
+      isNiche = true;
+      nicheReason = `存在 CNAME 记录但未匹配已知厂商特征，且解析 IP 数较少（${allIps.length} 个）`;
+    }
+  }
+
   state.cdnHits = allVendors.map(v => vendorStats[v] ? `${v}（${vendorStats[v].count} 个 IP）` : v);
+  if (isNiche) state.cdnHits = ["疑似小众/自建 CDN"];
 
   const evidenceRows = [];
 
@@ -908,6 +904,10 @@ async function mCdnDetect(q) {
     if (asnVendors.length) layers.push("ASN");
     verdictText = `🔍 判定为 CDN 加速网站，命中厂商：<strong>${allVendors.join("、")}</strong>`;
     verdictText += `<br><span style="font-size:.78rem;font-weight:400;">证据来源：${layers.join(" + ")}</span>`;
+  } else if (isNiche) {
+    verdictClass = "niche";
+    verdictText = `🟣 疑似小众/自建 CDN，${nicheReason}`;
+    verdictText += `<br><span style="font-size:.78rem;font-weight:400;">建议结合其他情报源进一步确认其性质。</span>`;
   }
 
   const ipNodesHTML = ipResults.map(r => {
@@ -938,6 +938,7 @@ async function mCdnDetect(q) {
   `;
 }
 
+/* ============ 广告 ============ */
 const AD_NETWORKS = [
   { pattern: /googlesyndication\.com|doubleclick\.net/i, name: "Google AdSense / AdX" },
   { pattern: /pos\.baidu\.com|cpro\.baidu\.com/i, name: "百度联盟" },
@@ -1219,6 +1220,7 @@ function mUserAdDetect(q) {
   });
 }
 
+/* ============ 社区情报（中文解释 + 处置建议） ============ */
 async function mPhishDestroy(q) {
   if (!isDomain(q)) return { skip: true, reason: "PhishDestroy 仅支持域名" };
   const res = await fetchT(`https://api.destroy.tools/v1/check?domain=${encodeURIComponent(q)}`);
@@ -1232,7 +1234,7 @@ async function mPhishDestroy(q) {
 
   if (num >= 70) {
     return alertBox("danger", `该域名被识别为高风险恶意域名（风险评分 ${score}/100）`,
-      `PhishDestroy 综合多个情报源判定该域名具有高风险，可能原因包括：<br>
+      `PhishDestroy 综合多个情报源判定该域名具有高风险。这意味着它很可能是一个钓鱼网站或恶意域名，可能原因包括：<br>
       • 域名与已知钓鱼网站高度相似（仿冒品牌、银行、社交平台等）<br>
       • 域名注册信息异常（短期注册、匿名注册、隐私保护）<br>
       • 域名托管环境与已知恶意活动关联<br>
@@ -1243,12 +1245,13 @@ async function mPhishDestroy(q) {
   }
   if (num >= 30) {
     return alertBox("warn", `该域名存在可疑特征（风险评分 ${score}/100）`,
-      `PhishDestroy 将该域名标记为可疑，可能原因包括：<br>
+      `PhishDestroy 将该域名标记为可疑。这意味着它的行为或特征与已知钓鱼/恶意模式有部分重叠，但尚未达到高置信度的恶意判定。可能原因包括：<br>
       • 匹配到部分可疑关键词：<strong>${esc(keywords)}</strong><br>
-      • 域名行为与已知钓鱼模式有部分相似<br>
-      • 缺乏明确的恶意证据，但不足以判定为安全`,
+      • 域名注册时间短、注册信息不透明<br>
+      • 托管环境与部分恶意站点共享 IP 或 ASN`,
       `• 谨慎访问该网站，避免输入敏感信息<br>
-      • 如该站点与你的业务相关，建议进一步核实其真实性质`);
+      • 如该站点与你的业务相关，建议进一步核实其真实性质<br>
+      • 可结合 SSL 证书信息、ICP 备案状态综合判断`);
   }
   return alertBox("ok", `未在 PhishDestroy 恶意域名库中发现明显风险（风险评分 ${score}/100）`,
     "该域名未被 PhishDestroy 标记为恶意或可疑。",
@@ -1265,18 +1268,19 @@ async function mOtxPulse(q) {
   const count = pi.count || 0;
   if (!state.otxPulseCount) state.otxPulseCount = count;
   const pulses = (pi.pulses || []).slice(0, 5);
-  const pulseLines = pulses.map(p => `• ${esc(p.name)}${(p.tags || []).length ? `（标签：${esc((p.tags || []).slice(0, 3).join(", "))}）` : ""}`).join("<br>");
+  const pulseLines = pulses.map(p => `• <strong>${esc(p.name)}</strong>${(p.tags || []).length ? `（标签：${esc((p.tags || []).slice(0, 3).join(", "))}）` : ""}`).join("<br>");
 
   if (count > 0) {
-    return alertBox("warn", `该目标关联 ${count} 个威胁简报（OTX Pulse）`,
-      `AlienVault OTX 社区中有 ${count} 份威胁简报将 ${esc(q)} 列为关联 IOC。可能原因包括：<br>
-      • 该目标被用于实际攻击活动（如 C2、载荷分发、钓鱼域名）<br>
-      • 该目标出现在安全研究者的分析报告中<br>
-      • 该目标与某个已知攻击组织或恶意软件家族关联<br>
+    return alertBox("warn", `该目标关联 ${count} 份威胁情报（OTX Pulse）`,
+      `这意味着 AlienVault OTX 社区（一个开放的威胁情报共享平台）中有 ${count} 份威胁报告把 ${esc(q)} 列为关联 IOC（攻击指标）。可能原因包括：<br>
+      • 该目标被用于实际攻击活动，比如作为 C2（命令控制）服务器、分发恶意载荷、或钓鱼域名<br>
+      • 该目标出现在安全研究者的分析报告中，与某个攻击活动或恶意软件家族有关联<br>
+      • 该目标与已知的攻击组织或威胁行为者存在基础设施重叠<br>
       ${pulseLines ? `<br><strong>近期相关简报：</strong><br>${pulseLines}` : ""}`,
-      `• 如该目标与你的业务无关，可在防火墙/IDS 中添加规则<br>
-      • 如该目标是你自己的资产，建议立即进行安全排查<br>
-      • 访问 OTX 查看简报详情可了解具体的攻击上下文`);
+      `• 如果这个目标不是你自己的资产，可以在防火墙、IDS 或 DNS 安全网关上把它加入阻止列表<br>
+      • 如果它是你自己的资产，建议立即排查：检查异常进程、外连记录、Webshell 或未授权服务<br>
+      • 打开 OTX Pulse 详情页可以看到具体的攻击上下文、关联样本和攻击者标签，有助于判断严重程度<br>
+      • 注意：OTX 是社区情报，存在误报可能，建议结合 VirusTotal、奇安信威胁情报中心等多源交叉验证[reference:6]`);
   }
   return alertBox("ok", "未在 OTX 威胁简报中发现关联记录",
     "该目标当前没有被任何公开的威胁简报列为关联 IOC。",
@@ -1295,13 +1299,16 @@ async function mOtxMalware(q) {
       "该目标当前没有关联任何公开的恶意样本哈希。",
       "公开情报中未见样本关联，可视为相对干净。");
   }
-  const sampleLines = samples.map(s => `• 哈希 ${esc(s.hash?.slice(0, 16) ?? "—")}...${(s.detections || []).map(x => x.detection?.family).filter(Boolean).length ? `（家族：${esc((s.detections || []).map(x => x.detection?.family).filter(Boolean).join(", "))}）` : ""}`).join("<br>");
+  const sampleLines = samples.map(s => {
+    const families = (s.detections || []).map(x => x.detection?.family).filter(Boolean);
+    return `• 样本哈希：<code style="font-size:.7rem;">${esc(s.hash?.slice(0, 16) ?? "—")}…</code>${families.length ? `（恶意家族：<strong>${esc(families.join(", "))}</strong>）` : ""}`;
+  }).join("<br>");
   return alertBox("danger", `该目标关联 ${samples.length} 个恶意样本`,
-    `OTX 社区将该目标与以下恶意样本关联：<br>${sampleLines}<br>
-    可能原因：该域名/IP 曾托管恶意载荷、被用作回连地址、或出现在沙箱分析报告中。`,
-    `• 下载样本哈希可进一步分析（上传到沙箱）<br>
-    • 如该目标在业务环境中出现，建议立即隔离<br>
-    • 检查日志中是否有设备与该目标通信`);
+    `这意味着 OTX 社区将该目标与以下恶意样本哈希关联。通常说明该域名/IP 曾托管恶意载荷、被恶意软件用作回连地址，或者出现在沙箱分析报告里。<br>${sampleLines}`,
+    `• 下载或复制样本哈希，上传到 VirusTotal 或沙箱做进一步分析，确认恶意行为<br>
+    • 如果该目标在你的业务环境中出现（比如流量日志、DNS 查询日志），建议立即隔离相关主机<br>
+    • 检查日志中是否有设备与该目标通信，如有则排查是否已失陷<br>
+    • 将相关 IOC 导入 SIEM/EDR 进行全网回溯[reference:7]`);
 }
 
 async function mFeodoC2(q) {
@@ -1314,14 +1321,14 @@ async function mFeodoC2(q) {
 
   if (hit) {
     return alertBox("danger", `该 IP 被识别为僵尸网络 C2 服务器`,
-      `该 IP 出现在 Feodo Tracker 的僵尸网络命令控制服务器（C2）黑名单中，恶意家族：<strong>${esc(hit.malware ?? "—")}</strong>。<br>
-      这意味着该服务器很可能正在指挥被感染的设备，是网络攻击的基础设施。可能原因包括：<br>
-      • 该 IP 被攻击者控制并用于分发恶意指令<br>
-      • 该 IP 被恶意软件家族（如 Emotet、Dridex、QakBot）作为回连地址<br>
-      • 该 IP 已被入侵，攻击者利用它作为跳板`,
-      `• 阻止所有来自/前往该 IP 的通信<br>
-      • 如果这是你自己的服务器，立即进行安全排查（检查异常进程、网络连接）<br>
-      • 检查日志中是否有设备尝试连接该 IP（${esc(hit.first_seen ?? "未知")} 起已被标记）`);
+      `这意味着该 IP 出现在 Feodo Tracker 的僵尸网络命令控制服务器（C2）黑名单中，恶意家族为 <strong>${esc(hit.malware ?? "—")}</strong>。C2 服务器是指挥被感染设备的“大脑”，是网络攻击的核心基础设施。可能原因包括：<br>
+      • 该 IP 被攻击者控制，用于向受感染的机器下发指令<br>
+      • 该 IP 被 Emotet、Dridex、QakBot 等恶意软件家族用作回连地址<br>
+      • 该 IP 可能已被入侵，攻击者利用它作为跳板`,
+      `• 阻止所有来自/前往该 IP 的通信（防火墙、安全组、DNS 黑名单）<br>
+      • 如果这是你自己的服务器，立即进行安全排查：检查异常进程、网络连接、计划任务<br>
+      • 检查日志中是否有内部设备尝试连接该 IP；该 IP 自 ${esc(hit.first_seen ?? "未知")} 起已被标记，说明相关攻击活动已经持续一段时间<br>
+      • 将 IOC 导入 SIEM/EDR 做全网回溯排查[reference:8]`);
   }
   return alertBox("ok", "未在 Feodo C2 黑名单中发现",
     "该 IP 未被 Feodo Tracker 列为僵尸网络 C2 服务器。",
@@ -1359,6 +1366,7 @@ function mContrastManual(q) {
   return Promise.resolve(container);
 }
 
+/* ============ 隐私 / 环境 ============ */
 async function pWebRTC() {
   return new Promise(res => {
     const ips = new Set();
@@ -1421,6 +1429,7 @@ async function pTimeLang() {
 <strong>时区前缀</strong> ${esc(tz.split("/")[0] || "—")}</pre>`;
 }
 
+/* ============ 渲染 ============ */
 async function runTasksIn(container, tasks) {
   for (const t of tasks) {
     const placeholder = document.createElement("div");
@@ -1683,6 +1692,7 @@ function buildProfileText() {
       const grade = sslScore >= 90 ? "A" : sslScore >= 75 ? "B" : sslScore >= 60 ? "C" : "D";
       lines.push(`【SSL 安全】评分 ${sslScore}/100（等级 ${grade}）· 协议 ${state.sslProtocol || "—"} · 剩余 ${state.sslDaysLeft ?? "—"} 天`);
       if (state.sslFrom || state.sslTo) lines.push(`  生效 ${(state.sslFrom || "").slice(0, 10) || "—"} → 到期 ${(state.sslTo || "").slice(0, 10) || "—"}`);
+      if (state.sslIssuer) lines.push(`  颁发机构：${state.sslIssuer}`);
       if (state.sslCipher) lines.push(`  加密套件：${state.sslCipher}`);
     }
     if (state.cdnHits?.length) lines.push(`【CDN 信号】${state.cdnHits.join("；")}`);
@@ -1800,7 +1810,7 @@ async function runEnvCheck(force = false) {
 function forceEnvCheck() { envChecked = false; runEnvCheck(true); }
 
 const whoisThrottle = throttle(mTcpWhois, 6500);
-const sslThrottle = throttle(mTcpSsl, 6500);
+const sslCrossThrottle = throttle(mSslWebDoctor, 6500);
 
 async function runQuery() {
   const q = $in.value.trim();
@@ -1818,8 +1828,8 @@ async function runQuery() {
   setEmpty("profile", "正在生成质量评分与画像…");
 
   const certTasks = domOnly ? [
-    { title: "Domainee · SSL 深度检测", fn: () => mSslDomainee(q) },
-    { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
+    { title: "Domainee · SSL 主检测（完整字段）", fn: () => mSslDomainee(q) },
+    { title: "web-doctor · SSL 交叉验证", fn: () => sslCrossThrottle(q) },
     { title: "CDN 多地探测（Globalping + ASN）", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
     { title: "用户视角广告检测（多阶段观察）", fn: () => mUserAdDetect(q) },
