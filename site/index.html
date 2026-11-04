@@ -354,7 +354,7 @@ async function prof(t) {
   out.innerHTML =
     card('整体画像', `<div class="score">${sc}</div><p style="text-align:center">${pill(0, band, cls)}</p>` +
       note('启发式评分，仅反映可自动获取的指标，不构成安全结论。') + radar(D) +
-      tbl(['维度', '得分', '说明'], D.map(x => [x[0], `${x[1]}/${x[2]}`, x[3]])));
+      tbl(['维度', '得分', '说明'], D.map(x => [x[0], `${x[1]}/${x[2]}`, x[3]]))));
 }
 
 function about() {
