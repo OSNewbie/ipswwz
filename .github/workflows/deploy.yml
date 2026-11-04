@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: 部署前端到 GitHub Pages
+    name: 部署到 GitHub Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
