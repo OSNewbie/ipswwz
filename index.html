@@ -52,6 +52,28 @@ summary:hover{color:#64748b}
 details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;overflow:auto}
 .empty{text-align:center;color:#94a3b8;font-size:.82rem;padding:2.5rem 1rem;background:#fff;border-radius:10px;border:1px dashed #e2e8f0}
 
+/* 质量评分圆环 */
+.score-circle{
+  width:132px;height:132px;border-radius:50%;
+  background:conic-gradient(var(--color) calc(var(--score) * 1%),#e2e8f0 0);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;
+  transition:background .8s ease;
+}
+.score-circle::before{content:'';position:absolute;inset:11px;background:#fff;border-radius:50%}
+.score-inner{position:relative;z-index:1;text-align:center}
+.score-num{font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.02em}
+.score-label{font-size:.72rem;color:#64748b;margin-top:.3rem;font-weight:500}
+.quality-card{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+.quality-body{flex:1;min-width:220px}
+.quality-body h3{font-size:.88rem;font-weight:650;color:#0f172a;margin-bottom:.3rem}
+.quality-body .quality-sub{font-size:.76rem;color:#94a3b8;margin-bottom:.55rem}
+.quality-issues{list-style:none;padding:0;margin:0}
+.quality-issues li{font-size:.78rem;color:#475569;padding:.15rem 0;padding-left:1.1rem;position:relative}
+.quality-issues li::before{content:'•';position:absolute;left:.2rem;color:#94a3b8}
+.quality-issues li.ok{color:#059669}
+.quality-issues li.ok::before{content:'✓';color:#10b981;font-weight:700}
+
 .copy-btn{margin-top:.6rem;padding:.45rem 1rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.8rem;cursor:pointer;font-weight:500}
 .copy-btn:hover{background:#f1f5f9}
 
@@ -67,6 +89,8 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
   .query-bar{flex-direction:column}
   .query-bar button{width:100%}
   main{padding:1rem .75rem 2rem}
+  .score-circle{width:110px;height:110px}
+  .score-num{font-size:1.7rem}
 }
 </style>
 </head>
@@ -109,10 +133,8 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
 
   <section class="page" id="page-selfcheck">
     <div class="page-head"><h2>网络自检</h2><p>检测自己的出口与隐私泄露；输入 IP 时同时检测目标 IP 的代理状态</p></div>
-
     <div class="section-label">🖥️ 我的网络环境</div>
     <div id="out-self-my"><p class="empty">正在运行自检…</p></div>
-
     <div class="section-label" id="target-section-label" style="display:none">🎯 目标 IP 检测</div>
     <div id="out-self-target"></div>
   </section>
@@ -123,8 +145,8 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
   </section>
 
   <section class="page" id="page-profile">
-    <div class="page-head"><h2>整体画像</h2><p>基于已有查询结果自动生成的用途推断说明</p></div>
-    <div id="out-profile"><p class="empty">输入 IP 或域名查询后，这里会生成画像说明</p></div>
+    <div class="page-head"><h2>整体画像</h2><p>基于已有查询结果自动生成的用途推断与质量评分</p></div>
+    <div id="out-profile"><p class="empty">输入 IP 或域名查询后，这里会生成质量评分与画像说明</p></div>
   </section>
 
   <section class="page" id="page-about">
@@ -143,13 +165,35 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
       </ul>
     </div>
     <div class="about-card">
+      <h3>📊 质量评分规则</h3>
+      <p><strong>IP 评分（满分 100）</strong></p>
+      <ul>
+        <li>命中 Feodo C2 黑名单：-35</li>
+        <li>URLhaus 存在恶意 URL：-25</li>
+        <li>OTX 威胁 Pulse：每个 -5，最多 -20</li>
+        <li>AbuseIPDB 评分：按比例最多 -20</li>
+        <li>VPN / 代理 / Tor：-15</li>
+        <li>开放高危端口（21/23/135/139/445/1433/3306/3389/6379/27017）：每个 -5，最多 -20</li>
+        <li>已知漏洞（CVE）：每个 -5，最多 -15</li>
+      </ul>
+      <p style="margin-top:.6rem;"><strong>域名评分（满分 100）</strong></p>
+      <ul>
+        <li>URLhaus 存在恶意 URL：-30</li>
+        <li>OTX 威胁 Pulse：每个 -5，最多 -20</li>
+        <li>SSL 证书无效：-25</li>
+        <li>未配置 SPF：-5；未配置 DMARC：-5</li>
+        <li>未查询到 ICP 备案：-10</li>
+      </ul>
+      <p style="margin-top:.6rem;font-size:.78rem;color:#94a3b8;">分数仅供参考，不能替代专业安全评估。</p>
+    </div>
+    <div class="about-card">
       <h3>⚙️ 使用说明</h3>
       <ul>
         <li>输入 IP：运行 IP 溯源、目标 IP 检测、社区情报、整体画像</li>
         <li>输入域名：运行域名溯源、证书/CDN、社区情报、整体画像</li>
         <li>输入 URL：运行社区情报（URL 维度）</li>
         <li>留空查询：直接跳转到“网络自检”，运行自身出口与隐私检测</li>
-        <li>“网络自检”页签切换到该页时会自动运行“我的网络环境”部分</li>
+        <li>“整体画像”页顶部显示质量评分圆环，并列出扣分依据</li>
       </ul>
     </div>
     <div class="about-card">
@@ -161,7 +205,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
 
 <script>
 /* ============================================================
-   全局状态：供画像引擎复用本次查询结果
+   全局状态：供画像/质量评分引擎复用本次查询结果
    ============================================================ */
 const state = {};
 
@@ -444,6 +488,7 @@ async function mSslDomainee(q) {
   const res = await fetchT(`https://api.domainee.dev/v1/tools/ssl-check?hostname=${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>Domainee SSL 返回 HTTP ${res.status}</pre>`;
   const d = await res.json();
+  if (d.valid === false) state.sslInvalid = true;
   return `<pre><strong>是否有效</strong> ${d.valid ? "✅ 有效" : "❌ 无效"}
 <strong>颁发者</strong> ${esc(d.issuer ?? "—")}
 <strong>主体</strong> ${esc(d.subject ?? "—")}
@@ -462,6 +507,7 @@ async function mTcpSsl(q) {
   const d = await res.json();
   if (d.code !== 200) return `<pre>${esc(d.msg || "检测失败")}</pre>`;
   const x = d.data || {};
+  if (x.valid === false) state.sslInvalid = true;
   return `<pre><strong>是否有效</strong> ${x.valid ? "✅" : "❌"}
 <strong>到期时间</strong> ${esc(x.expires_at ?? x.not_after ?? "—")}
 <strong>颁发机构</strong> ${esc(x.issuer ?? "—")}
@@ -735,6 +781,91 @@ function setEmpty(pageId, msg) {
 }
 
 /* ============================================================
+   质量评分引擎
+   ============================================================ */
+const RISKY_PORTS = [21, 23, 135, 139, 445, 1433, 3306, 3389, 6379, 27017];
+
+function detectVpnHit() {
+  return !!(
+    state.vpn?.isVpn || state.vpn?.isProxy || state.vpn?.isTor ||
+    state.netrisk?.flags?.vpn || state.netrisk?.flags?.proxy || state.netrisk?.flags?.tor ||
+    state.proxycheck?.detections?.vpn || state.proxycheck?.detections?.proxy || state.proxycheck?.detections?.tor
+  );
+}
+
+function calcIpQuality() {
+  let score = 100;
+  const issues = [];
+
+  if (state.feodoHit) { score -= 35; issues.push({ pts: -35, text: "命中 Feodo C2 僵尸网络黑名单" }); }
+  if (state.urlhausHit) { score -= 25; issues.push({ pts: -25, text: "URLhaus 中存在该 IP 的恶意 URL 记录" }); }
+
+  const pulse = state.otxPulseCount || 0;
+  if (pulse > 0) {
+    const p = Math.min(20, pulse * 5);
+    score -= p;
+    issues.push({ pts: -p, text: `OTX 关联 ${pulse} 个威胁 Pulse` });
+  }
+
+  const abuse = state.abuseScore || 0;
+  if (abuse > 0) {
+    const p = Math.min(20, Math.round(abuse / 5));
+    score -= p;
+    issues.push({ pts: -p, text: `AbuseIPDB 滥用评分 ${abuse}` });
+  }
+
+  if (detectVpnHit()) { score -= 15; issues.push({ pts: -15, text: "检测到 VPN / 代理 / Tor 特征" }); }
+
+  const ports = state.ipDb?.ports || [];
+  const hitPorts = ports.filter(p => RISKY_PORTS.includes(p));
+  if (hitPorts.length) {
+    const p = Math.min(20, hitPorts.length * 5);
+    score -= p;
+    issues.push({ pts: -p, text: `开放高危端口 ${hitPorts.join(", ")}` });
+  }
+
+  const vulns = state.ipDb?.vulns || [];
+  if (vulns.length) {
+    const p = Math.min(15, vulns.length * 5);
+    score -= p;
+    issues.push({ pts: -p, text: `存在 ${vulns.length} 个已知漏洞` });
+  }
+
+  score = Math.max(0, score);
+  return { score, issues };
+}
+
+function calcDomainQuality() {
+  let score = 100;
+  const issues = [];
+
+  if (state.urlhausHit) { score -= 30; issues.push({ pts: -30, text: "URLhaus 中存在该域名的恶意 URL 记录" }); }
+
+  const pulse = state.otxPulseCount || 0;
+  if (pulse > 0) {
+    const p = Math.min(20, pulse * 5);
+    score -= p;
+    issues.push({ pts: -p, text: `OTX 关联 ${pulse} 个威胁 Pulse` });
+  }
+
+  if (state.sslInvalid) { score -= 25; issues.push({ pts: -25, text: "SSL 证书无效或已过期" }); }
+
+  if (!state.spf || state.spf === "") { score -= 5; issues.push({ pts: -5, text: "未配置 SPF 邮件安全记录" }); }
+  if (!state.dmarc || state.dmarc === "") { score -= 5; issues.push({ pts: -5, text: "未配置 DMARC 邮件安全记录" }); }
+  if (!state.icp) { score -= 10; issues.push({ pts: -10, text: "未查询到 ICP 备案信息" }); }
+
+  score = Math.max(0, score);
+  return { score, issues };
+}
+
+function scoreColor(score) {
+  if (score >= 80) return { color: "#10b981", level: "优秀" };
+  if (score >= 60) return { color: "#3b82f6", level: "良好" };
+  if (score >= 40) return { color: "#f59e0b", level: "一般" };
+  return { color: "#ef4444", level: "较差" };
+}
+
+/* ============================================================
    画像推断引擎
    ============================================================ */
 function inferIpType() {
@@ -848,10 +979,37 @@ function buildProfileText() {
   return lines.join("\n");
 }
 
+/* ============================================================
+   整体画像渲染（含质量评分圆环）
+   ============================================================ */
 function renderProfile() {
+  const q = state.query;
+  const isIpAddr = /^[\d\.]+$/.test(q) || q.includes(":");
+  const quality = isIpAddr ? calcIpQuality() : calcDomainQuality();
+  const { color, level } = scoreColor(quality.score);
   const text = buildProfileText();
+
+  const issuesHtml = quality.issues.length
+    ? quality.issues.map(i => `<li>${esc(i.text)}（${i.pts}）</li>`).join("")
+    : `<li class="ok">未发现明显扣分项</li>`;
+
   const out = document.getElementById("out-profile");
   out.innerHTML = `
+    <div class="card">
+      <div class="quality-card">
+        <div class="score-circle" style="--score:${quality.score};--color:${color};">
+          <div class="score-inner">
+            <div class="score-num" style="color:${color}">${quality.score}</div>
+            <div class="score-label">${level}</div>
+          </div>
+        </div>
+        <div class="quality-body">
+          <h3>质量评分</h3>
+          <p class="quality-sub">综合威胁情报、暴露面与配置状态计算（满分 100）</p>
+          <ul class="quality-issues">${issuesHtml}</ul>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-header"><span class="card-title">画像说明</span>${tag("已生成", "ok")}</div>
       <pre id="profile-text">${esc(text)}</pre>
@@ -887,7 +1045,6 @@ async function runQuery() {
   }
   $btn.disabled = true;
 
-  // 重置状态，避免上一次查询残留
   for (const k of Object.keys(state)) delete state[k];
   state.query = q;
 
@@ -917,7 +1074,6 @@ async function runQuery() {
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
   ] : [];
 
-  // 目标 IP 检测任务
   const targetTasks = ipOnly ? [
     { title: "VPNDetection · VPN / 代理 / Tor", fn: () => mVpnDetection(q) },
     { title: "NetRiskScan · 风险评分 / 连接类型", fn: () => mNetRiskScan(q) },
@@ -938,9 +1094,8 @@ async function runQuery() {
     setEmpty("cert", "请输入域名后查询证书 / CDN");
   }
   if (!ipOnly && !domOnly && !urlOnly) setEmpty("intel", "请输入 IP、域名或 URL 后查询社区情报");
-  setEmpty("profile", "正在根据查询结果生成画像…");
+  setEmpty("profile", "正在根据查询结果生成质量评分与画像…");
 
-  // 处理自检页签的“目标 IP 检测”区域
   const targetLabel = document.getElementById("target-section-label");
   const targetOut = document.getElementById("out-self-target");
   if (ipOnly) {
@@ -951,21 +1106,17 @@ async function runQuery() {
     targetOut.innerHTML = "";
   }
 
-  // 并行执行所有任务
   await Promise.all([
     ipTasks.length ? runTasks("ip", ipTasks) : Promise.resolve(),
     domainTasks.length ? runTasks("domain", domainTasks) : Promise.resolve(),
     certTasks.length ? runTasks("cert", certTasks) : Promise.resolve(),
     targetTasks.length ? runTasks("self-target", targetTasks) : Promise.resolve(),
     intelTasks.length ? runTasks("intel", intelTasks) : Promise.resolve(),
-    // 输入 IP/域名时，确保“我的网络环境”也至少运行过一次
     (ipOnly || domOnly) ? runSelfMy() : Promise.resolve(),
   ]);
 
-  // 画像生成（复用 state）
   if (ipOnly || domOnly) {
     renderProfile();
-    // 若是 IP 输入，优先展示目标 IP 检测；域名输入则展示画像
     if (ipOnly) switchTab("selfcheck");
     else switchTab("profile");
   } else if (urlOnly) {
