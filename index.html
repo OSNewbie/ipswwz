@@ -75,7 +75,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .relation-box{background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:.8rem;color:#6b21a8}
 .relation-box strong{color:#7c3aed}
 
-/* ============ SSL 图形化增强 ============ */
+/* SSL 图形化 */
 .ssl-visual{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
 .ssl-ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0}
 .ssl-ring-svg{width:110px;height:110px;display:block}
@@ -107,7 +107,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .ssl-note{font-size:.74rem;color:#64748b;margin-top:.4rem;line-height:1.6;opacity:0;transition:opacity .4s ease 1.5s}
 .ssl-note.show{opacity:1}
 
-/* ============ CDN 图形化 ============ */
+/* CDN 图形化 */
 .cdn-summary{display:flex;gap:.8rem;flex-wrap:wrap;margin:.5rem 0 .8rem}
 .cdn-stat{flex:1;min-width:100px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.6rem .8rem;text-align:center}
 .cdn-stat-num{font-size:1.4rem;font-weight:700;line-height:1}
@@ -142,6 +142,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 .ad-phase span.done{background:#ecfdf5;color:#059669}
 .ad-action-row{display:flex;gap:.4rem;margin-top:.5rem}
 .ad-action-row button{flex:1}
+
 @media(max-width:600px){.header-inner{padding:.75rem .75rem .4rem}.header h1{font-size:1rem}.query-bar{flex-direction:column}.query-bar button{width:100%}main{padding:1rem .75rem 2rem}.score-circle{width:110px;height:110px}.score-num{font-size:1.7rem}}
 </style>
 </head>
@@ -172,7 +173,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-cert">
-    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 图形化检测、CDN 厂商识别、广告联盟信号、用户视角广告检测</p></div>
+    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 图形化检测、CDN 厂商识别（CNAME + IP 段 + 多地 Ping）、广告联盟信号、用户视角广告检测</p></div>
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
@@ -205,10 +206,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
         <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
         <li><code>Google DoH</code>：DNS 综合解析（正反向）</li>
         <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>Domainee</code>：SSL 深度检测</li>
+        <li><code>Domainee</code>：SSL 深度检测（参数名 host）</li>
         <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分</li>
         <li><code>PhishDestroy</code>：恶意域名风险评分</li>
         <li><code>OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
+        <li><code>apihz.cn pingplus</code>：多地 Ping 节点解析</li>
       </ul>
     </div>
     <div class="about-card">
@@ -223,10 +225,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
     </div>
     <div class="about-card">
       <h3>🌐 CDN 识别说明</h3>
-      <p>三层判定：</p>
+      <p>三层判定 + 多地 Ping：</p>
       <ul>
         <li><strong>CNAME 链</strong>：解析链中出现已知 CDN 域名特征</li>
         <li><strong>IP 段命中</strong>：A 记录 IP 落在 Cloudflare / CloudFront / Fastly / Akamai / Azure 等已知 IP 段内</li>
+        <li><strong>多地 Ping</strong>：通过免费 pingplus 接口从全球节点探测，收集不同地区解析出的 IP，再次进行 IP 段匹配</li>
         <li><strong>厂商统计</strong>：按命中厂商聚合，柱状图展示每个厂商覆盖的 IP 数量</li>
       </ul>
     </div>
@@ -450,7 +453,7 @@ function fmtTags(tags) {
   return tags.map(t => ENUM_CN[String(t).toLowerCase()] || t).join(", ");
 }
 
-/* 动画启动器：插入 HTML 后延迟触发各元素 .show 类 */
+/* 动画启动器 */
 function animateIn(container) {
   const tlFill = container.querySelector(".ssl-tl-fill");
   const tlNow = container.querySelector(".ssl-tl-now");
@@ -746,7 +749,6 @@ function renderSslVisual(d) {
   const sColor = score >= 80 ? "#10b981" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444";
   const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
 
-  // SVG 圆环动画参数
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const targetOffset = circumference * (1 - score / 100);
@@ -839,13 +841,16 @@ function renderSslVisual(d) {
   `;
 }
 
-/* ============ SSL 深度检测 ============ */
+/* ============ SSL 深度检测（修正参数名 host） ============ */
 async function mSslDomainee(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
-  const res = await fetchT(`https://api.domainee.dev/v1/tools/ssl-check?hostname=${encodeURIComponent(q)}`);
-  if (!res.ok) return `<pre>Domainee SSL 返回 HTTP ${res.status}</pre>`;
+  const url = `https://api.domainee.dev/v1/tools/ssl-check?host=${encodeURIComponent(q)}`;
+  const res = await fetchT(url);
+  if (!res.ok) return `<pre>Domainee SSL 返回 HTTP ${res.status}（可能额度已用完，30次/分钟）</pre>`;
   const json = await res.json();
-  if (!json.ok) return `<pre>SSL 检测失败：${esc(json.error?.message ?? "未知错误")}</pre>`;
+  if (!json.ok) {
+    return `<pre>SSL 检测失败：${esc(json.error?.message ?? "未知错误")}</pre>`;
+  }
 
   const d = json.data;
   state.sslInvalid = d.expired || !d.authorized;
@@ -920,7 +925,7 @@ async function mTcpSsl(q) {
     ${rawJson(d)}`;
 }
 
-/* ============ CDN 图形化检测 ============ */
+/* ============ CDN 图形化检测（含多地 Ping） ============ */
 async function mCdnDetect(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
 
@@ -949,15 +954,37 @@ async function mCdnDetect(q) {
   } catch (e) {}
 
   // 2. 查 A 记录 IP
-  const ips = [];
+  const ips = new Set();
   try {
     const r = await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`);
     const d = await r.json();
-    (d.Answer || []).filter(a => a.type === 1).forEach(a => ips.push(a.data));
+    (d.Answer || []).filter(a => a.type === 1).forEach(a => ips.add(a.data));
   } catch (e) {}
 
-  // 3. 每个 IP 判断 CDN 厂商
-  const results = ips.map(ip => {
+  // 3. 多地 Ping 探测（新增）
+  const pingIps = new Set();
+  try {
+    const pingUrl = `https://cn.apihz.cn/api/wangzhan/pingplus.php?id=88888888&key=88888888&domain=${encodeURIComponent(q)}`;
+    const r = await fetchT(pingUrl, {}, 12000);
+    if (r.ok) {
+      const d = await r.json();
+      const data = d.data || d;
+      if (Array.isArray(data)) {
+        data.forEach(node => {
+          if (node.ip) pingIps.add(node.ip);
+        });
+      } else if (data && typeof data === "object") {
+        Object.values(data).forEach(val => {
+          if (typeof val === "string" && isIP(val)) pingIps.add(val);
+          else if (val && typeof val === "object" && val.ip) pingIps.add(val.ip);
+        });
+      }
+    }
+  } catch (e) {}
+
+  // 合并所有 IP
+  const allIps = new Set([...ips, ...pingIps]);
+  const results = [...allIps].map(ip => {
     const vendor = detectCdnVendor(ip);
     return { ip, vendor };
   });
@@ -1006,24 +1033,25 @@ async function mCdnDetect(q) {
     : "";
 
   const verdictHTML = (cnameHit || uniqueVendors.length)
-    ? `<div class="cdn-verdict hit">🔍 判定结果：使用 CDN 加速${cnameHit ? `（CNAME 命中 ${cnameHit}）` : ""}${uniqueVendors.length ? `，A 记录命中 ${uniqueVendors.join("、")}` : ""}</div>`
-    : `<div class="cdn-verdict no">✅ 判定结果：未发现明确 CDN 特征（CNAME 链与 A 记录 IP 段均未命中）</div>`;
+    ? `<div class="cdn-verdict hit">🔍 判定结果：使用 CDN 加速${cnameHit ? `（CNAME 命中 ${cnameHit}）` : ""}${uniqueVendors.length ? `，IP 段命中 ${uniqueVendors.join("、")}` : ""}</div>`
+    : `<div class="cdn-verdict no">✅ 判定结果：未发现明确 CDN 特征（CNAME 链与 IP 段均未命中）</div>`;
 
   return `
     <div class="cdn-summary">
-      <div class="cdn-stat"><div class="cdn-stat-num">${ips.length}</div><div class="cdn-stat-label">解析 IP 数</div></div>
+      <div class="cdn-stat"><div class="cdn-stat-num">${ips.size}</div><div class="cdn-stat-label">DNS A 记录 IP</div></div>
+      <div class="cdn-stat"><div class="cdn-stat-num">${pingIps.size}</div><div class="cdn-stat-label">Ping 探测 IP</div></div>
       <div class="cdn-stat"><div class="cdn-stat-num" style="color:${hitCount ? '#dc2626' : '#059669'}">${hitCount}</div><div class="cdn-stat-label">命中 CDN 的 IP</div></div>
       <div class="cdn-stat"><div class="cdn-stat-num" style="color:#7c3aed">${uniqueVendors.length}</div><div class="cdn-stat-label">CDN 厂商数</div></div>
     </div>
     ${cnameChainHTML}
-    <div style="font-size:.74rem;color:#475569;font-weight:600;margin:.5rem 0 .35rem;">📡 解析 IP 与厂商分布</div>
+    <div style="font-size:.74rem;color:#475569;font-weight:600;margin:.5rem 0 .35rem;">📡 IP 与厂商分布（${results.length} 个）</div>
     <div class="cdn-ip-grid">${ipNodesHTML || '<div style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:1rem;">未解析到 IP</div>'}</div>
     ${Object.keys(vendorStats).length ? `<div style="font-size:.74rem;color:#475569;font-weight:600;margin:.6rem 0 .35rem;">📊 厂商占比统计</div><div class="cdn-bars">${barRowsHTML}</div>` : ""}
     ${verdictHTML}
     <div class="ssl-note" style="margin-top:.5rem;">
-      检测逻辑：CNAME 链特征 + A 记录 IP 段匹配（Cloudflare / CloudFront / Fastly / Akamai / Azure）。未命中的 IP 可能使用其他 CDN 或自建。
+      检测逻辑：CNAME 链特征 + DNS A 记录 IP 段匹配 + 多地 Ping 探测 IP 段匹配（Cloudflare / CloudFront / Fastly / Akamai / Azure）。未命中的 IP 可能使用其他 CDN 或自建。
     </div>
-    ${rawJson({ cname_chain: cnameChain, cname_hit: cnameHit, resolved_ips: results.map(r => ({ ip: r.ip, vendor: r.vendor ? r.vendor.name : null })), vendor_stats: vendorStats })}
+    ${rawJson({ cname_chain: cnameChain, cname_hit: cnameHit, dns_ips: [...ips], ping_ips: [...pingIps], results: results.map(r => ({ ip: r.ip, vendor: r.vendor ? r.vendor.name : null })), vendor_stats: vendorStats })}
   `;
 }
 
@@ -1557,7 +1585,6 @@ async function runTasksIn(container, tasks) {
       } else {
         placeholder.querySelector(".card-header").innerHTML = `<span class="card-title">${t.title}</span>${tag("完成", "ok")}`;
         placeholder.insertAdjacentHTML("beforeend", r);
-        // 触发动画
         animateIn(placeholder);
       }
     } catch (e) {
@@ -1951,7 +1978,7 @@ async function runQuery() {
   const certTasks = domOnly ? [
     { title: "Domainee · SSL 深度检测（评分 / 有效期 / 协议 / 算法）", fn: () => mSslDomainee(q) },
     { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
-    { title: "CDN 厂商识别（CNAME + IP 段 + 图形化）", fn: () => mCdnDetect(q) },
+    { title: "CDN 厂商识别（CNAME + IP 段 + 多地 Ping）", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
     { title: "用户视角广告检测（多阶段观察）", fn: () => mUserAdDetect(q) },
   ] : [];
