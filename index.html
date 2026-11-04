@@ -32,6 +32,9 @@ main{max-width:1000px;margin:0 auto;padding:1.25rem 1rem 3rem}
 .page-head h2{font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:.2rem}
 .page-head p{font-size:.8rem;color:#94a3b8}
 
+.section-label{font-size:.78rem;font-weight:700;color:#475569;margin:1.2rem 0 .6rem;padding-left:.35rem;border-left:3px solid #3b82f6;line-height:1.2}
+.section-label:first-of-type{margin-top:0}
+
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.9rem 1.1rem;margin-bottom:.65rem}
 .card-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
 .card-title{font-size:.85rem;font-weight:650;color:#0f172a}
@@ -76,14 +79,13 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
       <button class="tab active" data-tab="ip">📍 IP 溯源</button>
       <button class="tab" data-tab="domain">🌐 域名溯源</button>
       <button class="tab" data-tab="cert">🔒 证书 / CDN</button>
-      <button class="tab" data-tab="proxy">🛡️ 代理与出口</button>
+      <button class="tab" data-tab="selfcheck">🛡️ 网络自检</button>
       <button class="tab" data-tab="intel">🕵️ 社区情报</button>
       <button class="tab" data-tab="profile">📋 整体画像</button>
-      <button class="tab" data-tab="privacy">👤 隐私自检</button>
       <button class="tab" data-tab="about">ℹ️ 关于</button>
     </nav>
     <div class="query-bar">
-      <input id="qi" type="text" placeholder="输入 IP、域名或 URL，例如 8.8.8.8 / example.com" autocomplete="off" />
+      <input id="qi" type="text" placeholder="输入 IP、域名或 URL；留空则运行自身网络自检" autocomplete="off" />
       <button id="qb" onclick="runQuery()">查询</button>
     </div>
   </div>
@@ -105,9 +107,14 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
-  <section class="page" id="page-proxy">
-    <div class="page-head"><h2>代理与出口检测</h2><p>出口 IP 一致性、VPN / 代理 / Tor 标记、WebRTC 泄露</p></div>
-    <div id="out-proxy"><p class="empty">输入 IP 检测目标；留空则运行自身出口自检</p></div>
+  <section class="page" id="page-selfcheck">
+    <div class="page-head"><h2>网络自检</h2><p>检测自己的出口与隐私泄露；输入 IP 时同时检测目标 IP 的代理状态</p></div>
+
+    <div class="section-label">🖥️ 我的网络环境</div>
+    <div id="out-self-my"><p class="empty">正在运行自检…</p></div>
+
+    <div class="section-label" id="target-section-label" style="display:none">🎯 目标 IP 检测</div>
+    <div id="out-self-target"></div>
   </section>
 
   <section class="page" id="page-intel">
@@ -118,11 +125,6 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
   <section class="page" id="page-profile">
     <div class="page-head"><h2>整体画像</h2><p>基于已有查询结果自动生成的用途推断说明</p></div>
     <div id="out-profile"><p class="empty">输入 IP 或域名查询后，这里会生成画像说明</p></div>
-  </section>
-
-  <section class="page" id="page-privacy">
-    <div class="page-head"><h2>隐私自检</h2><p>浏览器出口、WebRTC 泄露、指纹一致性（与查询目标无关，可独立运行）</p></div>
-    <div id="out-privacy"></div>
   </section>
 
   <section class="page" id="page-about">
@@ -143,11 +145,11 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:400px;ove
     <div class="about-card">
       <h3>⚙️ 使用说明</h3>
       <ul>
-        <li>输入 IP：运行 IP 溯源、代理与出口、社区情报、整体画像</li>
+        <li>输入 IP：运行 IP 溯源、目标 IP 检测、社区情报、整体画像</li>
         <li>输入域名：运行域名溯源、证书/CDN、社区情报、整体画像</li>
         <li>输入 URL：运行社区情报（URL 维度）</li>
-        <li>“代理与出口”和“隐私自检”页签留空即运行自身自检</li>
-        <li>整体画像复用本次查询数据生成文字说明，可一键复制</li>
+        <li>留空查询：直接跳转到“网络自检”，运行自身出口与隐私检测</li>
+        <li>“网络自检”页签切换到该页时会自动运行“我的网络环境”部分</li>
       </ul>
     </div>
     <div class="about-card">
@@ -268,8 +270,7 @@ document.getElementById("tabs").addEventListener("click", e => {
   btn.classList.add("active");
   document.getElementById("page-" + btn.dataset.tab).classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (btn.dataset.tab === "privacy") runPrivacy();
-  if (btn.dataset.tab === "proxy") runProxySelfCheck();
+  if (btn.dataset.tab === "selfcheck") runSelfMy();
 });
 
 /* ============================================================
@@ -511,7 +512,7 @@ ${hits.map(h => "• " + h).join("\n")}</pre>`;
 }
 
 /* ============================================================
-   代理与出口检测
+   网络自检 · 目标 IP 检测
    ============================================================ */
 async function mVpnDetection(q) {
   if (!isIP(q)) return { skip: true, reason: "仅支持 IP" };
@@ -553,6 +554,9 @@ async function mProxyCheck(q) {
 <strong>置信度</strong> ${esc(det.confidence ?? "—")}%</pre>${rawJson(d)}`;
 }
 
+/* ============================================================
+   网络自检 · 我的网络环境
+   ============================================================ */
 async function pExitMulti() {
   const sources = [
     { name: "ip.sb", url: "https://api.ip.sb/ip" },
@@ -570,6 +574,60 @@ async function pExitMulti() {
   const lines = results.map(r => `<strong>${r.name}</strong> ${esc(r.ip)}`).join("\n");
   return `<pre>${lines}
 ${consistent && unique.length ? "✅ 出口 IP 一致" : tag("⚠️ 出口 IP 不一致，可能存在分流或代理", "warn")}</pre>`;
+}
+
+async function pWebRTC() {
+  return new Promise(res => {
+    const ips = new Set();
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    pc.createDataChannel("");
+    pc.onicecandidate = e => {
+      if (!e.candidate) return;
+      const m = e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
+      if (m) ips.add(m[0]);
+    };
+    pc.createOffer().then(o => pc.setLocalDescription(o));
+    setTimeout(() => {
+      pc.close();
+      const l = [...ips];
+      res(`<pre><strong>WebRTC 获取地址</strong>
+${l.length ? esc(l.join("\n")) : "未获取到（浏览器可能已阻止）"}
+${l.length ? tag("⚠️ 若与出口 IP 不符，说明 WebRTC 泄露了真实网络", "warn") : ""}</pre>`);
+    }, 3000);
+  });
+}
+
+async function pFingerprint() {
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+  let webgl = "—";
+  if (gl) { const d = gl.getExtension("WEBGL_debug_renderer_info"); if (d) webgl = gl.getParameter(d.UNMASKED_RENDERER_WEBGL); }
+  const parts = [
+    navigator.userAgent, navigator.language,
+    screen.width + "x" + screen.height,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.hardwareConcurrency, webgl
+  ].join("|");
+  let h = 0;
+  for (let i = 0; i < parts.length; i++) { h = ((h << 5) - h) + parts.charCodeAt(i); h |= 0; }
+  const fp = Math.abs(h).toString(16);
+  const key = "fp_" + location.hostname;
+  const last = localStorage.getItem(key);
+  localStorage.setItem(key, fp);
+  return `<pre><strong>指纹 ID</strong> ${esc(fp)}
+<strong>WebGL 渲染器</strong> ${esc(webgl)}
+<strong>CPU 线程</strong> ${esc(navigator.hardwareConcurrency ?? "—")}
+<strong>时区</strong> ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}
+<strong>上次访问</strong> ${last ? esc(last) : "首次"}
+${last && last !== fp ? tag("⚠️ 指纹已变化", "warn") : last ? "✅ 指纹未变化" : ""}</pre>`;
+}
+
+async function pTimeLang() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const lang = navigator.language;
+  return `<pre><strong>浏览器时区</strong> ${esc(tz)}
+<strong>浏览器语言</strong> ${esc(lang)}
+<strong>时区前缀</strong> ${esc(tz.split("/")[0] || "—")}</pre>`;
 }
 
 /* ============================================================
@@ -644,63 +702,6 @@ async function mFeodoC2(q) {
 <strong>首次发现</strong> ${esc(hit.first_seen ?? "—")}
 <strong>端口</strong> ${esc(hit.port ?? "—")}</pre>`;
   return `<pre>✅ 未在 Feodo C2 黑名单中发现</pre>`;
-}
-
-/* ============================================================
-   隐私自检模块
-   ============================================================ */
-async function pWebRTC() {
-  return new Promise(res => {
-    const ips = new Set();
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-    pc.createDataChannel("");
-    pc.onicecandidate = e => {
-      if (!e.candidate) return;
-      const m = e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
-      if (m) ips.add(m[0]);
-    };
-    pc.createOffer().then(o => pc.setLocalDescription(o));
-    setTimeout(() => {
-      pc.close();
-      const l = [...ips];
-      res(`<pre><strong>WebRTC 获取地址</strong>
-${l.length ? esc(l.join("\n")) : "未获取到（浏览器可能已阻止）"}
-${l.length ? tag("⚠️ 若与出口 IP 不符，说明 WebRTC 泄露了真实网络", "warn") : ""}</pre>`);
-    }, 3000);
-  });
-}
-
-async function pFingerprint() {
-  const canvas = document.createElement("canvas");
-  const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-  let webgl = "—";
-  if (gl) { const d = gl.getExtension("WEBGL_debug_renderer_info"); if (d) webgl = gl.getParameter(d.UNMASKED_RENDERER_WEBGL); }
-  const parts = [
-    navigator.userAgent, navigator.language,
-    screen.width + "x" + screen.height,
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    navigator.hardwareConcurrency, webgl
-  ].join("|");
-  let h = 0;
-  for (let i = 0; i < parts.length; i++) { h = ((h << 5) - h) + parts.charCodeAt(i); h |= 0; }
-  const fp = Math.abs(h).toString(16);
-  const key = "fp_" + location.hostname;
-  const last = localStorage.getItem(key);
-  localStorage.setItem(key, fp);
-  return `<pre><strong>指纹 ID</strong> ${esc(fp)}
-<strong>WebGL 渲染器</strong> ${esc(webgl)}
-<strong>CPU 线程</strong> ${esc(navigator.hardwareConcurrency ?? "—")}
-<strong>时区</strong> ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}
-<strong>上次访问</strong> ${last ? esc(last) : "首次"}
-${last && last !== fp ? tag("⚠️ 指纹已变化", "warn") : last ? "✅ 指纹未变化" : ""}</pre>`;
-}
-
-async function pTimeLang() {
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const lang = navigator.language;
-  return `<pre><strong>浏览器时区</strong> ${esc(tz)}
-<strong>浏览器语言</strong> ${esc(lang)}
-<strong>时区前缀</strong> ${esc(tz.split("/")[0] || "—")}</pre>`;
 }
 
 /* ============================================================
@@ -880,9 +881,8 @@ const sslThrottle = throttle(mTcpSsl, 6500);
 async function runQuery() {
   const q = $in.value.trim();
   if (!q) {
-    switchTab("proxy");
-    await runProxySelfCheck();
-    await runPrivacy();
+    switchTab("selfcheck");
+    await runSelfMy();
     return;
   }
   $btn.disabled = true;
@@ -917,7 +917,8 @@ async function runQuery() {
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
   ] : [];
 
-  const proxyTasks = ipOnly ? [
+  // 目标 IP 检测任务
+  const targetTasks = ipOnly ? [
     { title: "VPNDetection · VPN / 代理 / Tor", fn: () => mVpnDetection(q) },
     { title: "NetRiskScan · 风险评分 / 连接类型", fn: () => mNetRiskScan(q) },
     { title: "ProxyCheck · 代理标记 / 风险分", fn: () => mProxyCheck(q) },
@@ -936,22 +937,37 @@ async function runQuery() {
     setEmpty("domain", "请输入域名后查询域名溯源");
     setEmpty("cert", "请输入域名后查询证书 / CDN");
   }
-  if (!ipOnly) setEmpty("proxy", "输入 IP 查询目标；留空运行出口自检");
   if (!ipOnly && !domOnly && !urlOnly) setEmpty("intel", "请输入 IP、域名或 URL 后查询社区情报");
   setEmpty("profile", "正在根据查询结果生成画像…");
 
+  // 处理自检页签的“目标 IP 检测”区域
+  const targetLabel = document.getElementById("target-section-label");
+  const targetOut = document.getElementById("out-self-target");
+  if (ipOnly) {
+    targetLabel.style.display = "block";
+    targetOut.innerHTML = "";
+  } else {
+    targetLabel.style.display = "none";
+    targetOut.innerHTML = "";
+  }
+
+  // 并行执行所有任务
   await Promise.all([
     ipTasks.length ? runTasks("ip", ipTasks) : Promise.resolve(),
     domainTasks.length ? runTasks("domain", domainTasks) : Promise.resolve(),
     certTasks.length ? runTasks("cert", certTasks) : Promise.resolve(),
-    proxyTasks.length ? runTasks("proxy", proxyTasks) : Promise.resolve(),
+    targetTasks.length ? runTasks("self-target", targetTasks) : Promise.resolve(),
     intelTasks.length ? runTasks("intel", intelTasks) : Promise.resolve(),
+    // 输入 IP/域名时，确保“我的网络环境”也至少运行过一次
+    (ipOnly || domOnly) ? runSelfMy() : Promise.resolve(),
   ]);
 
   // 画像生成（复用 state）
   if (ipOnly || domOnly) {
     renderProfile();
-    switchTab("profile");
+    // 若是 IP 输入，优先展示目标 IP 检测；域名输入则展示画像
+    if (ipOnly) switchTab("selfcheck");
+    else switchTab("profile");
   } else if (urlOnly) {
     switchTab("intel");
   }
@@ -966,24 +982,14 @@ function switchTab(name) {
 }
 
 /* ============================================================
-   自身自检：代理与出口 / 隐私
+   网络自检 · 我的网络环境（只运行一次）
    ============================================================ */
-let proxySelfDone = false;
-async function runProxySelfCheck() {
-  if (proxySelfDone) return;
-  proxySelfDone = true;
-  await runTasks("proxy", [
+let selfMyDone = false;
+async function runSelfMy() {
+  if (selfMyDone) return;
+  selfMyDone = true;
+  await runTasks("self-my", [
     { title: "出口 IP 多源对比", fn: () => pExitMulti() },
-    { title: "WebRTC 泄露检测", fn: () => pWebRTC() },
-  ]);
-}
-
-let privacyDone = false;
-async function runPrivacy() {
-  if (privacyDone) return;
-  privacyDone = true;
-  await runTasks("privacy", [
-    { title: "出口 IP 对比", fn: () => pExitMulti() },
     { title: "WebRTC 泄露检测", fn: () => pWebRTC() },
     { title: "时区 / 语言信息", fn: () => pTimeLang() },
     { title: "浏览器指纹", fn: () => pFingerprint() },
