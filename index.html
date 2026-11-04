@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IP / 域名溯源与隐私自检面板</title>
+<title>IP / 域名溯源 · 国内优先版</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8fafc;color:#1e293b;padding:2rem 1rem;line-height:1.6}
@@ -39,20 +39,20 @@ details pre{margin-top:.4rem;font-size:.75rem;color:#64748b}
 </head>
 <body>
 <div class="container">
-<h1>🔍 IP / 域名溯源 · 隐私自检</h1>
+<h1>🔍 IP / 域名溯源 · 国内优先</h1>
 <p class="sub">
-全模块默认可用 · 无需 API Key ·
+优先国内数据源 · 字段中文化 ·
 <span style="color:#3b82f6">IP 溯源</span> ·
 <span style="color:#8b5cf6">域名溯源</span> ·
-<span style="color:#ec4899">隐私泄露检测</span>
+<span style="color:#ec4899">隐私自检</span>
 </p>
 
 <div class="query-bar">
-<input id="qi" type="text" placeholder="输入 IP 或域名，例如 8.8.8.8 或 example.com" autocomplete="off" />
+<input id="qi" type="text" placeholder="输入 IP 或域名，例如 58.30.0.0 或 example.cn" autocomplete="off" />
 <button id="qb" onclick="run()">查询</button>
 </div>
 
-<div id="out"><p class="empty">输入 IP 或域名开始查询；留空直接点“查询”可运行隐私自检</p></div>
+<div id="out"><p class="empty">输入 IP 或域名开始查询；留空直接点“查询”运行隐私自检</p></div>
 </div>
 
 <script>
@@ -63,175 +63,119 @@ const isIP=q=>/^[\d\.]+$/.test(q)||q.includes(":");
 const isDomain=q=>/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(q);
 
 function card(title,tagHtml,body=""){return`<div class="card"><div class="card-header"><span class="card-title">${title}</span>${tagHtml}</div>${body}</div>`}
-function rawJson(o){return`<details><summary>原始 JSON</summary><pre>${esc(JSON.stringify(o,null,2))}</pre></details>`}
+function rawJson(o){return`<details><summary>原始数据</summary><pre>${esc(JSON.stringify(o,null,2))}</pre></details>`}
 async function fetchT(url,opt={},ms=12000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{return await fetch(url,{...opt,signal:c.signal})}finally{clearTimeout(t)}}
 
-/* ================= IP 溯源 ================= */
+/* ================= IP 溯源（国内优先） ================= */
+
+// 1. ip9.com.cn — 国内 IP 归属地，免费不限次
+async function mIp9(q){
+if(!isIP(q))return{skip:true,reason:"ip9.com.cn 仅支持 IP"};
+const res=await fetchT(`https://ip9.com.cn/get?ip=${encodeURIComponent(q)}`);
+if(!res.ok)throw new Error(`HTTP ${res.status}`);
+const d=await res.json();
+if(d.ret!==200||!d.data)return`<pre>未查询到该 IP 的归属地信息</pre>`;
+const x=d.data;
+return`<pre><strong>IP</strong> ${esc(x.ip??"—")}
+<strong>国家/地区</strong> ${esc(x.country??"—")} (${esc(x.country_code??"—")})
+<strong>省份</strong> ${esc(x.prov??"—")}
+<strong>城市</strong> ${esc(x.city??"—")} ${esc(x.city_short_code??"")}
+<strong>区县</strong> ${esc(x.area??"—")}
+<strong>运营商</strong> ${esc(x.isp??"—")}
+<strong>经纬度</strong> ${esc(x.lng??"—")}, ${esc(x.lat??"—")}</pre>${rawJson(d)}`
+}
+
+// 2. ip.sb — 备用地理源（中文化字段）
 async function mIpSb(q){
-if(isDomain(q))return{skip:true,reason:"ip.sb 的 geoip 端点按 IP 查询"};
+if(!isIP(q))return{skip:true,reason:"ip.sb 仅支持 IP"};
 const res=await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);
 if(!res.ok)throw new Error(`HTTP ${res.status}`);
 const d=await res.json();
 return`<pre><strong>IP</strong> ${esc(d.ip??"—")}
 <strong>国家</strong> ${esc(d.country??"—")}
 <strong>城市</strong> ${esc(d.city??"—")}
-<strong>ISP</strong> ${esc(d.isp??"—")}
+<strong>运营商</strong> ${esc(d.isp??"—")}
 <strong>ASN</strong> ${esc(d.asn??"—")}</pre>${rawJson(d)}`
 }
 
-async function mIpwhois(q){
-if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
-const res=await fetchT(`https://ipwho.is/${encodeURIComponent(q)}`);
-if(!res.ok)throw new Error(`HTTP ${res.status}`);
-const d=await res.json();
-if(d.success===false)return`<pre>ipwho.is 无此 IP 数据</pre>`;
-return`<pre><strong>国家</strong> ${esc(d.country??"—")} (${esc(d.country_code??"—")})
-<strong>地区</strong> ${esc(d.region??"—")}
-<strong>城市</strong> ${esc(d.city??"—")}
-<strong>ASN</strong> ${esc(d.connection?.asn??"—")} ${esc(d.connection?.org??"")}
-<strong>时区</strong> ${esc(d.timezone?.id??"—")}</pre>${rawJson(d)}`
-}
-
-async function mGeojs(q){
-if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
-const res=await fetchT(`https://get.geojs.io/v1/ip/geo/${encodeURIComponent(q)}.json`);
-if(!res.ok)throw new Error(`HTTP ${res.status}`);
-const d=await res.json();
-return`<pre><strong>国家</strong> ${esc(d.country??"—")} (${esc(d.country_code??"—")})
-<strong>城市</strong> ${esc(d.city??"—")}
-<strong>ASN</strong> ${esc(d.asn??"—")} ${esc(d.organization_name??"")}
-<strong>时区</strong> ${esc(d.timezone??"—")}</pre>${rawJson(d)}`
-}
-
-async function mInternetDB(q){
-if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
-const res=await fetchT(`https://internetdb.shodan.io/${encodeURIComponent(q)}`);
-if(res.status===404)return`<pre>该 IP 暂无 InternetDB 记录</pre>`;
-if(!res.ok)throw new Error(`HTTP ${res.status}`);
-const d=await res.json();
-return`<pre><strong>开放端口</strong> ${esc(d.ports?.join(", ")||"—")}
-<strong>主机名</strong> ${esc(d.hostnames?.join(", ")||"—")}
-<strong>已知漏洞</strong> ${esc(d.vulns?.join(", ")||"—")}</pre>${rawJson(d)}`
-}
-
-async function mOtx(q){
-const type=isIP(q)?"IPv4":"domain";
-const res=await fetchT(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/general`);
-if(!res.ok)return`<pre>OTX 返回 HTTP ${res.status}</pre>`;
-const d=await res.json();
-const pulses=d.pulse_info?.count??"—";
-const names=(d.pulse_info?.pulses||[]).slice(0,5).map(p=>`- ${p.name}`).join("\n")||"—";
-return`<pre><strong>威胁 Pulse 数量</strong> ${esc(pulses)}
-<strong>近期 Pulse</strong>
-${esc(names)}</pre>${rawJson(d)}`
-}
-
+// 3. ContrastAPI — 威胁情报/信誉（无密钥）
 async function mContrast(q){
-if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
-const res=await fetchT(`https://api.contrastapi.com/v1/threat-report/${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>ContrastAPI 返回 HTTP ${res.status}</pre>`;
+if(!isIP(q))return{skip:true,reason:"ContrastAPI 仅支持 IP"};
+const res=await fetchT(`https://api.contrastcyber.com/v1/threat-report/${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>威胁情报服务返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
 const abuse=d.abuseipdb||{};
-return`<pre><strong>AbuseIPDB 评分</strong> ${esc(abuse.abuse_score??"—")}
-<strong>AbuseIPDB 报告数</strong> ${esc(abuse.total_reports??"—")}</pre>${rawJson(d)}`
+return`<pre><strong>AbuseIPDB 滥用评分</strong> ${esc(abuse.abuse_score??"—")}
+<strong>举报总数</strong> ${esc(abuse.total_reports??"—")}
+<strong>最近举报</strong> ${esc(abuse.last_reported_at??"—")}</pre>${rawJson(d)}`
 }
 
-async function mDShield(q){
-if(!isIP(q))return{skip:true,reason:"仅支持 IP"};
-const res=await fetchT(`https://isc.sans.edu/api/ip/${encodeURIComponent(q)}?json`);
-if(!res.ok)return`<pre>DShield 返回 HTTP ${res.status}</pre>`;
+/* ================= 域名溯源（国内优先） ================= */
+
+// 4. TCPLab Whois — 无需 Key，每分钟 10 次
+async function mTcpWhois(q){
+if(!isDomain(q))return{skip:true,reason:"Whois 查询仅支持域名"};
+const res=await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>Whois 查询返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
-const x=d.ip||d;
-return`<pre><strong>攻击记录数</strong> ${esc(x.count??x.reports??"—")}
-<strong>目标 IP 数</strong> ${esc(x.attacks??x.targets??"—")}
-<strong>ASN</strong> ${esc(x.as??x.asn??"—")} ${esc(x.asname??"")}</pre>${rawJson(d)}`
+const dates=d.dates||{};
+return`<pre><strong>是否已注册</strong> ${d.isRegistered?"是":"否"}
+<strong>注册商</strong> ${esc(d.registrar?.name??"—")}
+<strong>创建时间</strong> ${esc(dates.created?.slice(0,10)??"—")}
+<strong>到期时间</strong> ${esc(dates.expires?.slice(0,10)??"—")}
+<strong>DNS 服务器</strong> ${esc((d.nameservers||[]).map(n=>n.name).join(", ")||"—")}</pre>${rawJson(d)}`
 }
 
-/* ================= 域名溯源 ================= */
+// 5. RDAP — 国际域名补充
 async function mRdap(q){
-const type=isDomain(q)?"domain":"ip";
-const res=await fetchT(`https://rdap.org/${type}/${encodeURIComponent(q)}`);
-if(res.status===404)return`<pre>该 ${type} 暂无 RDAP 数据</pre>`;
+if(!isDomain(q))return{skip:true,reason:"RDAP 仅支持域名"};
+const res=await fetchT(`https://rdap.org/domain/${encodeURIComponent(q)}`);
+if(res.status===404)return`<pre>暂无 RDAP 数据</pre>`;
 if(!res.ok)return`<pre>RDAP 返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
-if(type==="domain"){
 const events=(d.events||[]).map(e=>`${e.eventAction}: ${e.eventDate?.slice(0,10)??""}`).join("\n");
 const registrar=(d.entities||[]).find(e=>e.roles?.includes("registrar"))?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3]||"—";
 return`<pre><strong>注册商</strong> ${esc(registrar)}
 <strong>关键日期</strong>
 ${esc(events||"—")}</pre>${rawJson(d)}`
-}else{
-return`<pre><strong>网络名称</strong> ${esc(d.name??"—")}
-<strong>起始 IP</strong> ${esc(d.startAddress??"—")}
-<strong>结束 IP</strong> ${esc(d.endAddress??"—")}
-<strong>国家</strong> ${esc(d.country??"—")}</pre>${rawJson(d)}`
-}
 }
 
-async function mTcpWhois(q){
-if(!isDomain(q))return{skip:true,reason:"TCPLab Whois 仅支持域名"};
-const res=await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
-if(!res.ok)return`<pre>TCPLab Whois 返回 HTTP ${res.status}</pre>`;
+// 6. 接口盒子 · 反向 DNS — IP 反查域名
+async function mRevDns(q){
+if(!isIP(q))return{skip:true,reason:"反向 DNS 仅支持 IP"};
+const res=await fetchT(`https://cn.apihz.cn/api/ip/fdns.php?ip=${encodeURIComponent(q)}`);
+if(!res.ok)return`<pre>反向 DNS 返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
-const data=d.data||d;
-return`<pre><strong>注册商</strong> ${esc(data.registrar??"—")}
-<strong>创建时间</strong> ${esc(data.creation_date??"—")}
-<strong>到期时间</strong> ${esc(data.expiration_date??"—")}
-<strong>状态</strong> ${esc(Array.isArray(data.status)?data.status.join(", "):data.status??"—")}
-<strong>DNS 服务器</strong> ${esc(Array.isArray(data.name_servers)?data.name_servers.join(", "):data.name_servers??"—")}</pre>${rawJson(d)}`
+if(d.code!==200||!d.data)return`<pre>未查询到该 IP 的历史绑定域名</pre>`;
+const domains=Array.isArray(d.data)?d.data.join("\n"):d.data;
+return`<pre><strong>历史绑定域名</strong>
+${esc(domains)}</pre>${rawJson(d)}`
 }
 
-async function mTcpDns(q){
-if(!isDomain(q))return{skip:true,reason:"DNS 查询仅支持域名"};
-const res=await fetchT(`https://tcp.lc/api/v2/dns/query`,{
-method:"POST",headers:{"Content-Type":"application/json"},
-body:JSON.stringify({domain:q,type:"A"})
-});
-if(!res.ok)return`<pre>TCPLab DNS 返回 HTTP ${res.status}</pre>`;
-const d=await res.json();
-if(d.code!==200)return`<pre>${esc(d.msg||"查询失败")}</pre>`;
-const records=(d.data?.answers||[]).map(a=>`${a.type} ${a.name} → ${a.data}`).join("\n")||"—";
-return`<pre><strong>A 记录</strong>
-${esc(records)}</pre>${rawJson(d)}`
-}
-
-async function mDohResolve(q){
-if(!isDomain(q))return{skip:true,reason:"DoH 解析仅支持域名"};
-const res=await fetchT(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`);
-if(!res.ok)throw new Error(`HTTP ${res.status}`);
-const d=await res.json();
-const answers=(d.Answer||[]).map(a=>`${a.type===1?"A":"AAAA"} ${a.data}`).join("\n")||"无解析记录";
-return`<pre><strong>解析结果</strong>
-${esc(answers)}</pre>${rawJson(d)}`
-}
-
-async function mTcpIcp(q){
+// 7. 接口盒子 · ICP 备案（需注册获取 ID/Key，此处使用公共测试凭证，频次受限）
+async function mIcp(q){
 if(!isDomain(q))return{skip:true,reason:"ICP 备案查询仅支持域名"};
-const res=await fetchT(`https://tcp.lc/api/v2/icp/query?domain=${encodeURIComponent(q)}`);
+// 公共测试凭证：id=88888888, key=88888888
+const res=await fetchT(`https://cn.apihz.cn/api/wangzhan/icp.php?id=88888888&key=88888888&domain=${encodeURIComponent(q)}`);
 if(!res.ok)return`<pre>ICP 查询返回 HTTP ${res.status}</pre>`;
 const d=await res.json();
-if(d.code!==200||!d.data)return`<pre>未查询到 ICP 备案信息（或当日额度已用尽）</pre>`;
-return`<pre><strong>备案号</strong> ${esc(d.data.icp_code??"—")}
-<strong>主办单位</strong> ${esc(d.data.unit_name??"—")}
-<strong>单位性质</strong> ${esc(d.data.unit_nature??"—")}
-<strong>审核时间</strong> ${esc(d.data.update_time??"—")}</pre>${rawJson(d)}`
+if(d.code!==200)return`<pre>未查询到备案信息（公共凭证频次可能已用尽，建议注册获取独享 Key）</pre>`;
+return`<pre><strong>备案号</strong> ${esc(d.icp??"—")}
+<strong>主办单位</strong> ${esc(d.unit??"—")}
+<strong>主体性质</strong> ${esc(d.type??"—")}
+<strong>审核时间</strong> ${esc(d.time??"—")}</pre>${rawJson(d)}`
 }
 
-/* ================= 隐私泄露检测 ================= */
+/* ================= 隐私自检（中文化） ================= */
+
 async function pExitCompare(){
 const results={};
-try{
-const a=await fetchT("https://api.ip.sb/ip",{headers:{"User-Agent":"ip-sb-check"}});
-results.ipSb=await a.text();
-}catch(e){results.ipSb="失败"}
-try{
-const b=await fetchT("https://api.ipify.org?format=json");
-results.ipify=(await b.json()).ip;
-}catch(e){results.ipify="失败"}
-const ok=results.ipSb===results.ipify&&results.ipSb!=="失败"&&results.ipify!=="失败";
-return`<pre><strong>ip.sb 看到</strong> ${esc(results.ipSb)}
-<strong>ipify 看到</strong> ${esc(results.ipify)}
-${ok?"✅ 出口一致":tag("⚠️ 出口不一致，可能存在分流","warn")}</pre>`
+try{const a=await fetchT("https://api.ip.sb/ip");results.ipSb=await a.text()}catch{results.ipSb="获取失败"}
+try{const b=await fetchT("https://api.ipify.org?format=json");results.ipify=(await b.json()).ip}catch{results.ipify="获取失败"}
+const ok=results.ipSb===results.ipify&&results.ipSb!=="获取失败"&&results.ipify!=="获取失败";
+return`<pre><strong>ip.sb 看到的出口 IP</strong> ${esc(results.ipSb)}
+<strong>ipify 看到的出口 IP</strong> ${esc(results.ipify)}
+${ok?"✅ 出口一致，未检测到分流":tag("⚠️ 出口不一致，可能存在分流或代理","warn")}</pre>`
 }
 
 async function pWebRTC(){
@@ -241,17 +185,15 @@ const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"
 pc.createDataChannel("");
 pc.onicecandidate=e=>{
 if(!e.candidate)return;
-const c=e.candidate.candidate;
-const m=c.match(/(\d{1,3}\.){3}\d{1,3}|([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}/i);
+const m=e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}|([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}/i);
 if(m)ips.add(m[0]);
 };
 pc.createOffer().then(o=>pc.setLocalDescription(o));
 setTimeout(()=>{
-pc.close();
-const list=[...ips];
+pc.close();const list=[...ips];
 resolve(`<pre><strong>WebRTC 获取到的地址</strong>
-${list.length?esc(list.join("\n")):"无（可能已被浏览器阻止）"}
-${list.length?tag("⚠️ 如果这些地址与你实际出口不符，说明 WebRTC 泄露了真实网络","warn"):""}</pre>`);
+${list.length?esc(list.join("\n")):"无（浏览器可能已阻止 WebRTC）"}
+${list.length?tag("⚠️ 若这些地址与实际出口不符，说明 WebRTC 泄露了真实网络","warn"):""}</pre>`);
 },3000);
 });
 }
@@ -260,16 +202,15 @@ async function pTimeLang(ipGeo){
 const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
 const lang=navigator.language;
 let geoCountry="—",geoCity="—";
-if(ipGeo){geoCountry=ipGeo.country||"—";geoCity=ipGeo.city||"—"}
-const tzCountry=tz.split("/")[0]||"—";
+if(ipGeo){geoCountry=ipGeo.country||ipGeo.country_code||"—";geoCity=ipGeo.city||"—"}
 let hint="";
-if(geoCountry!=="—"&&!tz.includes(geoCountry)&&geoCountry!=="United States"){
-hint=`<br>${tag("⚠️ 时区与 IP 国家可能不一致","warn")} IP: ${esc(geoCountry)} / 时区: ${esc(tz)}`;
+if(geoCountry!=="—"&&geoCountry!=="中国"&&geoCountry!=="China"){
+hint=`<br>${tag("⚠️ 当前查询的 IP 不在中国境内，浏览器时区/语言为 "+tz+" / "+lang,"warn")}`;
 }
 return`<pre><strong>浏览器时区</strong> ${esc(tz)}
 <strong>浏览器语言</strong> ${esc(lang)}
-<strong>IP 国家</strong> ${esc(geoCountry)}
-<strong>IP 城市</strong> ${esc(geoCity)}${hint}</pre>`
+<strong>查询 IP 的国家</strong> ${esc(geoCountry)}
+<strong>查询 IP 的城市</strong> ${esc(geoCity)}${hint}</pre>`
 }
 
 async function pFingerprint(){
@@ -277,18 +218,8 @@ const canvas=document.createElement("canvas");
 const gl=canvas.getContext("webgl")||canvas.getContext("experimental-webgl");
 let webglInfo="—";
 if(gl){const dbg=gl.getExtension("WEBGL_debug_renderer_info");if(dbg)webglInfo=gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)}
-const parts=[
-navigator.userAgent,
-navigator.language,
-screen.width+"x"+screen.height,
-screen.colorDepth,
-Intl.DateTimeFormat().resolvedOptions().timeZone,
-navigator.hardwareConcurrency||"—",
-navigator.deviceMemory||"—",
-webglInfo
-].join("|");
-let hash=0;
-for(let i=0;i<parts.length;i++){hash=((hash<<5)-hash)+parts.charCodeAt(i);hash|=0}
+const parts=[navigator.userAgent,navigator.language,screen.width+"x"+screen.height,screen.colorDepth,Intl.DateTimeFormat().resolvedOptions().timeZone,navigator.hardwareConcurrency||"—",navigator.deviceMemory||"—",webglInfo].join("|");
+let hash=0;for(let i=0;i<parts.length;i++){hash=((hash<<5)-hash)+parts.charCodeAt(i);hash|=0}
 const fp=Math.abs(hash).toString(16);
 const key="fp_last_"+location.hostname;
 const last=localStorage.getItem(key);
@@ -298,13 +229,13 @@ return`<pre><strong>指纹 ID</strong> ${esc(fp)}
 <strong>WebGL 渲染器</strong> ${esc(webglInfo)}
 <strong>CPU 线程</strong> ${esc(navigator.hardwareConcurrency??"—")}
 <strong>设备内存</strong> ${esc(navigator.deviceMemory??"—")} GB
-<strong>上次访问</strong> ${last?esc(last):"首次"}
-${changed?tag("⚠️ 指纹已变化","warn"):last?"✅ 指纹未变":""}</pre>`
+<strong>上次访问指纹</strong> ${last?esc(last):"首次访问"}
+${changed?tag("⚠️ 指纹已发生变化","warn"):last?"✅ 指纹未变化":""}</pre>`
 }
 
 /* ================= 主流程 ================= */
 function throttle(fn,ms){let last=0;return async(...a)=>{const w=Math.max(0,last+ms-Date.now());if(w>0)await new Promise(r=>setTimeout(r,w));last=Date.now();return fn(...a)}}
-const internetdbThrottled=throttle(mInternetDB,1100);
+const whoisThrottled=throttle(mTcpWhois,6500); // 每分钟 10 次 ≈ 6 秒一次
 
 async function run(){
 const q=$in.value.trim();
@@ -313,32 +244,26 @@ const hasQuery=q.length>0;
 const ipOnly=hasQuery&&isIP(q);
 const domOnly=hasQuery&&isDomain(q);
 
-// 并行获取 ip.sb 地理数据，供隐私检测复用
 let ipGeo=null;
-if(ipOnly){try{const r=await fetchT(`https://api.ip.sb/geoip/${encodeURIComponent(q)}`);if(r.ok)ipGeo=await r.json()}catch(e){}}
+if(ipOnly){try{const r=await fetchT(`https://ip9.com.cn/get?ip=${encodeURIComponent(q)}`);if(r.ok){const j=await r.json();if(j.ret===200)ipGeo=j.data}}catch(e){}}
 
 const sections=[
 {name:"IP 溯源",color:"#3b82f6",tasks:[
-{title:"ip.sb · 主检测源",fn:()=>mIpSb(q),skip:!hasQuery},
-{title:"ipwho.is · 备用地理",fn:()=>mIpwhois(q),skip:!ipOnly},
-{title:"GeoJS · 交叉验证地理",fn:()=>mGeojs(q),skip:!ipOnly},
-{title:"Shodan InternetDB · 资产测绘",fn:()=>internetdbThrottled(q),skip:!ipOnly},
-{title:"AlienVault OTX · 威胁情报",fn:()=>mOtx(q),skip:!hasQuery},
-{title:"ContrastAPI · IP 信誉",fn:()=>mContrast(q),skip:!ipOnly},
-{title:"SANS DShield · 攻击面",fn:()=>mDShield(q),skip:!ipOnly},
+{title:"ip9.com.cn · 国内归属地",fn:()=>mIp9(q),skip:!ipOnly},
+{title:"ip.sb · 备用地理",fn:()=>mIpSb(q),skip:!ipOnly},
+{title:"ContrastAPI · 威胁情报",fn:()=>mContrast(q),skip:!ipOnly},
+{title:"接口盒子 · 反向 DNS（域名反查）",fn:()=>mRevDns(q),skip:!ipOnly},
 ]},
 {name:"域名溯源",color:"#8b5cf6",tasks:[
-{title:"RDAP · 注册信息",fn:()=>mRdap(q),skip:!hasQuery},
-{title:"TCPLab Whois · 注册商/状态",fn:()=>mTcpWhois(q),skip:!domOnly},
-{title:"TCPLab DNS · A 记录",fn:()=>mTcpDns(q),skip:!domOnly},
-{title:"DoH 解析 · A/AAAA",fn:()=>mDohResolve(q),skip:!domOnly},
-{title:"TCPLab ICP 备案",fn:()=>mTcpIcp(q),skip:!domOnly},
+{title:"TCPLab Whois · 注册信息",fn:()=>whoisThrottled(q),skip:!domOnly},
+{title:"RDAP · 国际域名补充",fn:()=>mRdap(q),skip:!domOnly},
+{title:"接口盒子 · ICP 备案",fn:()=>mIcp(q),skip:!domOnly},
 ]},
-{name:"隐私泄露检测",color:"#ec4899",tasks:[
-{title:"出口 IP 对比（ip.sb vs ipify）",fn:()=>pExitCompare(),skip:false},
+{name:"隐私自检",color:"#ec4899",tasks:[
+{title:"出口 IP 对比",fn:()=>pExitCompare(),skip:false},
 {title:"WebRTC 泄露检测",fn:()=>pWebRTC(),skip:false},
 {title:"时区 / 语言一致性",fn:()=>pTimeLang(ipGeo),skip:false},
-{title:"浏览器指纹卡片",fn:()=>pFingerprint(),skip:false},
+{title:"浏览器指纹",fn:()=>pFingerprint(),skip:false},
 ]}
 ];
 
@@ -346,8 +271,8 @@ for(const sec of sections){
 $out.insertAdjacentHTML("beforeend",`<div class="section"><div class="section-title" style="color:${sec.color}">${sec.name}</div></div>`);
 const secEl=$out.lastElementChild;
 for(const t of sec.tasks){
-if(t.skip&&hasQuery){continue}
-if(!hasQuery&&sec.name!=="隐私泄露检测"){continue}
+if(t.skip)continue;
+if(!hasQuery&&sec.name!=="隐私自检")continue;
 
 secEl.insertAdjacentHTML("beforeend",card(t.title,tag("查询中…","load")));
 const el=secEl.lastElementChild;
