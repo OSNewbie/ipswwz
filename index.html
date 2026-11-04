@@ -104,7 +104,7 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
   </section>
 
   <section class="page" id="page-cert">
-    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 证书、CDN 特征、广告联盟信号、用户视角广告检测</p></div>
+    <div class="page-head"><h2>证书 / CDN / 广告</h2><p>SSL 深度检测、CDN 特征、广告联盟信号、用户视角广告检测</p></div>
     <div id="out-cert"><p class="empty">输入域名后点击查询</p></div>
   </section>
 
@@ -137,24 +137,26 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
         <li><code>Shodan InternetDB</code>：端口与漏洞测绘</li>
         <li><code>Google DoH</code>：DNS 综合解析（正反向）</li>
         <li><code>crt.sh</code>：证书透明日志子域名枚举</li>
-        <li><code>Domainee</code>：SSL 证书检测</li>
+        <li><code>Domainee</code>：SSL 深度检测（协议/套件/颁发机构/剩余天数/安全评分）</li>
         <li><code>checkip.me</code>：VPN / 代理 / Tor / 风险评分，CORS 已启用</li>
         <li><code>PhishDestroy</code>：恶意域名风险评分 0–100，无密钥、CORS Ready</li>
         <li><code>OTX / ContrastAPI / Feodo Tracker</code>：社区威胁情报</li>
       </ul>
     </div>
     <div class="about-card">
-      <h3>🔗 统一溯源说明</h3>
+      <h3>🔐 SSL 安全评分规则（满分 100）</h3>
       <ul>
-        <li><strong>输入域名</strong>：解析 A 记录得到 IP，对域名跑 Whois/DNS/ICP，对每个 IP 跑归属/端口/VPN 检测</li>
-        <li><strong>输入 IP</strong>：PTR 反向解析 + 反向 IP 查询得到域名，对 IP 跑归属/端口/VPN，对每个域名跑 Whois/ICP</li>
-        <li>主目标展示完整模块，关联目标展示核心模块，最多各 3 个</li>
+        <li>证书有效且未过期：+60</li>
+        <li>协商协议 TLSv1.3：+20；TLSv1.2：+10</li>
+        <li>剩余有效期 &gt; 30 天：+10</li>
+        <li>加密套件包含 GCM 或 CHACHA20：+10</li>
+        <li>等级：A≥90 / B≥75 / C≥60 / D&lt;60</li>
       </ul>
     </div>
     <div class="about-card">
       <h3>📊 质量评分规则</h3>
       <p><strong>IP 评分（满分 100）</strong>：Feodo C2 命中 -35；OTX Pulse 每个 -5（最多 -20）；VPN/代理/Tor -15；高危端口每个 -5（最多 -20）；CVE 每个 -5（最多 -15）。</p>
-      <p style="margin-top:.5rem;"><strong>域名评分（满分 100）</strong>：PhishDestroy 风险分 ≥70 -25，50–69 -15，30–49 -5；OTX Pulse 每个 -5（最多 -20）；SSL 无效 -25；缺 SPF -5；缺 DMARC -5；未备案 -10；广告联盟 -5；用户视角广告命中 -5。</p>
+      <p style="margin-top:.5rem;"><strong>域名评分（满分 100）</strong>：PhishDestroy 风险分 ≥70 -25，50–69 -15，30–49 -5；OTX Pulse 每个 -5（最多 -20）；SSL 评分 &lt;60 -25，60–79 -10；缺 SPF -5；缺 DMARC -5；未备案 -10；广告联盟 -5；用户视角广告命中 -5。</p>
       <p style="margin-top:.5rem;font-size:.78rem;color:#94a3b8;">分数与雷达图仅供参考，不能替代专业安全评估。</p>
     </div>
     <div class="about-card">
@@ -167,115 +169,73 @@ details pre{margin-top:.4rem;font-size:.72rem;color:#64748b;max-height:420px;ove
 <script>
 const state = {};
 
-/* ============================================================
-   字段名中文化 + 含义注释
-   ============================================================ */
 const KEY_CN = {
-  // 通用
-  ip:"IP 地址", ip_address:"IP 地址", ipAddress:"IP 地址", ipv4:"IPv4 地址", ipv6:"IPv6 地址",
-  country:"国家/地区", country_code:"国家代码", country_name:"国家名称",
-  region:"地区（省/州）", province:"省份", city:"城市", district:"区县", area:"区域",
-  continent:"大洲", timezone:"时区", zip:"邮政编码", postal:"邮政编码",
-  isp:"运营商", org:"组织", organization:"组织", asn:"ASN（自治系统号）",
-  as_name:"AS 名称", asn_org:"ASN 组织", asname:"AS 名称", operator:"服务商",
-  latitude:"纬度（坐标）", longitude:"经度（坐标）", lat:"纬度", lng:"经度", lon:"经度",
-  connection_type:"连接类型（直连/住宅/企业/机房/移动）",
-  usage_type:"使用类型", domain:"域名", domains:"域名列表", hostname:"主机名",
-  hostnames:"主机名列表", url:"URL 地址", urls:"URL 列表", path:"路径",
-  // 端口 / 测绘
-  ports:"开放端口（列表）", port:"端口", tags:"标签（列表）",
-  cpes:"CPE 指纹（列表）", vulns:"已知漏洞 CVE（列表）",
-  // DNS / 解析
-  answers:"解析结果（列表）", Answer:"解析结果（列表）", Question:"查询问题",
-  type:"记录类型", name:"名称", data:"数据", ttl:"TTL（缓存秒数）",
-  status:"状态", code:"状态码", msg:"消息", ret:"状态码",
-  // Whois
-  registrar:"注册商", creation_date:"创建时间", expiration_date:"到期时间",
-  updated_date:"更新时间", name_servers:"DNS 服务器（列表）", nameservers:"DNS 服务器（列表）",
-  isRegistered:"是否已注册", dates:"日期信息", created:"创建时间",
-  expires:"到期时间", updated:"更新时间", registrant:"注册人", admin:"管理员",
-  tech:"技术联系人", billing:"账单联系人", contacts:"联系人", abuse:"滥用报告",
-  // SSL
+  ip:"IP 地址", ip_address:"IP 地址", country:"国家/地区", country_code:"国家代码",
+  region:"地区（省/州）", province:"省份", city:"城市", district:"区县",
+  isp:"运营商", org:"组织", asn:"ASN（自治系统号）", as_name:"AS 名称", operator:"服务商",
+  latitude:"纬度（坐标）", longitude:"经度（坐标）", timezone:"时区",
+  ports:"开放端口（列表）", hostnames:"主机名列表", hostname:"主机名",
+  tags:"标签（列表）", cpes:"CPE 指纹（列表）", vulns:"已知漏洞 CVE（列表）", ptr:"PTR 记录",
+  domains:"域名列表", domain:"域名", registrar:"注册商",
+  creation_date:"创建时间", expiration_date:"到期时间",
+  name_servers:"DNS 服务器（列表）", nameservers:"DNS 服务器（列表）", status:"状态",
+  isRegistered:"是否已注册", created:"创建时间", expires:"到期时间",
   issuer:"颁发者（CA）", subject:"证书主体", valid_from:"生效时间", valid_to:"到期时间",
   not_before:"生效时间", not_after:"到期时间", san:"备用名称 SAN（列表）",
-  serial:"序列号", signature_algorithm:"签名算法", valid:"是否有效",
-  tls_version:"TLS 版本", http2:"是否支持 HTTP/2", cipher:"加密套件",
-  days_left:"剩余有效天数", chain:"证书链",
-  // ICP
-  icp:"ICP 备案信息", icp_code:"备案号", filed:"是否已备案",
-  mainLicence:"主体备案号", serviceLicence:"网站备案号", unitName:"主办单位",
-  natureName:"主体性质（企业/个人/政府/事业）", unit_name:"主办单位",
-  unit_nature:"主体性质", updatedAt:"审核时间", update_time:"审核时间",
-  records:"备案记录（列表）", limitAccess:"是否限制访问", contentType:"前置审批项",
-  siteName:"网站名称", leaderName:"负责人", domain:"域名",
-  // 威胁情报
+  serial:"序列号", valid:"是否有效", altNames:"备用名称（列表）",
+  protocol:"协商协议", cipher:"加密套件", version:"版本", O:"组织名称", C:"国家代码", CN:"通用名称",
+  daysUntilExpiry:"剩余有效天数", authorized:"是否授权（证书链验证）", expired:"是否已过期",
+  answers:"解析结果（列表）", Answer:"解析结果（列表）", Question:"查询问题",
+  type:"记录类型", name:"名称", data:"数据", ttl:"TTL（缓存秒数）",
   pulse_info:"威胁简报信息", count:"数量", pulses:"威胁简报列表",
-  malware:"恶意软件家族", malware_families:"恶意软件家族（列表）",
-  first_seen:"首次发现时间", last_seen:"最近发现时间", last_online:"最近在线时间",
-  firstseen:"首次发现时间", lastseen:"最近发现时间", last_reported_at:"最近举报时间",
-  abuse_score:"滥用评分（0-100，越高越危险）", abuseConfidenceScore:"滥用置信度（0-100）",
-  total_reports:"举报总数", totalReports:"举报总数", lastReportedAt:"最近举报时间",
+  malware:"恶意软件家族", first_seen:"首次发现时间", last_online:"最近在线时间",
+  port:"端口", abuse_score:"滥用评分（0-100，越高越危险）",
+  total_reports:"举报总数", last_reported_at:"最近举报时间",
   verdict:"判定结果", threatfox:"ThreatFox 数据", urlhaus:"URLhaus 数据",
   abuseipdb:"AbuseIPDB 数据", family:"恶意家族", confidence_level:"置信度（0-100）",
   threat_type:"威胁类型", confidence:"置信度（0-100）", url_status:"URL 状态（在线/离线）",
-  blacklists:"黑名单信息", spamhaus_dbl:"Spamhaus DBL 状态", surbl:"SURBL 状态",
-  tags_list:"标签（列表）", references:"参考链接（列表）", description:"描述",
-  attack_ids:"ATT&CK 技术 ID（列表）", industries:"目标行业（列表）",
-  targeted_countries:"目标国家（列表）", author:"作者",
-  // checkip.me
+  blacklists:"黑名单信息", spamhaus_dbl:"Spamhaus DBL 状态",
+  icp:"ICP 备案信息", icp_code:"备案号", filed:"是否已备案",
+  mainLicence:"主体备案号", serviceLicence:"网站备案号", unitName:"主办单位",
+  natureName:"主体性质（企业/个人/政府/事业）", updatedAt:"审核时间",
+  records:"备案记录（列表）",
   vpn:"是否 VPN（虚拟专用网络）", proxy:"是否代理", tor:"是否 Tor（匿名网络）",
   hosting:"是否托管/机房 IP", isVpn:"是否 VPN", isProxy:"是否代理",
   isTor:"是否 Tor", isHosting:"是否托管",
   risk:"风险评分（0-100，越高越危险）",
-  // PhishDestroy
   score:"风险评分（0-100，越高越危险）", risk_score:"风险评分（0-100）",
   riskScore:"风险评分（0-100）", severity:"严重程度（严重/高/中/低）",
   matched_keywords:"匹配关键词（列表）", keywords:"关键词（列表）",
   multi_source_confirmed:"是否多源确认", confirmed:"是否确认", blocked:"是否已拦截",
-  // DNS 记录类型（作为值展示时用）
-  // 其它
   flag:"标记", index:"清洁度评分（0-100，越高越健康）", band:"风险等级",
   datacenter:"是否数据中心", scanner:"是否扫描器", anonymous:"是否匿名",
-  compromised:"是否已失陷", scraper:"是否爬虫", http2:"是否 HTTP/2",
+  compromised:"是否已失陷", scraper:"是否爬虫", http2:"是否支持 HTTP/2", tls_version:"TLS 版本",
 };
 
-/* ============================================================
-   字段值中文化映射
-   ============================================================ */
 const ENUM_CN = {
-  // 布尔值（作为字符串时）
-  "true":"是", "false":"否", "yes":"是", "no":"否",
-  "null":"无数据", "none":"无", "unknown":"未知", "n/a":"不适用",
-  // 严重程度 / 风险等级
+  "true":"是", "false":"否", "yes":"是", "no":"否", "null":"无数据", "none":"无",
+  "unknown":"未知", "n/a":"不适用",
   "critical":"严重", "high":"高", "medium":"中", "low":"低", "info":"信息",
   "safe":"安全", "clean":"干净", "suspicious":"可疑", "malicious":"恶意",
   "danger":"危险", "warning":"警告", "normal":"正常",
-  // 连接类型
   "direct":"直连", "residential":"住宅宽带", "business":"企业专线",
   "hosting":"托管机房", "mobile":"移动网络", "education":"教育网络",
-  "government":"政府网络", "military":"军事网络", "library":"公共图书馆",
-  "organization":"组织机构", "commercial":"商业网络", "content_delivery":"内容分发",
-  // 状态
+  "government":"政府网络", "organization":"组织机构", "commercial":"商业网络",
   "online":"在线", "offline":"离线", "active":"活跃", "inactive":"不活跃",
   "registered":"已注册", "unregistered":"未注册", "expired":"已过期",
   "valid":"有效", "invalid":"无效", "revoked":"已吊销",
-  "ok":"正常", "error":"错误", "fail":"失败", "failed":"失败", "success":"成功",
-  "pending":"等待中", "available":"可用", "unavailable":"不可用",
-  // 标签
+  "ok":"正常", "error":"错误", "fail":"失败", "success":"成功",
   "cloud":"云服务", "cdn":"CDN 边缘节点", "vpn":"VPN 出口", "tor":"Tor 匿名节点",
   "ics":"工业控制系统", "scada":"SCADA 工控", "honeypot":"蜜罐/欺骗主机",
   "database":"数据库服务", "web":"Web 服务", "dns":"DNS 服务", "mail":"邮件服务",
   "proxy":"代理服务", "iot":"物联网设备", "router":"路由器",
   "doubleclick":"双击广告", "malware":"恶意软件", "phishing":"钓鱼网站",
   "spam":"垃圾邮件", "botnet":"僵尸网络", "c2":"C2 命令控制服务器",
-  // DNS 记录类型
   "a":"A（IPv4 地址）", "aaaa":"AAAA（IPv6 地址）", "cname":"CNAME（别名）",
   "mx":"MX（邮件交换）", "ns":"NS（域名服务器）", "txt":"TXT（文本记录）",
   "soa":"SOA（起始授权）", "ptr":"PTR（反向指针）", "srv":"SRV（服务记录）",
-  "caa":"CAA（证书授权）", "ds":"DS（DNSSEC 委派）", "dnskey":"DNSKEY（DNSSEC 密钥）",
 };
 
-/* 端口 → 常见服务名 */
 const PORT_SERVICES = {
   20:"FTP-Data", 21:"FTP", 22:"SSH", 23:"Telnet", 25:"SMTP", 53:"DNS",
   67:"DHCP", 68:"DHCP", 80:"HTTP", 110:"POP3", 111:"RPC", 135:"RPC",
@@ -287,9 +247,6 @@ const PORT_SERVICES = {
   27017:"MongoDB",
 };
 
-/* ============================================================
-   值翻译 + 递归中文化
-   ============================================================ */
 function cnValue(key, val) {
   if (val === null || val === undefined) return "—";
   if (typeof val === "boolean") return val ? "是" : "否";
@@ -298,29 +255,16 @@ function cnValue(key, val) {
     if (Object.prototype.hasOwnProperty.call(ENUM_CN, lower)) return ENUM_CN[lower];
     return val;
   }
-  if (typeof val === "number") {
-    // 端口列表里的数字由调用方处理，这里原样返回
-    return val;
-  }
   return val;
 }
 
 function deepTranslate(obj, parentKey = "", seen = new WeakSet()) {
-  if (obj === null || typeof obj !== "object") {
-    return cnValue(parentKey, obj);
-  }
+  if (obj === null || typeof obj !== "object") return cnValue(parentKey, obj);
   if (seen.has(obj)) return "[循环引用]";
   seen.add(obj);
-
-  if (Array.isArray(obj)) {
-    return obj.map(x => deepTranslate(x, parentKey, seen));
-  }
-
+  if (Array.isArray(obj)) return obj.map(x => deepTranslate(x, parentKey, seen));
   const out = {};
-  for (const k of Object.keys(obj)) {
-    const nk = KEY_CN[k] || k;
-    out[nk] = deepTranslate(obj[k], k, seen);
-  }
+  for (const k of Object.keys(obj)) out[KEY_CN[k] || k] = deepTranslate(obj[k], k, seen);
   return out;
 }
 
@@ -329,9 +273,6 @@ function rawJson(o) {
   return `<details><summary>参数详情（中文键 + 中文值）</summary><pre>${esc(JSON.stringify(translated, null, 2))}</pre></details>`;
 }
 
-/* ============================================================
-   基础工具
-   ============================================================ */
 const $in = document.getElementById("qi");
 const $btn = document.getElementById("qb");
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -357,24 +298,15 @@ function throttle(fn, ms) {
   };
 }
 
-/* 端口格式化：22(SSH), 80(HTTP) */
 function fmtPorts(ports) {
   if (!ports || !ports.length) return "—";
   return ports.map(p => PORT_SERVICES[p] ? `${p}(${PORT_SERVICES[p]})` : String(p)).join(", ");
 }
-
-/* 标签格式化：cloud → 云服务 */
 function fmtTags(tags) {
   if (!tags || !tags.length) return "—";
-  return tags.map(t => {
-    const lower = String(t).toLowerCase();
-    return ENUM_CN[lower] || t;
-  }).join(", ");
+  return tags.map(t => ENUM_CN[String(t).toLowerCase()] || t).join(", ");
 }
 
-/* ============================================================
-   页签切换
-   ============================================================ */
 document.getElementById("tabs").addEventListener("click", e => {
   const btn = e.target.closest(".tab");
   if (!btn) return;
@@ -386,9 +318,7 @@ document.getElementById("tabs").addEventListener("click", e => {
   if (btn.dataset.tab === "env") runEnvCheck();
 });
 
-/* ============================================================
-   正反向解析
-   ============================================================ */
+/* ============ 正反向解析 ============ */
 async function resolveDomainToIps(domain) {
   const ips = new Set();
   try {
@@ -419,9 +349,7 @@ async function resolveIpToDomains(ip) {
   return [...domains];
 }
 
-/* ============================================================
-   IP 模块
-   ============================================================ */
+/* ============ IP 模块 ============ */
 async function mTcpIp(q) {
   if (!isIP(q)) return { skip: true, reason: "仅支持 IP" };
   const res = await fetchT(`https://tcp.lc/api/v2/ip/${encodeURIComponent(q)}`);
@@ -495,9 +423,7 @@ ${d.operator ? `<strong>服务商</strong> ${esc(d.operator)} <em>（VPN/代理�
 </pre>${rawJson(d)}`;
 }
 
-/* ============================================================
-   域名模块
-   ============================================================ */
+/* ============ 域名模块 ============ */
 async function mTcpWhois(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
   const res = await fetchT(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`);
@@ -608,23 +534,48 @@ ${esc(events || "—")}
 <em>（registration=注册，expiration=到期，last changed=最近变更）</em></pre>${rawJson(d)}`;
 }
 
-/* ============================================================
-   证书 / CDN / 广告
-   ============================================================ */
+/* ============ SSL 深度检测 ============ */
 async function mSslDomainee(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
   const res = await fetchT(`https://api.domainee.dev/v1/tools/ssl-check?hostname=${encodeURIComponent(q)}`);
   if (!res.ok) return `<pre>Domainee SSL 返回 HTTP ${res.status}</pre>`;
-  const d = await res.json();
-  if (d.valid === false) state.sslInvalid = true;
-  else if (d.valid === true && state.sslInvalid === undefined) state.sslInvalid = false;
+  const json = await res.json();
+  if (!json.ok) return `<pre>SSL 检测失败：${esc(json.error?.message ?? "未知错误")}</pre>`;
+
+  const d = json.data;
+  state.sslInvalid = d.expired || !d.authorized;
+  state.sslDaysLeft = d.daysUntilExpiry;
+  state.sslProtocol = d.protocol;
+
+  let score = 0;
+  if (d.authorized && !d.expired) score += 60;
+  if (d.protocol === "TLSv1.3") score += 20;
+  else if (d.protocol === "TLSv1.2") score += 10;
+  if ((d.daysUntilExpiry ?? 0) > 30) score += 10;
+  const cipherName = String(d.cipher?.name || "").toUpperCase();
+  if (cipherName.includes("GCM") || cipherName.includes("CHACHA20")) score += 10;
+  score = Math.min(100, score);
+  state.sslScore = score;
+
+  const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 60 ? "C" : "D";
+  const expireHint = d.daysUntilExpiry <= 0
+    ? "⚠️ 已过期"
+    : d.daysUntilExpiry <= 30
+      ? `⚠️ ${d.daysUntilExpiry} 天后过期`
+      : `✅ ${d.daysUntilExpiry} 天后过期`;
+
+  const issuerOrg = d.issuer?.O || d.issuer?.CN || d.issuer || "—";
+  const issuerCountry = d.issuer?.C ? `（${d.issuer.C}）` : "";
+
   return `<pre>
-<strong>是否有效</strong> ${d.valid ? "✅ 有效（证书链验证通过）" : "❌ 无效（证书链验证失败）"}
-<strong>颁发者</strong> ${esc(d.issuer ?? "—")} <em>（证书颁发机构 CA）</em>
-<strong>主体</strong> ${esc(d.subject ?? "—")} <em>（证书绑定的域名）</em>
-<strong>有效期起</strong> ${esc(d.validFrom ?? d.notBefore ?? "—")}
-<strong>有效期至</strong> ${esc(d.validTo ?? d.notAfter ?? "—")}
-<strong>备用名称</strong> ${esc((d.san || d.subjectAltName || []).join(", ") || "—")} <em>（该证书可用的其他域名）</em>
+<strong>安全评分</strong> ${score} / 100 <em>（等级 ${grade}：A≥90 / B≥75 / C≥60 / D&lt;60）</em>
+<strong>是否有效</strong> ${d.authorized && !d.expired ? "✅ 有效（证书链验证通过且未过期）" : "❌ 无效"}
+<strong>剩余有效期</strong> ${expireHint} <em>（到期日 ${esc(d.validTo?.slice(0, 10) ?? "—")}）</em>
+<strong>协商协议</strong> ${esc(d.protocol ?? "—")} <em>（TLS 1.2 / TLS 1.3）</em>
+<strong>加密套件</strong> ${esc(d.cipher?.name ?? "—")} <em>（${esc(d.cipher?.version ?? "")}）</em>
+<strong>颁发机构</strong> ${esc(issuerOrg)} ${issuerCountry} <em>（证书颁发机构 CA）</em>
+<strong>证书主体</strong> ${esc(d.subject?.CN ?? "—")}
+<strong>备用名称</strong> ${esc((d.altNames || []).join(", ") || "—")}
 </pre>${rawJson(d)}`;
 }
 
@@ -641,7 +592,7 @@ async function mTcpSsl(q) {
   if (x.valid === false) state.sslInvalid = true;
   else if (x.valid === true && state.sslInvalid === undefined) state.sslInvalid = false;
   return `<pre>
-<strong>是否有效</strong> ${x.valid ? "✅ 有效" : "❌ 无效"}
+<strong>是否有效</strong> ${x.valid ? "✅ 有效（交叉验证）" : "❌ 无效"}
 <strong>到期时间</strong> ${esc(x.expires_at ?? x.not_after ?? "—")}
 <strong>颁发机构</strong> ${esc(x.issuer ?? "—")}
 <strong>SAN</strong> ${esc((x.san || []).join(", ") || "—")} <em>（证书覆盖的域名列表）</em>
@@ -650,6 +601,7 @@ async function mTcpSsl(q) {
 </pre>${rawJson(d)}`;
 }
 
+/* ============ CDN / 广告联盟 ============ */
 async function mCdnDetect(q) {
   if (!isDomain(q)) return { skip: true, reason: "仅支持域名" };
   const hits = [];
@@ -718,9 +670,25 @@ ${state.adHits.map(n => "• " + n).join("\n")}
 <em>（该站点接入了上述广告联盟，大概率存在商业广告展示）</em></pre>`;
 }
 
-/* ============================================================
-   用户视角广告检测
-   ============================================================ */
+/* ============ 广告检测：iframe 预检 ============ */
+async function preflightFrame(q) {
+  try {
+    const res = await fetchT(`https://${q}`, { method: "HEAD", mode: "cors" }, 6000);
+    if (!res.ok) return { allowed: true, corsBlocked: true };
+    const xfo = res.headers.get("x-frame-options");
+    const csp = res.headers.get("content-security-policy") || "";
+    if (xfo && /deny|sameorigin/i.test(xfo)) {
+      return { allowed: false, reason: `X-Frame-Options: ${xfo}` };
+    }
+    if (/frame-ancestors\s+'none'/i.test(csp) || /frame-ancestors\s+'self'/i.test(csp)) {
+      return { allowed: false, reason: "CSP frame-ancestors 限制" };
+    }
+    return { allowed: true };
+  } catch (e) {
+    return { allowed: true, corsBlocked: true };
+  }
+}
+
 function mUserAdDetect(q) {
   if (!isDomain(q)) return Promise.resolve({ skip: true, reason: "仅支持域名" });
 
@@ -754,6 +722,7 @@ function mUserAdDetect(q) {
     let checkTimer = null;
     let lastHeight = 0;
     let adInterventions = 0;
+    let started = false;
 
     try {
       if (typeof ReportingObserver !== "undefined") {
@@ -786,13 +755,45 @@ ${signals.map(s => "• " + s).join("\n")}
 <em>（纯前端无法读取跨域 iframe 的 DOM，此结果仅基于弹窗/干预/高度突变等外围信号）</em></pre>`;
         state.userAdHit = false;
       }
-      resolve(resultBox.innerHTML);
+      btn.textContent = "▶ 重新检测";
+      btn.disabled = false;
     }
 
-    btn.onclick = () => {
+    btn.onclick = async () => {
+      if (started) {
+        // 重新检测时重置状态
+        window.open = origOpen;
+        if (checkTimer) clearInterval(checkTimer);
+        frame.src = "about:blank";
+        resultBox.innerHTML = "";
+        status.textContent = "";
+      }
+      started = true;
       btn.disabled = true;
+      btn.textContent = "⏳ 正在预检…";
+      status.textContent = "正在检测目标站点是否允许 iframe 嵌入…";
+
+      const pre = await preflightFrame(q);
+      if (!pre.allowed) {
+        state.frameBlocked = true;
+        state.frameBlockReason = pre.reason;
+        resultBox.innerHTML = `${tag("⚠️ 该站点禁止 iframe 嵌入", "warn")}
+<pre><strong>拒绝原因</strong> ${esc(pre.reason)}
+<strong>结论</strong> 无法通过 iframe 模拟用户访问进行广告检测。
+<em>X-Frame-Options 或 CSP frame-ancestors 是网站主动设置的安全策略，用于防止点击劫持。</em></pre>
+<a href="https://${esc(q)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:.5rem;padding:.4rem .9rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.8rem;text-decoration:none;">↗ 在新标签页打开 ${esc(q)}</a>`;
+        status.textContent = "";
+        btn.textContent = "▶ 重新尝试";
+        btn.disabled = false;
+        return;
+      }
+
+      state.frameBlocked = false;
+      state.frameBlockReason = null;
       btn.textContent = "⏳ 正在模拟访问…";
-      status.textContent = "用户手势已触发，正在加载目标站点并观察 10 秒…";
+      status.textContent = pre.corsBlocked
+        ? "无法读取响应头（CORS 拦截），直接加载 iframe 观察…"
+        : "用户手势已触发，正在加载目标站点并观察 10 秒…";
       frame.style.display = "block";
 
       window.open = function (...args) {
@@ -821,9 +822,7 @@ ${signals.map(s => "• " + s).join("\n")}
   });
 }
 
-/* ============================================================
-   社区情报
-   ============================================================ */
+/* ============ 社区情报 ============ */
 async function mPhishDestroy(q) {
   if (!isDomain(q)) return { skip: true, reason: "PhishDestroy 仅支持域名" };
   const res = await fetchT(`https://api.destroy.tools/v1/check?domain=${encodeURIComponent(q)}`);
@@ -937,9 +936,7 @@ function mContrastManual(q) {
   return Promise.resolve(container);
 }
 
-/* ============================================================
-   隐私 / 网络环境
-   ============================================================ */
+/* ============ 隐私 / 网络环境 ============ */
 async function pWebRTC() {
   return new Promise(res => {
     const ips = new Set();
@@ -994,9 +991,7 @@ async function pTimeLang() {
 </pre>`;
 }
 
-/* ============================================================
-   渲染
-   ============================================================ */
+/* ============ 渲染 ============ */
 async function runTasksIn(container, tasks) {
   for (const t of tasks) {
     const placeholder = document.createElement("div");
@@ -1032,9 +1027,7 @@ function setEmpty(pageId, msg) {
   document.getElementById("out-" + pageId).innerHTML = `<p class="empty">${msg}</p>`;
 }
 
-/* ============================================================
-   质量评分
-   ============================================================ */
+/* ============ 质量评分 ============ */
 const RISKY_PORTS = [21, 23, 135, 139, 445, 1433, 3306, 3389, 6379, 27017];
 
 function detectVpnHit() {
@@ -1071,7 +1064,12 @@ function calcDomainQuality() {
   }
   const pulse = state.otxPulseCount || 0;
   if (pulse > 0) { const p = Math.min(20, pulse * 5); score -= p; issues.push({ pts: -p, text: `OTX 关联 ${pulse} 个威胁 Pulse` }); }
-  if (state.sslInvalid) { score -= 25; issues.push({ pts: -25, text: "SSL 证书无效或已过期" }); }
+  if (typeof state.sslScore === "number") {
+    if (state.sslScore < 60) { score -= 25; issues.push({ pts: -25, text: `SSL 安全评分 ${state.sslScore}（等级 D）` }); }
+    else if (state.sslScore < 80) { score -= 10; issues.push({ pts: -10, text: `SSL 安全评分 ${state.sslScore}（等级 C）` }); }
+  } else if (state.sslInvalid) {
+    score -= 25; issues.push({ pts: -25, text: "SSL 证书无效或已过期" });
+  }
   if (!state.spf || state.spf === "") { score -= 5; issues.push({ pts: -5, text: "未配置 SPF 邮件安全记录" }); }
   if (!state.dmarc || state.dmarc === "") { score -= 5; issues.push({ pts: -5, text: "未配置 DMARC 邮件安全记录" }); }
   if (state.icp && state.icp.filed !== true) { score -= 10; issues.push({ pts: -10, text: "未查询到 ICP 备案（境外或未合规站点）" }); }
@@ -1087,9 +1085,7 @@ function scoreColor(score) {
   return { color: "#ef4444", level: "较差" };
 }
 
-/* ============================================================
-   雷达图
-   ============================================================ */
+/* ============ 雷达图 ============ */
 function calcRadarScores() {
   const isIpAddr = isIP(state.query);
   const q = isIpAddr ? calcIpQuality() : calcDomainQuality();
@@ -1097,7 +1093,8 @@ function calcRadarScores() {
   if (detectVpnHit()) anonymity = 30;
   else if (state.checkip?.risk >= 70) anonymity = 60;
   let cert = 70;
-  if (state.sslInvalid === true) cert = 0;
+  if (typeof state.sslScore === "number") cert = state.sslScore;
+  else if (state.sslInvalid === true) cert = 0;
   else if (state.sslInvalid === false) cert = 100;
   let exposure = 100;
   if (isIpAddr) {
@@ -1149,9 +1146,7 @@ function renderRadar(scores) {
   return `<svg viewBox="0 0 260 260" width="260" height="260" style="max-width:100%">${grid}${axisLines}<polygon points="${pts.join(" ")}" fill="#3b82f622" stroke="#3b82f6" stroke-width="2"/>${pts.map(p => { const [x, y] = p.split(","); return `<circle cx="${x}" cy="${y}" r="3" fill="#3b82f6"/>`; }).join("")}${labelsSvg}</svg>`;
 }
 
-/* ============================================================
-   画像
-   ============================================================ */
+/* ============ 画像 ============ */
 function inferIpType() {
   if (!state.ipDb && !state.ipGeo) return "未知";
   const tags = (state.ipDb?.tags || []).map(t => t.toLowerCase());
@@ -1247,9 +1242,14 @@ function buildProfileText() {
       lines.push(`【解析 IP】共 ${state.relatedIps.length} 个`);
       state.relatedIps.slice(0, 5).forEach(ip => lines.push(`  • ${ip}`));
     }
+    if (typeof state.sslScore === "number") {
+      const grade = state.sslScore >= 90 ? "A" : state.sslScore >= 75 ? "B" : state.sslScore >= 60 ? "C" : "D";
+      lines.push(`【SSL 安全】评分 ${state.sslScore}/100（等级 ${grade}）· 协议 ${state.sslProtocol || "—"} · 剩余 ${state.sslDaysLeft ?? "—"} 天`);
+    }
     if (state.cdnHits?.length) lines.push(`【CDN 信号】${state.cdnHits.join("；")}`);
     if (state.adHits?.length) lines.push(`【广告联盟】⚠️ ${state.adHits.join("、")}，该站点大概率存在商业广告展示`);
     if (state.userAdHit) lines.push(`【用户视角广告】⚠️ 模拟访问过程中捕获到弹窗或重型广告干预`);
+    else if (state.frameBlocked) lines.push(`【用户视角广告】站点禁止 iframe 嵌入（${state.frameBlockReason || "未知原因"}），无法模拟访问检测`);
     if (state.subCount) lines.push(`【子域名】证书透明日志中共 ${state.subCount} 个`);
     lines.push(`【邮件安全】SPF ${state.spf && state.spf !== "" ? "已配置" : "缺失"}；DMARC ${state.dmarc && state.dmarc !== "" ? "已配置" : "缺失"}`);
     const threats = threatSummary();
@@ -1328,9 +1328,7 @@ function copyProfile(btn) {
   });
 }
 
-/* ============================================================
-   网络环境
-   ============================================================ */
+/* ============ 网络环境 ============ */
 let envChecked = false;
 async function runEnvCheck(force = false) {
   if (envChecked && !force) return;
@@ -1363,9 +1361,7 @@ async function runEnvCheck(force = false) {
 }
 function forceEnvCheck() { envChecked = false; runEnvCheck(true); }
 
-/* ============================================================
-   统一查询主流程
-   ============================================================ */
+/* ============ 统一查询主流程 ============ */
 const whoisThrottle = throttle(mTcpWhois, 6500);
 const sslThrottle = throttle(mTcpSsl, 6500);
 
@@ -1385,7 +1381,7 @@ async function runQuery() {
   setEmpty("profile", "正在生成质量评分与画像…");
 
   const certTasks = domOnly ? [
-    { title: "Domainee · SSL 证书", fn: () => mSslDomainee(q) },
+    { title: "Domainee · SSL 深度检测", fn: () => mSslDomainee(q) },
     { title: "tcp.lc · SSL 交叉验证", fn: () => sslThrottle(q) },
     { title: "CDN 特征检测", fn: () => mCdnDetect(q) },
     { title: "广告联盟 DNS 信号", fn: () => mAdDetect(q) },
