@@ -113,7 +113,7 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 .cvc.n{background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8}
 .cvc.s{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
 .cvc.o{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
-.cig{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.35rem;margin:.4rem 0}
+.cig{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.35rem;margin:.4rem 0}
 .cin{padding:.45rem;border:1.5px solid var(--bd);border-radius:8px;background:#f8fafc;font-size:.68rem;opacity:0;transform:scale(.92);transition:all .3s ease}
 .cin.show{opacity:1;transform:scale(1)}
 .cin.h{border-color:currentColor;background:#fff}
@@ -123,10 +123,21 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 .ib{margin:.4rem 0}
 .ibr{display:flex;align-items:center;gap:.4rem;margin:.2rem 0;font-size:.7rem;opacity:0;transition:opacity .4s ease}
 .ibr.show{opacity:1}
-.ibn{min-width:100px;font-weight:600;color:#0f172a;font-size:.7rem}
+.ibn{min-width:110px;font-weight:600;color:#0f172a;font-size:.68rem}
 .ibt{flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
 .ibf{height:100%;border-radius:4px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1) .15s}
 .ibc{min-width:50px;text-align:right;color:var(--tx2);font-size:.64rem}
+.at{display:flex;gap:.3rem;margin-bottom:.4rem;flex-wrap:wrap}
+.at .d{padding:.22rem .55rem;border:1px solid var(--bd);border-radius:6px;background:#f8fafc;color:#334155;font-size:.68rem;cursor:pointer;font-weight:500}
+.at .d.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.apr{height:5px;background:#e2e8f0;border-radius:3px;margin-top:.4rem;overflow:hidden;display:none}
+.apf{height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width .3s linear;border-radius:3px}
+.aph{display:flex;gap:.3rem;margin-top:.3rem;flex-wrap:wrap;font-size:.64rem}
+.aph span{padding:.1rem .4rem;border-radius:20px;background:#f1f5f9;color:#94a3b8;font-weight:500;transition:all .2s}
+.aph span.a{background:var(--pri);color:#fff;font-weight:600}
+.aph span.d{background:#ecfdf5;color:#059669}
+.aar{display:flex;gap:.3rem;margin-top:.4rem}
+.aar button{flex:1;padding:.4rem .9rem;border:1px solid var(--bd);border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;cursor:pointer;font-weight:500}
 @media(max-width:600px){.hd-in{padding:.65rem .65rem .3rem}.qb{flex-direction:column}.qb button{width:100%}main{padding:.9rem .65rem 2rem}.sc{width:100px;height:100px}.sc-n{font-size:1.5rem}}
 </style>
 </head>
@@ -156,43 +167,113 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
   <section class="pg" id="pg-cert"><div class="ph"><h2>证书 / CDN / 广告</h2><p>SSL 主检测 + ContrastAPI 交叉验证、CDN 运营商级识别、广告检测</p></div><div id="out-cert"><p class="ep">输入域名后点击查询</p></div></section>
   <section class="pg" id="pg-env"><div class="ph"><h2>网络环境</h2><p>当前出口、VPN / 代理 / Tor</p></div><button style="padding:.4rem .9rem;border:1px solid var(--bd);border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;cursor:pointer;margin-bottom:.8rem" onclick="forceEnv()">🔄 重新检测</button><div id="out-env"><p class="ep">正在检测…</p></div></section>
   <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>恶意域名评分、威胁 Pulse、恶意样本、最新漏洞（仅近一年）</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
-  <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合质量评分、雷达图与判断依据</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
+  <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合质量评分与判断依据</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
   <section class="pg" id="pg-about"><div class="ph"><h2>关于</h2><p>核心说明</p></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">🌐 CDN 判定逻辑</div>
       <ul class="qi"><li>域名只解析出 <strong>1 个 IP</strong>：直接展示 ASN、运营商、BGP 前缀、国家，<strong>不做 CDN 判定</strong></li>
       <li>解析出 <strong>2 个及以上 IP</strong>：才做 CNAME + ASN 白名单匹配，统计运营商占比；未命中知名 CDN 时判定“疑似小众 CDN”</li>
-      <li>ASN 查询双保险：<code>ipwho.is</code> 主源 + <code>ipinfo.app</code> 备源，<strong>永不显示“未知 ASN”</strong></li></ul></div>
+      <li>ASN 双源查询：<code>ipwho.is</code> 主源 + <code>ipinfo.app</code> 备源，<strong>永不显示“未知 ASN”</strong></li></ul></div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🏷️ 运营商命名规则</div>
+      <ul class="qi"><li><strong>国内运营商</strong>：中文名 + 英文简称，如“中国电信 (ChinaNet 163)”</li>
+      <li><strong>海外骨干 / 运营商</strong>：中文名 + 英文名，如“Lumen (Level3)”、“NTT Global IP Network”</li>
+      <li><strong>海外云厂商</strong>：中文名 + 英文名，如“Amazon AWS”、“Microsoft Azure”</li>
+      <li><strong>CDN 厂商</strong>：厂商官方英文名，如“Cloudflare”、“Akamai”、“Fastly”</li>
+      <li><strong>未归类 ASN</strong>：<code>未归类 ASxxxx (Unclassified ASxxxx)</code>，同时展示原 ISP 名</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔒 SSL 检测</div>
-      <ul class="qi"><li>主检测：<code>Domainee</code>，免费无密钥、CORS 启用，30 次/分钟、500 次/天</li>
-      <li>交叉验证：<code>ContrastAPI</code>，免费无密钥、CORS 启用，30 次/小时，返回 A–F 评级与完整证书字段</li></ul></div>
+      <ul class="qi"><li>主检测：<code>Domainee</code>，免费无密钥、CORS 启用</li>
+      <li>交叉验证：<code>ContrastAPI</code>，免费无密钥、CORS 启用，返回 A–F 评级</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">🕵️ 漏洞情报</div>
-      <ul class="qi"><li>使用 <code>CIRCL CVE API</code> 的 <code>last/&lt;n&gt;</code> 端点获取<strong>最新发布</strong>的漏洞，无密钥、CORS 启用、无硬性速率限制</li>
-      <li>额外过滤：只保留最近 <strong>365 天</strong>内发布的 CVE，避免展示过时漏洞</li></ul></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">⚙️ 请求调度</div>
-      <ul class="qi"><li><strong>全局限流</strong>：每个接口按各自限额排队；<strong>并发控制</strong>：全局最多 6 个请求同时在飞</li>
-      <li><strong>失败隔离</strong>：一个失败只降级自己；<strong>短期缓存</strong>：5–30 分钟内重复查询直接命中</li></ul></div>
+      <ul class="qi"><li>使用 <code>CIRCL CVE API</code> 的 <code>last/20</code> 端点获取最新发布漏洞</li>
+      <li>只展示最近 <strong>365 天</strong>内发布的 CVE，避免过时数据</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">📊 评分规则</div>
       <ul class="qi"><li><strong>IP 质量分</strong>：基础 100 - VPN/代理/Tor 15 - C2 命中 35 - 风险评分按档扣 - 高危端口每个 5（最多 20）- CVE 每个 5（最多 15）</li>
-      <li><strong>SSL 评分</strong>：证书有效 60 + TLS1.3 20 或 1.2 10 + 剩余 &gt; 30 天 10 + 强套件 10，最高 100</li>
-      <li><strong>域名质量分</strong>：基础 100 - PhishDestroy 高风险 25 / 中 15 / 低 5 - SSL 评分 &lt; 60 扣 25 / 60–79 扣 10 - 未备案 10 - 广告联盟 5 - OTX Pulse 每个 5（最多 20）</li></ul></div>
+      <li><strong>SSL 评分</strong>：有效 60 + TLS1.3 20 或 1.2 10 + 剩余 &gt;30 天 10 + 强套件 10</li>
+      <li><strong>域名质量分</strong>：基础 100 - PhishDestroy 25/15/5 - SSL &lt;60 扣 25 / 60–79 扣 10 - 未备案 10 - 广告联盟 5 - OTX Pulse 每个 5（最多 20）</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔐 隐私</div><p style="font-size:.76rem;color:#475569">纯前端运行，不收集、不上传任何查询记录。</p></div>
   </section>
 </main>
 
 <script>
 /* ============================================================
-   常量与工具
+   运营商 & CDN 映射（国内中文 + 海外双语）
    ============================================================ */
-const CDN={'13335':['Cloudflare','#f38020'],'16509':['Amazon CloudFront','#ff9900'],'54113':['Fastly','#ff282d'],'20940':['Akamai','#009bde'],'16625':['Akamai','#009bde'],'8075':['Azure CDN','#0078d4'],'24429':['阿里云 CDN','#ff6a00'],'139341':['腾讯云 CDN','#00a4ff'],'38365':['百度云加速','#2932e1']};
-const CN_ISP={'4134':['中国电信','#0066cc'],'4837':['中国联通','#e60012'],'9929':['中国联通 CUII','#c00000'],'9808':['中国移动','#009944'],'4538':['中国教育网','#6b21a8'],'7497':['中国科技网','#7c3aed']};
-const GL_ISP={'3356':['Lumen','#1e40af'],'174':['Cogent','#dc2626'],'2914':['NTT','#0891b2'],'3257':['GTT','#7c3aed'],'6453':['Tata','#be123c'],'1299':['Arelion','#0f766e']};
-const CLOUD={'396982':['Google Cloud','#34a853'],'14061':['DigitalOcean','#0080ff'],'24940':['Hetzner','#d50c2d'],'16276':['OVH','#123c6e']};
-const CNAME_SIG=[[/\.cloudflare\.net|\.cloudflare\.com/i,'Cloudflare'],[/\.cloudfront\.net/i,'Amazon CloudFront'],[/\.fastly\.net|\.fastlylb\.net/i,'Fastly'],[/\.akamaiedge\.net|\.akamai\.net|\.edgesuite\.net|\.edgekey\.net/i,'Akamai'],[/\.azureedge\.net|\.azurefd\.net|\.trafficmanager\.net/i,'Azure CDN'],[/\.alikunlun\.com|\.kunluncan\.com|\.cdngslb\.com/i,'阿里云 CDN'],[/\.cdn\.dnsv1\.com|\.qcloudcdn\.com/i,'腾讯云 CDN'],[/\.bdydns\.com|\.yunjiasu\.com/i,'百度云加速']];
-const AD=[{p:/googlesyndication\.com|doubleclick\.net/i,n:'Google AdSense'},{p:/pos\.baidu\.com|cpro\.baidu\.com/i,n:'百度联盟'},{p:/tanx\.com|alimama\.com/i,n:'阿里妈妈'},{p:/e\.qq\.com|gdt\.qq\.com/i,n:'腾讯广点通'}];
+const CDN_MAP={
+  '13335':{n:'Cloudflare',c:'#f38020'},
+  '20940':{n:'Akamai',c:'#009bde'},
+  '16625':{n:'Akamai',c:'#009bde'},
+  '54113':{n:'Fastly',c:'#ff282d'},
+  '16509':{n:'Amazon CloudFront',c:'#ff9900'},
+  '8075':{n:'Microsoft Azure',c:'#0078d4'},
+  '24429':{n:'阿里云 CDN (Aliyun CDN)',c:'#ff6a00'},
+  '139341':{n:'腾讯云 CDN (Tencent Cloud CDN)',c:'#00a4ff'},
+  '45090':{n:'腾讯云 CDN (Tencent Cloud CDN)',c:'#00a4ff'},
+  '38365':{n:'百度云加速 (Baidu Yunjiasu)',c:'#2932e1'}
+};
+
+const CN_ISP_MAP={
+  '4134':{n:'中国电信 (ChinaNet 163)',c:'#0066cc'},
+  '4837':{n:'中国联通 (China169)',c:'#e60012'},
+  '9929':{n:'中国联通 CUII (Industrial Internet)',c:'#c00000'},
+  '9808':{n:'中国移动 (CMNET)',c:'#009944'},
+  '4538':{n:'中国教育网 (CERNET)',c:'#6b21a8'},
+  '7497':{n:'中国科技网 (CSTNET)',c:'#7c3aed'},
+  '23764':{n:'中国电信国际 (CTGNet)',c:'#1e40af'}
+};
+
+const GL_ISP_MAP={
+  '3356':{n:'Lumen (Level3)',c:'#1e40af'},
+  '1299':{n:'Arelion (Telia)',c:'#0f766e'},
+  '174':{n:'Cogent Communications',c:'#dc2626'},
+  '3257':{n:'GTT Communications',c:'#7c3aed'},
+  '2914':{n:'NTT Global IP Network',c:'#0891b2'},
+  '6453':{n:'Tata Communications',c:'#be123c'},
+  '3491':{n:'PCCW Global',c:'#7c2d12'},
+  '6762':{n:'Telecom Italia Sparkle',c:'#065f46'},
+  '5511':{n:'Orange',c:'#ea580c'}
+};
+
+const CLOUD_MAP={
+  '396982':{n:'Google Cloud',c:'#34a853'},
+  '16509':{n:'Amazon AWS',c:'#ff9900'},
+  '8075':{n:'Microsoft Azure',c:'#0078d4'},
+  '14061':{n:'DigitalOcean',c:'#0080ff'},
+  '24940':{n:'Hetzner',c:'#d50c2d'},
+  '16276':{n:'OVH',c:'#123c6e'}
+};
+
+const CNAME_SIG=[
+  [/\.cloudflare\.net|\.cloudflare\.com/i,'Cloudflare'],
+  [/\.cloudfront\.net/i,'Amazon CloudFront'],
+  [/\.fastly\.net|\.fastlylb\.net/i,'Fastly'],
+  [/\.akamaiedge\.net|\.akamai\.net|\.edgesuite\.net|\.edgekey\.net/i,'Akamai'],
+  [/\.azureedge\.net|\.azurefd\.net|\.trafficmanager\.net/i,'Azure CDN'],
+  [/\.alikunlun\.com|\.kunluncan\.com|\.cdngslb\.com/i,'阿里云 CDN (Aliyun CDN)'],
+  [/\.cdn\.dnsv1\.com|\.qcloudcdn\.com/i,'腾讯云 CDN (Tencent Cloud CDN)'],
+  [/\.bdydns\.com|\.yunjiasu\.com/i,'百度云加速 (Baidu Yunjiasu)']
+];
+
+const AD_SIG=[
+  {p:/googlesyndication\.com|doubleclick\.net/i,n:'Google AdSense'},
+  {p:/pos\.baidu\.com|cpro\.baidu\.com/i,n:'百度联盟'},
+  {p:/tanx\.com|alimama\.com/i,n:'阿里妈妈'},
+  {p:/e\.qq\.com|gdt\.qq\.com/i,n:'腾讯广点通'}
+];
+
 const PORTS={21:'FTP',22:'SSH',23:'Telnet',80:'HTTP',443:'HTTPS',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',6379:'Redis',27017:'MongoDB'};
 const RISKY=[21,23,135,139,445,1433,3306,3389,6379,27017];
-const LIM={'dns.google':100,'api.domainee.dev':2100,'api.contrastcyber.com':3000,'otx.alienvault.com':900,'api.destroy.tools':700,'feodotracker.abuse.ch':3000,'tcp.lc':500,'whois.tcp.lc':6500,'checkip.me':700,'myip.helpmek.com':500,'api.hackertarget.com':2000,'internetdb.shodan.io':1000,'ipwho.is':200,'atlas.ipinfo.app':200,'crt.sh':2500,'rdap.org':500,'api.globalping.io':600,'cve.circl.lu':500};
 
+const LIM={
+  'dns.google':100,'api.domainee.dev':2100,'api.contrastcyber.com':3000,
+  'otx.alienvault.com':900,'api.destroy.tools':700,'feodotracker.abuse.ch':3000,
+  'tcp.lc':500,'whois.tcp.lc':6500,'checkip.me':700,'myip.helpmek.com':500,
+  'api.hackertarget.com':2000,'internetdb.shodan.io':1000,'ipwho.is':200,
+  'atlas.ipinfo.app':200,'crt.sh':2500,'rdap.org':500,'api.globalping.io':600,
+  'cve.circl.lu':500
+};
+
+/* ============================================================
+   工具
+   ============================================================ */
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const tag=(t,c)=>`<span class="tg tg-${c}">${t}</span>`;
@@ -203,7 +284,7 @@ const raw=o=>`<details><summary>原始数据</summary><pre>${esc(JSON.stringify(
 const state={};
 
 /* ============================================================
-   请求层
+   请求层：限流 + 并发 + 缓存 + 失败隔离
    ============================================================ */
 const HL=new Map(),CACHE=new Map(),PREF='tb:';
 try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k?.startsWith(PREF))continue;try{const v=JSON.parse(localStorage.getItem(k));if(v&&v.exp>Date.now())CACHE.set(k,v);else localStorage.removeItem(k)}catch{localStorage.removeItem(k)}}}catch{}
@@ -278,29 +359,49 @@ function calcDomainScore(){
 }
 
 /* ============================================================
-   ASN 查询
+   ASN 归类（国内中文 + 海外双语）
    ============================================================ */
 function classify(asn,isp){
-  if(asn&&CDN[asn])return{n:CDN[asn][0],c:CDN[asn][1],cat:'cdn',lv:'知名 CDN'};
-  if(asn&&CN_ISP[asn])return{n:CN_ISP[asn][0],c:CN_ISP[asn][1],cat:'cn',lv:'国内运营商'};
-  if(asn&&GL_ISP[asn])return{n:GL_ISP[asn][0],c:GL_ISP[asn][1],cat:'gl',lv:'海外骨干'};
-  if(asn&&CLOUD[asn])return{n:CLOUD[asn][0],c:CLOUD[asn][1],cat:'cloud',lv:'海外云厂商'};
+  const k=asn?String(asn):null;
+  if(k&&CDN_MAP[k])return{n:CDN_MAP[k].n,c:CDN_MAP[k].c,cat:'cdn',lv:'CDN 厂商 (CDN Provider)'};
+  if(k&&CN_ISP_MAP[k])return{n:CN_ISP_MAP[k].n,c:CN_ISP_MAP[k].c,cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(k&&GL_ISP_MAP[k])return{n:GL_ISP_MAP[k].n,c:GL_ISP_MAP[k].c,cat:'gl_isp',lv:'海外骨干 (Global Backbone)'};
+  if(k&&CLOUD_MAP[k])return{n:CLOUD_MAP[k].n,c:CLOUD_MAP[k].c,cat:'cloud',lv:'海外云厂商 (Global Cloud)'};
+
   const s=String(isp||'').toLowerCase();
-  if(/china telecom|中国电信/.test(s))return{n:'中国电信',c:'#0066cc',cat:'cn',lv:'国内运营商'};
-  if(/china unicom|中国联通/.test(s))return{n:'中国联通',c:'#e60012',cat:'cn',lv:'国内运营商'};
-  if(/china mobile|中国移动/.test(s))return{n:'中国移动',c:'#009944',cat:'cn',lv:'国内运营商'};
-  if(/amazon|aws|google|azure|digitalocean|ovh|hetzner/i.test(s))return{n:isp,c:'#475569',cat:'cloud',lv:'云厂商'};
-  if(asn)return{n:`AS${asn}`,c:'#94a3b8',cat:'other',lv:'未归类'};
-  if(isp)return{n:isp,c:'#94a3b8',cat:'other',lv:'未归类'};
-  return{n:'保留/查询受限',c:'#94a3b8',cat:'other',lv:'保留'};
+  if(/china telecom|chinanet|中国电信/.test(s))return{n:'中国电信 (China Telecom)',c:'#0066cc',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(/china unicom|中国联通/.test(s))return{n:'中国联通 (China Unicom)',c:'#e60012',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(/china mobile|中国移动/.test(s))return{n:'中国移动 (China Mobile)',c:'#009944',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(/cernet|教育网/.test(s))return{n:'中国教育网 (CERNET)',c:'#6b21a8',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(/cstnet|科技网/.test(s))return{n:'中国科技网 (CSTNET)',c:'#7c3aed',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
+  if(/alibaba|aliyun|阿里/.test(s))return{n:'阿里云 (Aliyun)',c:'#ff6a00',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
+  if(/tencent|腾讯/.test(s))return{n:'腾讯云 (Tencent Cloud)',c:'#00a4ff',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
+  if(/baidu|百度/.test(s))return{n:'百度 (Baidu)',c:'#2932e1',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
+  if(/comcast|at&t|verizon|deutsche telekom|orange|bt |vodafone|kddi|softbank|ntt/.test(s))
+    return{n:isp+(/[a-zA-Z]/.test(isp)?' (海外 ISP)':''),c:'#64748b',cat:'gl_isp',lv:'海外宽带/移动 (Global ISP)'};
+  if(/amazon|aws|google cloud|azure|digitalocean|linode|ovh|hetzner|vultr/.test(s))
+    return{n:isp+(/[a-zA-Z]/.test(isp)?' (海外云厂商)':''),c:'#475569',cat:'cloud',lv:'海外云厂商 (Global Cloud)'};
+
+  if(k)return{n:`未归类 AS${k} (Unclassified AS${k})${isp?` · ${isp}`:''}`,c:'#94a3b8',cat:'other',lv:'未归类 (Unclassified)'};
+  if(isp)return{n:isp,c:'#94a3b8',cat:'other',lv:'未归类 (Unclassified)'};
+  return{n:'保留/查询受限 (Reserved/Restricted)',c:'#94a3b8',cat:'other',lv:'保留 (Reserved)'};
 }
+
 async function lookupIp(ip){
-  if(/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/.test(ip))return{asn:null,isp:'',country:'—',cidr:'',cls:classify(null,''),reserved:true};
+  if(/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/.test(ip))
+    return{asn:null,isp:'',country:'—',cidr:'',cls:classify(null,''),reserved:true};
   let asn=null,isp='',country='—',cidr='';
   const r1=await sf(`https://ipwho.is/${encodeURIComponent(ip)}`,{},{timeout:6000,cacheTTL:600000});
-  if(r1.ok&&r1.data?.success!==false){const d=r1.data;asn=d.connection?.asn?String(d.connection.asn).replace(/^AS/i,''):null;isp=d.connection?.isp||d.connection?.org||'';country=d.country||d.country_code||'—'}
+  if(r1.ok&&r1.data?.success!==false){const d=r1.data;
+    asn=d.connection?.asn?String(d.connection.asn).replace(/^AS/i,''):null;
+    isp=d.connection?.isp||d.connection?.org||'';
+    country=d.country||d.country_code||'—'}
   if(!asn||!cidr){const r2=await sf(`https://atlas.ipinfo.app/api/v2/ip/${encodeURIComponent(ip)}`,{},{timeout:6000,cacheTTL:600000});
-    if(r2.ok&&r2.data){const d=r2.data;if(!asn&&d.as_number!=null)asn=String(d.as_number);if(!isp)isp=d.as_description||'';if(!country||country==='—')country=d.country||d.country_code||'—';cidr=d.cidr||''}}
+    if(r2.ok&&r2.data){const d=r2.data;
+      if(!asn&&d.as_number!=null)asn=String(d.as_number);
+      if(!isp)isp=d.as_description||'';
+      if(!country||country==='—')country=d.country||d.country_code||'—';
+      cidr=d.cidr||''}}
   return{asn,isp,country,cidr,cls:classify(asn,isp),reserved:false};
 }
 
@@ -346,7 +447,7 @@ async function runTasks(page,tasks){
 function empty(page,msg){const el=$('out-'+page);if(el)el.innerHTML=`<p class="ep">${esc(msg)}</p>`}
 
 /* ============================================================
-   SSL：Domainee 主检测 + ContrastAPI 交叉验证
+   SSL
    ============================================================ */
 function renderSsl(d){
   const f=d.validFrom?new Date(d.validFrom):null,t=d.validTo?new Date(d.validTo):null,now=new Date();
@@ -396,7 +497,9 @@ async function mSsl(q){
   if(!r.ok)return{error:r.error};
   const j=r.data;if(!j?.ok)return{error:{code:'API',cn:'SSL 接口失败: '+(j?.error?.message||'未知')}};
   const d=j.data;
-  state.sslScore=calcSslScore(d).s;state.sslProtocol=d.protocol;state.sslDaysLeft=d.daysUntilExpiry;state.sslFrom=d.validFrom;state.sslTo=d.validTo;state.sslIssuer=d.issuer?.O||d.issuer?.CN;state.sslCipher=d.cipher?.name;state.sslInvalid=d.expired||!d.authorized;
+  state.sslScore=calcSslScore(d).s;state.sslProtocol=d.protocol;state.sslDaysLeft=d.daysUntilExpiry;
+  state.sslFrom=d.validFrom;state.sslTo=d.validTo;state.sslIssuer=d.issuer?.O||d.issuer?.CN;
+  state.sslCipher=d.cipher?.name;state.sslInvalid=d.expired||!d.authorized;
   return renderSsl(d)+raw(d);
 }
 
@@ -453,7 +556,7 @@ async function mCdn(q){
     if(r.country&&r.country!=='—')lines.push(`国家/地区：${esc(r.country)}`);
     if(r.asn)lines.push(`ASN：<strong>AS${esc(r.asn)}</strong>`);
     if(r.cidr)lines.push(`BGP 前缀：${esc(r.cidr)}`);
-    lines.push(`运营商：<strong style="color:${cls.c}">${esc(cls.n)}</strong>（${esc(cls.lv)}）`);
+    lines.push(`运营商：<strong style="color:${cls.c}">${esc(cls.n)}</strong> <span style="color:#94a3b8">（${esc(cls.lv)}）</span>`);
     if(r.isp&&r.isp!==cls.n)lines.push(`ISP 原名：${esc(r.isp)}`);
     return `<div class="cvc s">📍 域名仅解析出 <strong>1 个 IP</strong>（${esc(r.ip)}），通常意味着<strong>直连单一服务器</strong>，不做 CDN 特征判定。</div>
       <div style="font-size:.7rem;font-weight:700;color:#475569;margin:.5rem 0 .25rem">📡 该 IP 完整归属</div>
@@ -484,7 +587,7 @@ async function mCdn(q){
   const tot=res.length;
   const bars=Object.entries(stats).sort((a,b)=>b[1].count-a[1].count).map(([k,s])=>{
     const pct=((s.count/tot)*100).toFixed(0);
-    return `<div class="ibr"><div class="ibn" style="color:${s.c}">${esc(s.n)}<span style="font-weight:400;color:#94a3b8;font-size:.6rem;margin-left:.25rem">${esc(s.l)}</span></div><div class="ibt"><div class="ibf" data-w="${pct}" style="background:${s.c}"></div></div><div class="ibc">${s.count} 个 (${pct}%)</div></div>`}).join('');
+    return `<div class="ibr"><div class="ibn" style="color:${s.c}">${esc(s.n)}</div><div class="ibt"><div class="ibf" data-w="${pct}" style="background:${s.c}"></div></div><div class="ibc">${s.count} 个 (${pct}%)</div></div>`}).join('');
   return `<div style="font-size:.7rem;font-weight:700;color:#475569;margin:.3rem 0 .35rem">📋 证据链</div><div class="cev">${ev}</div>
     <div class="cvc ${vc}">${vt}</div>
     <div style="font-size:.7rem;font-weight:600;color:#475569;margin:.55rem 0 .3rem">📡 IP / ASN / 运营商（${res.length} 个）</div>
@@ -589,8 +692,23 @@ async function mRdap(q){
   return `<pre><strong>关键日期</strong>\n${esc(ev||'—')}</pre>${raw(d)}`;
 }
 
+async function mDns(q){
+  if(!isDom(q))return{skip:true,reason:'仅支持域名'};
+  const[a,c]=await Promise.all([
+    sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`,{},{timeout:8000,cacheTTL:300000}),
+    sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`,{},{timeout:8000,cacheTTL:300000})
+  ]);
+  const ips=a.ok?(a.data.Answer||[]).filter(x=>x.type===1).map(x=>x.data):[];
+  const chain=c.ok?(c.data.Answer||[]).map(x=>x.data):[];
+  let out='';
+  if(ips.length){out+=`<pre><strong>A 记录</strong>${ips.length} 个\n${ips.map(ip=>'  • '+esc(ip)).join('\n')}</pre>`}
+  else out+='<pre><strong>A 记录</strong>无（可能仅 AAAA 或未生效）</pre>';
+  if(chain.length)out+=`<pre><strong>CNAME 链</strong>\n${chain.map((c,i)=>'  '+(i?'→ ':'  ')+esc(c)).join('\n')}</pre>`;
+  return out;
+}
+
 /* ============================================================
-   社区情报：PhishDestroy、OTX、Feodo、最新 CVE
+   社区情报
    ============================================================ */
 async function mPhish(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
@@ -634,7 +752,6 @@ async function mFeodo(q){
   return alertBox('ok','未在 Feodo C2 黑名单中发现','该 IP 未被 Feodo Tracker 列为僵尸网络 C2 服务器。','可视为相对干净，但建议继续结合其他情报源综合判断。');
 }
 
-/* 最新漏洞：CIRCL last/20，过滤近一年 */
 async function mVulnLatest(){
   const r=await sf('https://cve.circl.lu/api/last/20',{},{timeout:10000,cacheTTL:600000,retries:0});
   if(!r.ok)return{error:r.error};
@@ -654,9 +771,9 @@ async function mAd(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const hits=[];
   const r1=await sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`,{},{timeout:8000,cacheTTL:900000});
-  if(r1.ok){const c=(r1.data.Answer||[]).map(a=>a.data).join(' ').toLowerCase();for(const n of AD)if(n.p.test(c))hits.push(n.n)}
+  if(r1.ok){const c=(r1.data.Answer||[]).map(a=>a.data).join(' ').toLowerCase();for(const n of AD_SIG)if(n.p.test(c))hits.push(n.n)}
   const r2=await sf(`https://crt.sh/?q=%25.${encodeURIComponent(q)}&output=json`,{},{timeout:15000,cacheTTL:1800000,retries:0});
-  if(r2.ok&&Array.isArray(r2.data)){const s=r2.data.map(x=>x.name_value).join(' ').toLowerCase();for(const n of AD)if(n.p.test(s))hits.push(n.n)}
+  if(r2.ok&&Array.isArray(r2.data)){const s=r2.data.map(x=>x.name_value).join(' ').toLowerCase();for(const n of AD_SIG)if(n.p.test(s))hits.push(n.n)}
   state.adHits=[...new Set(hits)];
   if(!state.adHits.length)return `<pre>未从 DNS / 证书透明日志中发现主流广告联盟特征。\n<em>（这是 DNS 层面的间接信号，不代表页面一定没有广告位）</em></pre>`;
   return alertBox('info',`该站点接入广告联盟：${state.adHits.join('、')}`,'该域名在 DNS / 证书透明日志中与主流广告联盟域名关联，说明站点使用了上述联盟的广告投放。','这通常意味着该站点以商业变现为目的，可能包含较多广告位。');
@@ -721,7 +838,7 @@ function mUserAd(q){
 function renderProfile(){
   const isIPAddr=isIP(state.query);const q=isIPAddr?calcIpScore():calcDomainScore();
   const col=scoreColor(q.s),is=q.is;
-  const issues=is.length?is.map(i=>`<li>${esc(i.t)}（${i.p})</li>`).join(''):'<li class="ok">未发现明显扣分项</li>';
+  const issues=is.length?is.map(i=>`<li>${esc(i.t)}（${i.p}）</li>`).join(''):'<li class="ok">未发现明显扣分项</li>';
   const detail=buildProfileText();
   $('out-profile').innerHTML=`
     <div class="cd"><div class="qc"><div class="sc" style="--s:${q.s};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${q.s}</div><div class="sc-l">${col.l}</div></div></div>
@@ -839,7 +956,6 @@ async function runQuery(){
         {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
       ])
     ];
-    // 统一溯源页：域名基础信息
     await Promise.allSettled([certP,intelP]);
     await runTasks('unified',[
       {t:'DNS A 记录',fn:()=>mDns(q)},
@@ -868,21 +984,6 @@ async function runQuery(){
     empty('unified','输入格式无效');$('qb').disabled=false;return;
   }
   $('qb').disabled=false;
-}
-
-async function mDns(q){
-  if(!isDom(q))return{skip:true,reason:'仅支持域名'};
-  const[a,c]=await Promise.all([
-    sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=A`,{},{timeout:8000,cacheTTL:300000}),
-    sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`,{},{timeout:8000,cacheTTL:300000})
-  ]);
-  const ips=a.ok?(a.data.Answer||[]).filter(x=>x.type===1).map(x=>x.data):[];
-  const chain=c.ok?(c.data.Answer||[]).map(x=>x.data):[];
-  let out='';
-  if(ips.length){out+=`<pre><strong>A 记录</strong>${ips.length} 个\n${ips.map(ip=>'  • '+esc(ip)).join('\n')}</pre>`}
-  else out+='<pre><strong>A 记录</strong>无（可能仅 AAAA 或未生效）</pre>';
-  if(chain.length)out+=`<pre><strong>CNAME 链</strong>\n${chain.map((c,i)=>'  '+(i?'→ ':'  ')+esc(c)).join('\n')}</pre>`;
-  return out;
 }
 
 function switchTab(n){
