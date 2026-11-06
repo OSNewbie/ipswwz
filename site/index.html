@@ -38,6 +38,7 @@ main{max-width:960px;margin:0 auto;padding:1rem 1rem 2.5rem}
 .tg-sk{background:#f1f5f9;color:var(--tx2)}
 .tg-wn{background:#fffbeb;color:#d97706}
 .tg-if{background:#f3e8ff;color:#7c3aed}
+.tg-tg{background:#e0e7ff;color:#3730a3}
 .cd pre{white-space:pre-wrap;word-break:break-word;font-size:.76rem;line-height:1.6;color:#334155;font-family:ui-monospace,SFMono-Regular,monospace}
 .cd pre strong{color:#0f172a;font-weight:600;display:inline-block;min-width:6.5em}
 .cd pre em{font-style:normal;color:#94a3b8;font-size:.7rem}
@@ -128,15 +129,14 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 .ibf{height:100%;border-radius:4px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1) .15s}
 .ibc{min-width:50px;text-align:right;color:var(--tx2);font-size:.64rem}
 
-/* 广告检测面板 */
+/* 广告 */
 .ad-panel{margin-top:.4rem}
 .ad-score-card{display:flex;gap:1.1rem;align-items:center;flex-wrap:wrap;padding:.8rem;border-radius:10px;background:linear-gradient(135deg,#f8fafc,#eff6ff);margin-bottom:.6rem;border:1px solid var(--bd)}
 .ad-score-body{flex:1;min-width:200px}
 .ad-score-body h3{font-size:.84rem;font-weight:650;margin-bottom:.2rem;color:#0f172a}
 .ad-score-sub{font-size:.7rem;color:#94a3b8;margin-bottom:.4rem}
 .ad-sch-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.6rem}
-.ad-sch{padding:.6rem .8rem;border-radius:10px;border:1px solid var(--bd);background:#fff;transition:all .2s}
-.ad-sch:hover{box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ad-sch{padding:.6rem .8rem;border-radius:10px;border:1px solid var(--bd);background:#fff}
 .ad-sch-head{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap}
 .ad-sch-num{width:1.3rem;height:1.3rem;border-radius:50%;background:#eff6ff;color:#2563eb;font-size:.66rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ad-sch-icon{font-size:.9rem}
@@ -148,9 +148,6 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 .ad-iframe-card{padding:.6rem .8rem;border-radius:10px;border:1px solid var(--bd);background:#fff;margin-bottom:.6rem}
 .ad-iframe-body{margin-top:.4rem}
 .ad-verdict{margin-top:.4rem}
-.ad-verdict .ab-s strong{display:inline-block;margin-right:.3rem}
-
-/* iframe 交互 */
 .at{display:flex;gap:.3rem;margin-bottom:.4rem;flex-wrap:wrap}
 .at .d{padding:.22rem .55rem;border:1px solid var(--bd);border-radius:6px;background:#f8fafc;color:#334155;font-size:.68rem;cursor:pointer;font-weight:500}
 .at .d.on{background:var(--pri);color:#fff;border-color:var(--pri)}
@@ -179,7 +176,7 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
       <button class="tab" data-tab="about">ℹ️ 关于</button>
     </nav>
     <div class="qb">
-      <input id="qi" type="text" placeholder="输入 IP 或域名" autocomplete="off">
+      <input id="qi" type="text" placeholder="输入 IP 或域名（自动互查：IP 反查域名、域名解析 IP）" autocomplete="off">
       <button id="qb" onclick="runQuery()">查询</button>
     </div>
   </div>
@@ -187,26 +184,29 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 </header>
 
 <main>
-  <section class="pg on" id="pg-unified"><div class="ph"><h2>统一溯源</h2><p>域名解析 IP 后自动附带 ASN 与运营商；单 IP 不做 CDN 判定</p></div><div id="out-unified"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
-  <section class="pg" id="pg-cert"><div class="ph"><h2>证书 / CDN / 广告</h2><p>SSL 主检测 + ContrastAPI 交叉验证、CDN 运营商级识别、4 种方案广告检测</p></div><div id="out-cert"><p class="ep">输入域名后点击查询</p></div></section>
+  <section class="pg on" id="pg-unified"><div class="ph"><h2>统一溯源</h2><p>输入 IP 自动反查域名并跑域名检测；输入域名自动解析 IP 并跑 IP 检测</p></div><div id="out-unified"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
+  <section class="pg" id="pg-cert"><div class="ph"><h2>证书 / CDN / 广告</h2><p>输入域名直接检测；输入 IP 会尝试从反向 DNS 找到域名后再检测</p></div><div id="out-cert"><p class="ep">输入域名或 IP 后点击查询</p></div></section>
   <section class="pg" id="pg-env"><div class="ph"><h2>网络环境</h2><p>当前出口、VPN / 代理 / Tor</p></div><button style="padding:.4rem .9rem;border:1px solid var(--bd);border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;cursor:pointer;margin-bottom:.8rem" onclick="forceEnv()">🔄 重新检测</button><div id="out-env"><p class="ep">正在检测…</p></div></section>
-  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>恶意域名评分、威胁 Pulse、恶意样本、最新漏洞（仅近一年）</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
-  <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合质量评分与判断依据</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
+  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>IP 和域名都跑全套威胁情报（OTX Pulse、恶意样本、Feodo C2、最新漏洞）</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
+  <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合 IP 和域名双维度数据评分</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
   <section class="pg" id="pg-about"><div class="ph"><h2>关于</h2><p>核心说明</p></div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔀 IP / 域名互查逻辑</div>
+      <ul class="qi">
+        <li><strong>输入 IP</strong>：跑 IP 全套（归属/ASN/BGP/端口/CVE/VPN/PTR/同 IP 域名），然后通过 PTR + 反向 IP 找到关联域名，自动对前 1 个域名跑 SSL/CDN/广告检测</li>
+        <li><strong>输入域名</strong>：跑域名全套（Whois/ICP/RDAP/DNS），然后解析 A 记录拿到 IP，自动对前 3 个 IP 跑归属/端口/CVE/VPN 检测</li>
+        <li>证书页对 IP 输入会先用反查到的域名跑检测；没有关联域名则明确提示"该 IP 无关联域名，无法检测 SSL/CDN/广告"</li>
+        <li>社区情报页 IP 和域名都跑 OTX Pulse + 恶意样本 + 最新漏洞；IP 额外跑 Feodo C2 比对</li>
+      </ul>
+    </div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">🌐 CDN 判定逻辑</div>
       <ul class="qi"><li>域名只解析出 <strong>1 个 IP</strong>：直接展示 ASN、运营商、BGP 前缀、国家，<strong>不做 CDN 判定</strong></li>
       <li>解析出 <strong>2 个及以上 IP</strong>：才做 CNAME + ASN 白名单匹配，统计运营商占比</li>
-      <li>ASN 双源查询：<code>ipwho.is</code> 主源 + <code>ipinfo.app</code> 备源，<strong>永不显示“未知 ASN”</strong></li></ul></div>
+      <li>ASN 双源查询：<code>ipwho.is</code> 主源 + <code>ipinfo.app</code> 备源，<strong>永不显示"未知 ASN"</strong></li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">📢 广告检测 4 种方案</div>
       <ul class="qi"><li><strong>方案1 · DNS CNAME 特征</strong>：直接查 CNAME 链是否指向广告联盟域名</li>
       <li><strong>方案2 · 证书透明日志</strong>：通过 crt.sh 查所有证书子域名，匹配广告联盟域名和广告前缀子域名</li>
-      <li><strong>方案3 · HTTP 头 + 页面 HTML 分析</strong>（代理受限，可选）</li>
-      <li><strong>方案4 · iframe 模拟用户访问</strong>：预检 → 加载 → 多阶段观察弹窗、广告干预、iframe 高度突变</li>
-      <li>综合评分：基础 100 - 每个广告联盟 20（最多 60）- 广告前缀子域名 5 个（最多 20）- iframe 弹窗 15 - 广告干预 10</li></ul></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🏷️ 运营商命名</div>
-      <ul class="qi"><li><strong>国内运营商</strong>：中文名 + 英文简称，如“中国电信 (ChinaNet 163)”</li>
-      <li><strong>海外骨干 / 云厂商</strong>：中文/官方英文名，如“Lumen (Level3)”、“Amazon AWS”</li>
-      <li><strong>未归类 ASN</strong>：<code>未归类 ASxxxx (Unclassified ASxxxx)</code></li></ul></div>
+      <li><strong>方案3 · iframe 模拟用户访问</strong>：预检 → 加载 → 多阶段观察弹窗、广告干预、iframe 高度突变</li>
+      <li><strong>方案4 · HTTP 头分析</strong>：预检时同时分析 X-Frame-Options 和 CSP</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">📊 评分规则</div>
       <ul class="qi"><li><strong>IP 质量分</strong>：基础 100 - VPN/代理/Tor 15 - C2 35 - 风险评分按档扣 - 高危端口每个 5（最多 20）- CVE 每个 5（最多 15）</li>
       <li><strong>SSL 评分</strong>：有效 60 + TLS1.3 20 或 1.2 10 + 剩余 &gt;30 天 10 + 强套件 10</li>
@@ -250,7 +250,6 @@ const CNAME_SIG=[
   [/\.cdn\.dnsv1\.com|\.qcloudcdn\.com/i,'腾讯云 CDN (Tencent Cloud CDN)'],
   [/\.bdydns\.com|\.yunjiasu\.com/i,'百度云加速 (Baidu Yunjiasu)']
 ];
-/* 广告联盟特征库 */
 const AD_NETWORKS=[
   {p:/googlesyndication\.com|doubleclick\.net|googleadservices\.com|googletagservices\.com/i,n:'Google AdSense / AdX'},
   {p:/pos\.baidu\.com|cpro\.baidu\.com|baidustatic\.com.*ad/i,n:'百度联盟'},
@@ -259,9 +258,7 @@ const AD_NETWORKS=[
   {p:/union\.360\.cn|ads\.360\.cn/i,n:'360 联盟'},
   {p:/adnxs\.com|rubiconproject\.com|pubmatic\.com|openx\.net/i,n:'海外 DSP (AppNexus/Rubicon/PubMatic/OpenX)'}
 ];
-/* 广告前缀子域名正则 */
 const AD_PREFIX_RE=/^(ad|ads|advert|adv|banner|sponsor|promo|click|track|pixel|beacon|stat|analytics)\./i;
-
 const PORTS={21:'FTP',22:'SSH',23:'Telnet',80:'HTTP',443:'HTTPS',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',6379:'Redis',27017:'MongoDB'};
 const RISKY=[21,23,135,139,445,1433,3306,3389,6379,27017];
 const LIM={
@@ -352,9 +349,9 @@ function calcDomainScore(){
       else if(n>=30){s-=5;is.push({p:-5,t:`PhishDestroy ${n} 关注`})}}}
   if(state.otxPulseCount>0){const d=Math.min(20,state.otxPulseCount*5);s-=d;is.push({p:-d,t:`OTX ${state.otxPulseCount} Pulse`})}
   if(state.adScore!=null){
-    if(state.adScore<60){s-=15;is.push({p:-15,t:`广告检测评分 ${state.adScore}/100（广告较多）`})}
-    else if(state.adScore<80){s-=8;is.push({p:-8,t:`广告检测评分 ${state.adScore}/100（轻微广告）`})}
-  }else if(state.adHits?.length){const d=Math.min(20,state.adHits.length*5);s-=d;is.push({p:-d,t:`广告联盟 ${state.adHits.join('、')}`})}
+    if(state.adScore<60){s-=15;is.push({p:-15,t:`广告检测 ${state.adScore}/100（广告较多）`})}
+    else if(state.adScore<80){s-=8;is.push({p:-8,t:`广告检测 ${state.adScore}/100（轻微广告）`})}
+  }
   if(state.sslScore!=null){if(state.sslScore<60){s-=25;is.push({p:-25,t:`SSL ${state.sslScore} 差`})}
     else if(state.sslScore<80){s-=10;is.push({p:-10,t:`SSL ${state.sslScore} 一般`})}}
   if(state.icp&&state.icp.filed!==true){s-=10;is.push({p:-10,t:'未 ICP 备案'})}
@@ -446,6 +443,7 @@ async function runTasks(page,tasks){
   await Promise.allSettled(tasks.map(t=>renderTask(c,t)));
 }
 function empty(page,msg){const el=$('out-'+page);if(el)el.innerHTML=`<p class="ep">${esc(msg)}</p>`}
+function sectionLabel(text,cls){return `<div class="ch" style="margin:.8rem 0 .3rem"><span class="ct" style="color:${cls==='related'?'#7c3aed':cls==='primary'?'#2563eb':'#0f172a'}">${esc(text)}</span></div>`}
 
 /* ============================================================
    SSL
@@ -510,7 +508,6 @@ async function mSslCross(q){
   if(!r.ok)return{error:{code:r.error.code,cn:'ContrastAPI SSL 交叉验证失败：'+r.error.cn}};
   const d=r.data?.result||r.data;
   const grade=d.grade||'—',valid=d.valid!==false,protocol=d.protocol||'—',issuer=d.issuer||'—',days=d.days_remaining??null,san=d.san||[];
-  if(!state.sslScore){const sc=calcSslScore({authorized:valid,expired:!valid,protocol,daysUntilExpiry:days,cipher:{name:d.cipher?.name||d.cipher||''}});state.sslScore=sc.s}
   return `<pre><strong>综合评级</strong>${esc(String(grade))} <em>（A–F，越高越好）</em>
 <strong>证书有效性</strong>${valid?'✅ 有效':'❌ 无效'}
 <strong>协商协议</strong>${esc(protocol)}
@@ -598,7 +595,7 @@ async function mCdn(q){
 }
 
 /* ============================================================
-   广告检测：4 种方案并行 + 图形化
+   广告
    ============================================================ */
 async function adByDns(q){
   const r=await sf(`https://dns.google/resolve?name=${encodeURIComponent(q)}&type=CNAME`,{},{timeout:8000,cacheTTL:900000});
@@ -625,23 +622,14 @@ async function adByCrt(q){
 function calcAdScore(dnsRes,crtRes){
   let s=100;const signals=[];
   const uniqueHits=[...new Set([...dnsRes.hits,...crtRes.hits])];
-  if(uniqueHits.length){
-    const d=Math.min(60,uniqueHits.length*20);
-    s-=d;
-    signals.push(`命中 ${uniqueHits.length} 个广告联盟：${uniqueHits.join('、')}（-${d}）`);
-  }
-  if(crtRes.adSubs?.length){
-    const d=Math.min(20,crtRes.adSubs.length*5);
-    s-=d;
-    signals.push(`发现 ${crtRes.adSubs.length} 个广告前缀子域名（-${d}）`);
-  }
+  if(uniqueHits.length){const d=Math.min(60,uniqueHits.length*20);s-=d;signals.push(`命中 ${uniqueHits.length} 个广告联盟：${uniqueHits.join('、')}（-${d}）`)}
+  if(crtRes.adSubs?.length){const d=Math.min(20,crtRes.adSubs.length*5);s-=d;signals.push(`发现 ${crtRes.adSubs.length} 个广告前缀子域名（-${d}）`)}
   return{score:Math.max(0,s),signals,uniqueHits};
 }
 
 function renderAdPanel(q,dnsRes,crtRes,scoreResult){
   const{score,signals,uniqueHits}=scoreResult;
   const col=scoreColor(score);
-
   const schemeHTML=(icon,title,res,num)=>{
     const hit=(res.hits?.length>0)||(res.adSubs?.length>0);
     const err=!!res.error;
@@ -651,47 +639,25 @@ function renderAdPanel(q,dnsRes,crtRes,scoreResult){
     if(res.hits?.length)body+=`<div class="ad-sch-hits">命中广告联盟：${res.hits.map(h=>`<span class="ad-badge">${esc(h)}</span>`).join('')}</div>`;
     if(res.adSubs?.length)body+=`<div class="ad-sch-hits">广告前缀子域名：${res.adSubs.slice(0,6).map(s=>`<span class="ad-badge ad-badge-sub">${esc(s)}</span>`).join('')}${res.adSubs.length>6?` 等 ${res.adSubs.length} 个`:''}</div>`;
     return `<div class="ad-sch">
-      <div class="ad-sch-head">
-        <span class="ad-sch-num">${num}</span>
-        <span class="ad-sch-icon">${hit?'🔴':err?'⚫':'⚪'}</span>
-        <span class="ad-sch-title">${icon} ${title}</span>
-        <span class="tg tg-${sCls}">${status}</span>
-      </div>
+      <div class="ad-sch-head"><span class="ad-sch-num">${num}</span><span class="ad-sch-icon">${hit?'🔴':err?'⚫':'⚪'}</span><span class="ad-sch-title">${icon} ${title}</span><span class="tg tg-${sCls}">${status}</span></div>
       ${body}
     </div>`;
   };
-
   const verdictCls=score>=80?'ok':score>=60?'info':score>=40?'warn':'danger';
   const verdictText=score>=80?'该站点广告特征较弱，可能是内容型或轻广告站点'
     :score>=60?'该站点存在少量广告特征，可能含 1-2 个广告位'
     :score>=40?'该站点广告特征明显，可能含多个广告位'
     :'该站点广告特征强烈，可能是重广告或内容农场站点';
-
   return `<div class="ad-panel">
     <div class="ad-score-card">
-      <div class="sc" style="--s:${score};--c:${col.c}">
-        <div class="sc-in">
-          <div class="sc-n" style="color:${col.c}">${score}</div>
-          <div class="sc-l">${col.l}</div>
-        </div>
-      </div>
-      <div class="ad-score-body">
-        <h3>广告检测综合评分（0-100，越高越干净）</h3>
-        <p class="ad-score-sub">基于 DNS CNAME + 证书透明日志 + iframe 模拟，分数越高广告越少</p>
+      <div class="sc" style="--s:${score};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${score}</div><div class="sc-l">${col.l}</div></div></div>
+      <div class="ad-score-body"><h3>广告检测综合评分（0-100，越高越干净）</h3><p class="ad-score-sub">基于 DNS CNAME + 证书透明日志 + iframe 模拟</p>
         ${signals.length?`<ul class="qi">${signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:'<ul class="qi"><li class="ok">未发现明显广告信号</li></ul>'}
       </div>
     </div>
-    <div class="ad-sch-list">
-      ${schemeHTML('📡','方案1 · DNS CNAME 特征',dnsRes,1)}
-      ${schemeHTML('📜','方案2 · 证书透明日志',crtRes,2)}
-    </div>
+    <div class="ad-sch-list">${schemeHTML('📡','方案1 · DNS CNAME 特征',dnsRes,1)}${schemeHTML('📜','方案2 · 证书透明日志',crtRes,2)}</div>
     <div class="ad-iframe-card">
-      <div class="ad-sch-head">
-        <span class="ad-sch-num">3</span>
-        <span class="ad-sch-icon">🎬</span>
-        <span class="ad-sch-title">方案3 · iframe 模拟用户访问</span>
-        <span class="tg tg-if">交互</span>
-      </div>
+      <div class="ad-sch-head"><span class="ad-sch-num">3</span><span class="ad-sch-icon">🎬</span><span class="ad-sch-title">方案3 · iframe 模拟用户访问</span><span class="tg tg-if">交互</span></div>
       <div class="ad-iframe-body" id="adIframeBody"></div>
     </div>
     <div class="ab ${verdictCls} ad-verdict">
@@ -708,126 +674,88 @@ async function mAdDetect(q){
   const scoreResult=calcAdScore(dnsRes,crtRes);
   state.adHits=scoreResult.uniqueHits;
   state.adScore=scoreResult.score;
-
   const container=document.createElement('div');
   container.innerHTML=renderAdPanel(q,dnsRes,crtRes,scoreResult);
-  bindIframeAd(container,q,scoreResult);
+  bindIframeAd(container,q);
   return container;
 }
 
-function bindIframeAd(container,q,scoreResult){
+function bindIframeAd(container,q){
   const body=container.querySelector('#adIframeBody');
   if(!body)return;
   body.innerHTML=`
     <div class="at" id="adDur"></div>
-    <div class="aar">
-      <button id="adStart" style="margin-top:0">▶ 开始模拟用户访问</button>
-      <button id="adStop" style="margin-top:0;display:none;color:#dc2626;border-color:#fca5a5;background:#fef2f2">⏹ 停止</button>
-    </div>
-    <div class="aph">
-      <span data-p="1">① 0-3s 快速弹窗</span>
-      <span data-p="2">② 3-10s 延迟加载</span>
-      <span data-p="3">③ 10s+ 滚动触发</span>
-    </div>
+    <div class="aar"><button id="adStart" style="margin-top:0">▶ 开始模拟用户访问</button><button id="adStop" style="margin-top:0;display:none;color:#dc2626;border-color:#fca5a5;background:#fef2f2">⏹ 停止</button></div>
+    <div class="aph"><span data-p="1">① 0-3s 快速弹窗</span><span data-p="2">② 3-10s 延迟加载</span><span data-p="3">③ 10s+ 滚动触发</span></div>
     <div class="apr"><div class="apf" id="adPf"></div></div>
     <div style="font-size:.74rem;color:#94a3b8;margin-top:.35rem;min-height:1.1em" id="adStatus"></div>
     <iframe id="adFr" style="width:100%;height:380px;border:1px solid #e2e8f0;border-radius:8px;margin-top:.5rem;display:none;background:#fff" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" referrerpolicy="no-referrer"></iframe>
     <div style="font-size:.78rem;margin-top:.5rem;line-height:1.6" id="adResult"></div>
   `;
-
   const dur=body.querySelector('#adDur'),stBtn=body.querySelector('#adStart'),stopBtn=body.querySelector('#adStop');
   const phEls=[...body.querySelectorAll('.aph span')],prog=body.querySelector('.apr'),pf=body.querySelector('#adPf');
   const as=body.querySelector('#adStatus'),fr=body.querySelector('#adFr'),ar=body.querySelector('#adResult');
-
   const ds=[{l:'10 秒（快速）',v:10000},{l:'15 秒（推荐）',v:15000},{l:'20 秒（彻底）',v:20000}];
   let cd=15000;
   const dbs=ds.map(d=>{const b=document.createElement('button');b.className='d'+(d.v===cd?' on':'');b.textContent=d.l;
     b.onclick=()=>{cd=d.v;dbs.forEach(x=>x.classList.remove('on'));b.classList.add('on')};dur.appendChild(b);return b});
-
   let pu=0,ai=0,il=false,lh=0,ab=false,st=0;
   const oo=window.open,ts=[],iv=[];
   try{if(typeof ReportingObserver!=='undefined'){const o=new ReportingObserver(rs=>rs.forEach(r=>{if(r.type==='intervention')ai++}),{buffered:true,types:['intervention']});o.observe();ts.push(()=>o.disconnect())}}catch(e){}
-
   function cl(){ts.forEach(t=>{try{t()}catch(e){}});iv.forEach(i=>clearInterval(i));window.open=oo}
   function ph(n){phEls.forEach((el,i)=>{el.classList.remove('a','d');if(i+1<n)el.classList.add('d');else if(i+1===n)el.classList.add('a')})}
-
   function fin(man){
     cl();fr.style.display='none';prog.style.display='none';stopBtn.style.display='none';
     phEls.forEach(el=>el.classList.remove('a','d'));
     if(man){
       const el=((Date.now()-st)/1000).toFixed(1);
-      ar.innerHTML=alertBox('info',`已手动停止（观察 ${el} 秒）`,
-        `弹窗 ${pu} 次 / 广告干预 ${ai} 次 / iframe 高度突变 ${state.iframeResized?'是':'否'}`,
-        '如需完整评估请重新运行完整时长。');
+      ar.innerHTML=alertBox('info',`已手动停止（观察 ${el} 秒）`,`弹窗 ${pu} 次 / 广告干预 ${ai} 次 / iframe 高度突变 ${state.iframeResized?'是':'否'}`,'如需完整评估请重新运行完整时长。');
       state.userAdHit=pu>0||ai>0||state.iframeResized;
       stBtn.textContent='▶ 重新检测';stBtn.disabled=false;return;
     }
     const sig=[];
-    if(pu>0)sig.push(`弹窗 ${pu} 次`);
-    if(ai>0)sig.push(`广告干预 ${ai} 次`);
-    if(state.iframeResized)sig.push('iframe 高度突变');
+    if(pu>0)sig.push(`弹窗 ${pu} 次`);if(ai>0)sig.push(`广告干预 ${ai} 次`);if(state.iframeResized)sig.push('iframe 高度突变');
     if(state.adHits?.length)sig.push(`DNS 关联广告联盟：${state.adHits.join('、')}`);
     const el=((Date.now()-st)/1000).toFixed(1);
-    if(sig.length){
-      ar.innerHTML=alertBox('warn',`用户视角检测到广告行为（观察 ${el} 秒）`,
-        `命中：${sig.join('；')}。`, '建议开启广告拦截插件或对目标站点做更深入审查。');
-      state.userAdHit=true;
-    }else{
-      ar.innerHTML=alertBox('ok',`未检测到明显广告行为（观察 ${el} 秒）`,
-        '未捕获到弹窗、广告干预或 iframe 高度突变。','如怀疑有隐藏广告，可尝试延长至 20 秒重测。');
-      state.userAdHit=false;
-    }
+    if(sig.length){ar.innerHTML=alertBox('warn',`用户视角检测到广告行为（观察 ${el} 秒）`,`命中：${sig.join('；')}。`,'建议开启广告拦截插件或对目标站点做更深入审查。');state.userAdHit=true}
+    else{ar.innerHTML=alertBox('ok',`未检测到明显广告行为（观察 ${el} 秒）`,'未捕获到弹窗、广告干预或 iframe 高度突变。','如怀疑有隐藏广告，可尝试延长至 20 秒重测。');state.userAdHit=false}
     stBtn.textContent='▶ 重新检测';stBtn.disabled=false;
   }
-
   stopBtn.onclick=()=>{ab=true;fin(true)};
   stBtn.onclick=async()=>{
     ab=false;pu=0;ai=0;il=false;state.iframeResized=false;state.userAdHit=false;
-    cl();ar.innerHTML='';fr.src='about:blank';pf.style.width='0%';
-    phEls.forEach(el=>el.classList.remove('a','d'));
-    stBtn.disabled=true;stBtn.textContent='⏳ 预检中…';stopBtn.style.display='inline-block';
-    as.textContent='正在检测目标站点是否允许 iframe 嵌入…';
-
-    const pre=await (async()=>{
-      const r=await sf(`https://${q}`,{method:'HEAD',mode:'cors'},{timeout:6000,retries:0});
-      if(!r.ok)return{allowed:true,corsBlocked:true};
-      const h=r.data?.__headers;if(!h)return{allowed:true};
-      const xfo=h['x-frame-options'],csp=h['content-security-policy']||'';
-      if(xfo&&/deny|sameorigin/i.test(xfo))return{allowed:false,reason:`X-Frame-Options: ${xfo}`};
-      if(/frame-ancestors\s+'none'/i.test(csp)||/frame-ancestors\s+'self'/i.test(csp))return{allowed:false,reason:'CSP frame-ancestors 限制'};
-      return{allowed:true};
-    })();
-
+    cl();ar.innerHTML='';fr.src='about:blank';pf.style.width='0%';phEls.forEach(el=>el.classList.remove('a','d'));
+    stBtn.disabled=true;stBtn.textContent='⏳ 预检中…';stopBtn.style.display='inline-block';as.textContent='正在检测目标站点是否允许 iframe 嵌入…';
+    const r=await sf(`https://${q}`,{method:'HEAD',mode:'cors'},{timeout:6000,retries:0});
+    let pre={allowed:true};
+    if(r.ok){const h=r.data?.__headers;
+      if(h){const xfo=h['x-frame-options'],csp=h['content-security-policy']||'';
+        if(xfo&&/deny|sameorigin/i.test(xfo))pre={allowed:false,reason:`X-Frame-Options: ${xfo}`};
+        else if(/frame-ancestors\s+'none'/i.test(csp)||/frame-ancestors\s+'self'/i.test(csp))pre={allowed:false,reason:'CSP frame-ancestors 限制'};
+      }
+    }
     if(!pre.allowed){
       state.frameBlocked=true;state.frameBlockReason=pre.reason;
-      ar.innerHTML=alertBox('warn','该站点禁止 iframe 嵌入',
-        `目标站点通过 ${pre.reason} 主动拒绝被嵌入。`,
-        '无法通过 iframe 模拟用户访问检测广告。可在新标签页打开手动观察。')
+      ar.innerHTML=alertBox('warn','该站点禁止 iframe 嵌入',`目标站点通过 ${pre.reason} 主动拒绝被嵌入。`,'无法通过 iframe 模拟用户访问检测广告。可在新标签页打开手动观察。')
         +`<a href="https://${esc(q)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:.4rem;padding:.35rem .8rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;text-decoration:none">↗ 在新标签页打开</a>`;
       as.textContent='';stopBtn.style.display='none';stBtn.textContent='▶ 重新尝试';stBtn.disabled=false;return;
     }
-
-    state.frameBlocked=false;state.frameBlockReason=null;
-    st=Date.now();prog.style.display='block';ph(1);
-    as.textContent=pre.corsBlocked?'无法读取响应头（CORS 拦截），直接加载 iframe 观察…':'预检通过，正在加载目标站点…';
-    fr.style.display='block';
-    window.open=function(...a){pu++;return oo.apply(this,a)};
-    fr.onload=()=>{il=true;lh=fr.clientHeight;
-      const t=setInterval(()=>{if(ab)return;try{const h=fr.clientHeight;if(Math.abs(h-lh)>60){state.iframeResized=true;lh=h}}catch(e){}},1000);
-      iv.push(t)};
+    state.frameBlocked=false;state.frameBlockReason=null;st=Date.now();prog.style.display='block';ph(1);
+    as.textContent='预检通过，正在加载目标站点…';
+    fr.style.display='block';window.open=function(...a){pu++;return oo.apply(this,a)};
+    fr.onload=()=>{il=true;lh=fr.clientHeight;const t=setInterval(()=>{if(ab)return;try{const h=fr.clientHeight;if(Math.abs(h-lh)>60){state.iframeResized=true;lh=h}}catch(e){}},1000);iv.push(t)};
     fr.src=`https://${q}`;
     const tot=cd,sts=Date.now();
     ts.push(setTimeout(()=>{if(!ab){ph(2);as.textContent='观察中（第 2 阶段）：延迟加载广告…'}},3000));
     ts.push(setTimeout(()=>{if(ab)return;ph(3);as.textContent='观察中（第 3 阶段）：模拟滚动，检测懒加载广告…';
       try{if(fr.contentWindow&&fr.contentDocument){const sc=()=>{try{fr.contentWindow.scrollBy(0,300)}catch(e){}};sc();ts.push(setTimeout(sc,800));ts.push(setTimeout(sc,1600))}}catch(e){}},10000));
-    const pt=setInterval(()=>{if(ab)return;pf.style.width=Math.min(100,((Date.now()-sts)/tot)*100)+'%'},200);
-    iv.push(pt);
+    const pt=setInterval(()=>{if(ab)return;pf.style.width=Math.min(100,((Date.now()-sts)/tot)*100)+'%'},200);iv.push(pt);
     ts.push(setTimeout(()=>{if(!ab)fin(false)},tot));
   };
 }
 
 /* ============================================================
-   IP / 域名基础
+   IP / 域名基础模块
    ============================================================ */
 async function mIp(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
@@ -860,6 +788,8 @@ async function mReverseDns(q){
   if(!r.ok)return{error:r.error};
   const ptr=r.data.hostname||r.data.ptr||r.data.result||'';
   if(!state.ptr)state.ptr=ptr;
+  if(ptr&&!state.relatedDomains)state.relatedDomains=[];
+  if(ptr&&isDom(ptr)&&!state.relatedDomains.includes(ptr))state.relatedDomains.push(ptr);
   return `<pre><strong>PTR</strong>${esc(ptr||'—')}</pre>${raw(r.data)}`;
 }
 
@@ -869,6 +799,9 @@ async function mReverseIp(q){
   if(!r.ok)return{error:r.error};
   const txt=String(r.data||'').trim();
   if(/error|API count exceeded/i.test(txt))return`<pre>${esc(txt)}</pre>`;
+  const domains=txt.split('\n').map(x=>x.trim()).filter(x=>isDom(x));
+  if(!state.relatedDomains)state.relatedDomains=[];
+  domains.forEach(d=>{if(!state.relatedDomains.includes(d))state.relatedDomains.push(d)});
   return `<pre><strong>同 IP 域名</strong>\n${esc(txt||'未发现')}</pre>`;
 }
 
@@ -889,6 +822,7 @@ async function mWhois(q){
   const r=await sf(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`,{},{timeout:10000,cacheTTL:1800000});
   if(!r.ok)return{error:r.error};
   const d=r.data;const dt=d.dates||{};
+  state.whois=d;
   return `<pre><strong>是否注册</strong>${d.isRegistered?'是':'否'}
 <strong>注册商</strong>${esc(d.registrar?.name??'—')}
 <strong>创建时间</strong>${esc(dt.created?.slice(0,10)??'—')}
@@ -930,6 +864,8 @@ async function mDns(q){
   ]);
   const ips=a.ok?(a.data.Answer||[]).filter(x=>x.type===1).map(x=>x.data):[];
   const chain=c.ok?(c.data.Answer||[]).map(x=>x.data):[];
+  if(!state.relatedIps)state.relatedIps=[];
+  ips.forEach(ip=>{if(!state.relatedIps.includes(ip))state.relatedIps.push(ip)});
   let out='';
   if(ips.length){out+=`<pre><strong>A 记录</strong>${ips.length} 个\n${ips.map(ip=>'  • '+esc(ip)).join('\n')}</pre>`}
   else out+='<pre><strong>A 记录</strong>无（可能仅 AAAA 或未生效）</pre>';
@@ -998,36 +934,50 @@ async function mVulnLatest(){
    整体画像
    ============================================================ */
 function renderProfile(){
-  const isIPAddr=isIP(state.query);const q=isIPAddr?calcIpScore():calcDomainScore();
-  const col=scoreColor(q.s),is=q.is;
-  const issues=is.length?is.map(i=>`<li>${esc(i.t)}（${i.p}）</li>`).join(''):'<li class="ok">未发现明显扣分项</li>';
+  const q=state.query;
+  const isIpPrimary=isIP(q);
+  const primaryScore=isIpPrimary?calcIpScore():calcDomainScore();
+  const col=scoreColor(primaryScore.s);
+  const issues=primaryScore.is.length?primaryScore.is.map(i=>`<li>${esc(i.t)}（${i.p}）</li>`).join(''):'<li class="ok">未发现明显扣分项</li>';
   const detail=buildProfileText();
   $('out-profile').innerHTML=`
-    <div class="cd"><div class="qc"><div class="sc" style="--s:${q.s};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${q.s}</div><div class="sc-l">${col.l}</div></div></div>
-    <div class="qb2"><h3>质量评分（0-100，越高越健康）</h3><p class="qs">等级：≥80 优秀 / 60-79 良好 / 40-59 一般 / &lt;40 较差</p><ul class="qi">${issues}</ul></div></div></div>
+    <div class="cd"><div class="qc"><div class="sc" style="--s:${primaryScore.s};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${primaryScore.s}</div><div class="sc-l">${col.l}</div></div></div>
+    <div class="qb2"><h3>${isIpPrimary?'IP':'域名'}质量评分（0-100，越高越健康）</h3><p class="qs">等级：≥80 优秀 / 60-79 良好 / 40-59 一般 / &lt;40 较差</p><ul class="qi">${issues}</ul></div></div></div>
     <div class="cd"><div class="ch"><span class="ct">画像说明</span>${tag('已生成','ok')}</div><pre id="pt">${esc(detail)}</pre><button style="margin-top:.5rem;padding:.4rem .9rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.75rem;cursor:pointer;font-weight:500" onclick="cp(this)">📋 复制说明</button></div>`;
 }
 function cp(b){const el=$('pt');if(!el)return;navigator.clipboard.writeText(el.textContent).then(()=>{const o=b.textContent;b.textContent='✅ 已复制';setTimeout(()=>b.textContent=o,1500)}).catch(()=>{b.textContent='❌ 复制失败';setTimeout(()=>b.textContent='📋 复制说明',1500)})}
 
 function buildProfileText(){
-  const q=state.query,isIPAddr=isIP(q),L=[];
-  L.push(`目标：${q}（${isIPAddr?'IP 地址':'域名'}）`);L.push('');
-  if(isIPAddr){
-    const t=state.ipGeo||{};L.push(`【网络类型】${t.isp||'—'}`);
-    if(t.country)L.push(`【归属】${t.country}`);if(t.isp)L.push(`【运营商】${t.isp}`);if(t.asn)L.push(`【ASN】AS${t.asn}`);
+  const q=state.query,isIpPrimary=isIP(q),L=[];
+  L.push(`主目标：${q}（${isIpPrimary?'IP 地址':'域名'}）`);L.push('');
+  if(isIpPrimary){
+    const t=state.ipGeo||{};
+    L.push(`【IP 网络归属】${t.isp||'—'}${t.country?'，位于 '+t.country:''}${t.asn?'，AS'+t.asn:''}`);
     if(state.ipDb?.ports?.length)L.push(`【开放端口】${state.ipDb.ports.join(', ')}`);
     if(state.ipDb?.vulns?.length)L.push(`【已知漏洞】${state.ipDb.vulns.join(', ')}`);
     if(state.ptr)L.push(`【PTR】${state.ptr}`);
-    L.push('');L.push(`【画像结论】该 IP 归属 ${t.isp||'未知'}${t.country?'，位于 '+t.country:''}。`);
+    if(state.relatedDomains?.length){
+      L.push(`【关联域名】共 ${state.relatedDomains.length} 个：`);
+      state.relatedDomains.slice(0,5).forEach(d=>L.push(`  • ${d}`));
+    }
+    if(state.sslScore!=null)L.push(`【关联域名 SSL】评分 ${state.sslScore}/100`);
+    if(state.cdnHits?.length)L.push(`【关联域名 CDN】${state.cdnHits.join('、')}`);
+    L.push('');
+    L.push(`【画像结论】该 IP 归属 ${t.isp||'未知'}${state.relatedDomains?.length?`，关联 ${state.relatedDomains.length} 个域名`:''}。`);
   }else{
     const t=state.icp;
     if(t?.filed===true)L.push(`【ICP 备案】已备案（${t.records?.[0]?.unitName||'—'}）`);
     else if(t&&t.filed!==true)L.push(`【ICP 备案】❌ 未备案，判定为境外或未合规站点`);
     if(state.whois?.registrar?.name)L.push(`【注册商】${state.whois.registrar.name}`);
     if(state.sslScore!=null)L.push(`【SSL 安全】评分 ${state.sslScore}/100 · 协议 ${state.sslProtocol||'—'} · 剩余 ${state.sslDaysLeft??'—'} 天`);
-    if(state.adScore!=null)L.push(`【广告检测】评分 ${state.adScore}/100${state.adHits?.length?' · 命中联盟：'+state.adHits.join('、'):' · 未命中联盟'}`);
+    if(state.adScore!=null)L.push(`【广告检测】评分 ${state.adScore}/100${state.adHits?.length?' · 命中联盟：'+state.adHits.join('、'):''}`);
     if(state.cdnHits?.length)L.push(`【CDN 信号】${state.cdnHits.join('、')}`);
-    L.push('');L.push(`【画像结论】${inferDomain(t)}。`);
+    if(state.relatedIps?.length){
+      L.push(`【解析 IP】共 ${state.relatedIps.length} 个：`);
+      state.relatedIps.slice(0,5).forEach(ip=>L.push(`  • ${ip}`));
+    }
+    L.push('');
+    L.push(`【画像结论】${inferDomain(t)}。`);
   }
   L.push('');L.push(`（生成时间：${new Date().toLocaleString('zh-CN')}）`);
   return L.join('\n');
@@ -1049,16 +999,15 @@ async function runEnv(force=false){
   const r=await sf('https://api.ip.sb/geoip',{},{timeout:10000,cacheTTL:60000,retries:0});
   if(!r.ok){out.innerHTML=`<p class="ep">无法获取出口 IP：${esc(r.error.cn)}</p>`;return}
   const g=r.data;if(!g?.ip){out.innerHTML='<p class="ep">出口 IP 数据为空</p>';return}
-  const ip=g.ip;state.checkip=null;
-  const tasks=[
+  const ip=g.ip;
+  await runTasks('env',[
     {t:'当前出口 IP',fn:async()=>`<pre><strong>出口 IP</strong>${esc(ip)}</pre>`},
     {t:'IP 归属',fn:async()=>{const info=await lookupIp(ip);return `<pre><strong>国家</strong>${esc(info.country||'—')}\n<strong>ASN</strong>${info.asn?'AS'+esc(info.asn):'—'}\n<strong>运营商</strong><span style="color:${info.cls.c};font-weight:600">${esc(info.cls.n)}</span>（${esc(info.cls.lv)}）</pre>`}},
     {t:'VPN / 代理 / Tor',fn:()=>mCheckIp(ip)},
     {t:'WebRTC 泄露',fn:()=>pWebRTC()},
     {t:'时区 / 语言',fn:()=>pTimeLang()},
     {t:'浏览器指纹',fn:()=>pFingerprint()}
-  ];
-  await runTasks('env',tasks);
+  ]);
 }
 function forceEnv(){envDone=false;runEnv(true)}
 
@@ -1093,7 +1042,7 @@ async function pTimeLang(){
 }
 
 /* ============================================================
-   主查询
+   主查询（IP 和域名都能查，自动互查）
    ============================================================ */
 async function runQuery(){
   const q=$('qi').value.trim();if(!q)return;
@@ -1101,48 +1050,120 @@ async function runQuery(){
   for(const k of Object.keys(state))delete state[k];state.query=q;
   const ipOnly=isIP(q),domOnly=isDom(q);
   $('st').classList.remove('show');
+
+  if(!ipOnly&&!domOnly){
+    $('st').classList.add('show');$('st').innerHTML='请输入有效的 IP 或域名（示例：<strong>8.8.8.8</strong> 或 <strong>example.com</strong>）';
+    $('qb').disabled=false;return;
+  }
+
   if(domOnly){
+    // 域名查询：跑域名全套 + 对前几个 IP 跑 IP 全套
     empty('unified','正在查询域名主目标…');empty('cert','正在执行 CDN / SSL / 广告检测…');empty('intel','正在查询社区情报…');
-    const [certP,intelP]=[
-      runTasks('cert',[
-        {t:'SSL 主检测（Domainee）',fn:()=>mSsl(q)},
-        {t:'SSL 交叉验证（ContrastAPI）',fn:()=>mSslCross(q)},
-        {t:'CDN 检测（单 IP 直出归属 / 多 IP 才判定）',fn:()=>mCdn(q)},
-        {t:'广告检测（4 种方案 + 图形化）',fn:()=>mAdDetect(q)}
-      ]),
-      runTasks('intel',[
-        {t:'PhishDestroy 域名风险评分',fn:()=>mPhish(q)},
-        {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
-        {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
-        {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
-      ])
-    ];
-    await Promise.allSettled([certP,intelP]);
+
+    // 并行：域名基础信息 + 解析 IP
     await runTasks('unified',[
       {t:'DNS A 记录',fn:()=>mDns(q)},
       {t:'Whois 注册信息',fn:()=>mWhois(q)},
       {t:'ICP 备案',fn:()=>mIcp(q)},
       {t:'RDAP 补充',fn:()=>mRdap(q)}
     ]);
+
+    // 关联 IP 检测（mDns 已把 IP 存到 state.relatedIps）
+    const relatedIps=(state.relatedIps||[]).slice(0,3);
+    if(relatedIps.length){
+      const container=$('out-unified');
+      container.insertAdjacentHTML('beforeend',sectionLabel(`📍 关联 IP 检测（前 ${relatedIps.length} 个）`,'related'));
+      for(const ip of relatedIps){
+        await renderTask(container,{t:`${ip} · 归属 / ASN / 端口 / VPN`,fn:async()=>{
+          const info=await lookupIp(ip);
+          const lines=[];
+          if(info.country&&info.country!=='—')lines.push(`<strong>国家</strong>${esc(info.country)}`);
+          if(info.asn)lines.push(`<strong>ASN</strong>AS${esc(info.asn)}`);
+          if(info.cidr)lines.push(`<strong>BGP</strong>${esc(info.cidr)}`);
+          lines.push(`<strong>运营商</strong><span style="color:${info.cls.c};font-weight:600">${esc(info.cls.n)}</span>（${esc(info.cls.lv)}）`);
+          // 端口
+          const r=await sf(`https://internetdb.shodan.io/${encodeURIComponent(ip)}`,{},{timeout:8000,cacheTTL:900000});
+          if(r.ok){const d=r.data;if(!state.ipDb)state.ipDb=d;
+            const ps=(d.ports||[]).map(p=>PORTS[p]?`${p}(${PORTS[p]})`:String(p)).join(', ')||'—';
+            lines.push(`<strong>开放端口</strong>${esc(ps)}`);
+            if(d.vulns?.length)lines.push(`<strong>漏洞</strong>${esc(d.vulns.slice(0,8).join(', '))}`);
+          }
+          // VPN
+          const rc=await sf(`https://checkip.me/${encodeURIComponent(ip)}`,{},{timeout:8000,cacheTTL:900000});
+          if(rc.ok){const d=rc.data;if(!state.checkip&&ip===relatedIps[0])state.checkip=d;
+            lines.push(`<strong>VPN/代理</strong>${d.vpn?'VPN ':''}${d.proxy?'代理 ':''}${d.tor?'Tor ':''}${!(d.vpn||d.proxy||d.tor)?'无' :''}`.trim());
+          }
+          return `<pre>${lines.join('\n')}</pre>`;
+        }});
+      }
+    }
+
+    // 证书/广告检测
+    await runTasks('cert',[
+      {t:'SSL 主检测（Domainee）',fn:()=>mSsl(q)},
+      {t:'SSL 交叉验证（ContrastAPI）',fn:()=>mSslCross(q)},
+      {t:'CDN 检测',fn:()=>mCdn(q)},
+      {t:'广告检测（4 种方案 + 图形化）',fn:()=>mAdDetect(q)}
+    ]);
+
+    // 社区情报
+    await runTasks('intel',[
+      {t:'PhishDestroy 域名风险评分',fn:()=>mPhish(q)},
+      {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
+      {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
+      {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
+    ]);
+
     renderProfile();switchTab('cert');
-  }else if(ipOnly){
-    empty('unified','正在查询 IP…');empty('intel','正在查询社区情报…');empty('cert','IP 不支持证书/CDN 检测');
+  } else {
+    // IP 查询：跑 IP 全套 + 尝试对反查到的域名跑 SSL/CDN/广告
+    empty('unified','正在查询 IP 主目标…');empty('cert','正在查询该 IP 关联域名检测…');empty('intel','正在查询社区情报…');
+
     await runTasks('unified',[
       {t:'IP 归属 / ASN / BGP 前缀',fn:()=>mIp(q)},
-      {t:'InternetDB 端口 / 漏洞',fn:()=>mInternetDb(q)},
+      {t:'InternetDB 端口 / 漏洞',fn:()=>mInternetDB(q)},
       {t:'反向 DNS',fn:()=>mReverseDns(q)},
       {t:'同 IP 域名',fn:()=>mReverseIp(q)},
       {t:'VPN / 代理 / Tor',fn:()=>mCheckIp(q)}
     ]);
+
+    // 关联域名检测
+    const relatedDomains=(state.relatedDomains||[]).filter(d=>d!==q).slice(0,1);
+    if(relatedDomains.length){
+      const container=$('out-unified');
+      container.insertAdjacentHTML('beforeend',sectionLabel(`🌐 关联域名检测：${relatedDomains[0]}`,'related'));
+      const dq=relatedDomains[0];
+      await renderTask(container,{t:`${dq} · 关联信息摘要`,fn:async()=>{
+        const [who,icp]=await Promise.all([
+          sf(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(dq)}`,{},{timeout:10000,cacheTTL:1800000}),
+          sf(`https://tcp.lc/api/v2/icp/query?domain=${encodeURIComponent(dq)}`,{},{timeout:10000,cacheTTL:1800000})
+        ]);
+        const lines=[];
+        if(who.ok){const d=who.data;if(d.registrar?.name)lines.push(`<strong>注册商</strong>${esc(d.registrar.name)}`);if(d.dates?.created)lines.push(`<strong>创建时间</strong>${esc(d.dates.created.slice(0,10))}`)}
+        if(icp.ok&&icp.data?.data){if(icp.data.data.filed===true){const rec=(icp.data.data.records||[])[0]||{};lines.push(`<strong>ICP 备案</strong>已备案（${esc(rec.unitName||'—')}）`)}else lines.push(`<strong>ICP 备案</strong>❌ 未备案（境外或未合规站点）`)}
+        if(!lines.length)lines.push('暂无关联域名信息');
+        return `<pre>${lines.join('\n')}</pre>`;
+      }});
+
+      // 对关联域名跑证书/广告检测
+      await runTasks('cert',[
+        {t:`SSL 检测（${dq}）`,fn:()=>mSsl(dq)},
+        {t:`CDN 检测（${dq}）`,fn:()=>mCdn(dq)},
+        {t:`广告检测（${dq}）`,fn:()=>mAdDetect(dq)}
+      ]);
+    } else {
+      empty('cert','该 IP 未反查到关联域名，无法执行 SSL / CDN / 广告检测。');
+    }
+
+    // 社区情报（IP 和域名都跑 OTX + 恶意样本，IP 额外跑 Feodo）
     await runTasks('intel',[
       {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
       {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
-      {t:'Feodo Tracker C2 比对',fn:()=>mFeodo(q)}
+      {t:'Feodo Tracker C2 比对',fn:()=>mFeodo(q)},
+      {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
     ]);
+
     renderProfile();switchTab('unified');
-  }else{
-    $('st').classList.add('show');$('st').innerHTML='请输入有效的 IP 或域名（示例：<strong>8.8.8.8</strong> 或 <strong>example.com</strong>）';
-    empty('unified','输入格式无效');$('qb').disabled=false;return;
   }
   $('qb').disabled=false;
 }
