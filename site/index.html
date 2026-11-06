@@ -167,6 +167,7 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
     <nav class="tabs" id="tabs">
       <button class="tab on" data-tab="unified">📍 统一溯源</button>
       <button class="tab" data-tab="cert">🔒 证书 / CDN / 广告</button>
+      <button class="tab" data-tab="recon">🔴 安全攻防</button>
       <button class="tab" data-tab="env">🌐 网络环境</button>
       <button class="tab" data-tab="intel">🕵️ 社区情报</button>
       <button class="tab" data-tab="profile">📋 整体画像</button>
@@ -183,40 +184,38 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 <main>
   <section class="pg on" id="pg-unified"><div class="ph"><h2>统一溯源</h2><p>输入 IP 自动反查域名并跑域名检测；输入域名自动解析 IP 并跑 IP 检测</p></div><div id="out-unified"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
   <section class="pg" id="pg-cert"><div class="ph"><h2>证书 / CDN / 广告</h2><p>输入域名直接检测；输入 IP 会尝试从反向 DNS 找到域名后再检测</p></div><div id="out-cert"><p class="ep">输入域名或 IP 后点击查询</p></div></section>
+  <section class="pg" id="pg-recon"><div class="ph"><h2>安全攻防</h2><p>端口测绘 · 子域名 · WAF · 技术栈 · 历史 URL · 恶意 URL 检查</p></div><div id="out-recon"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
   <section class="pg" id="pg-env"><div class="ph"><h2>网络环境</h2><p>当前出口、VPN / 代理 / Tor</p></div><button style="padding:.4rem .9rem;border:1px solid var(--bd);border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;cursor:pointer;margin-bottom:.8rem" onclick="forceEnv()">🔄 重新检测</button><div id="out-env"><p class="ep">正在检测…</p></div></section>
-  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>微步在线 IP 信誉 / 域名分析 · OTX · Feodo · 最新漏洞</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
+  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>威胁 Pulse · 恶意样本 · C2 比对 · 最新漏洞 · 恶意域名评分</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
   <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合 IP 和域名双维度数据评分</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
   <section class="pg" id="pg-about"><div class="ph"><h2>关于</h2><p>核心说明</p></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔑 微步在线配置</div>
-      <p style="font-size:.76rem;color:#475569;line-height:1.8">
-        在代码中搜索 <code>THREATBOOK_KEY</code>，替换为你的 apikey。获取方式：登录 <code>x.threatbook.com</code> → 服务控制台 → 我的 API Key。<br>
-        免费额度（以实际账户为准）：IP 信誉约 20次/月 或 50次/天；域名分析额度以控制台显示为准。额度耗尽后该模块会降级，不影响其他模块。
-      </p>
-    </div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🕵️ 社区情报数据源</div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔴 安全攻防模块</div>
       <ul class="qi">
-        <li><strong>微步在线 IP 信誉</strong>：<code>api.threatbook.cn/v3/scene/ip_reputation</code>，入站 IP 风险判定，字段 <code>is_malicious</code>、<code>confidence_level</code>、<code>severity</code>、<code>judgments</code>[reference:7][reference:8]</li>
-        <li><strong>微步在线域名分析</strong>：<code>api.threatbook.cn/v3/domain/query</code>，返回 <code>judgments</code>、<code>intelligences</code>、<code>cur_ips</code>、<code>cur_whois</code>、<code>icp</code> 等[reference:9]</li>
-        <li><strong>OTX Pulse</strong>：社区威胁简报，判断是否出现在公开攻击活动中</li>
-        <li><strong>Feodo Tracker</strong>：僵尸网络 C2 黑名单</li>
-        <li><strong>CIRCL CVE</strong>：最近一年新发布漏洞</li>
+        <li><strong>IP 侧</strong>：Shodan InternetDB 端口/CPE/CVE、高风险端口标记、反向 DNS、同 IP 虚拟主机、URLhaus 恶意 IP 检查</li>
+        <li><strong>域名侧</strong>：crt.sh 子域名枚举、Wayback CDX 历史 URL 与子域名、安全头分析、WAF 特征检测、URLhaus 恶意域名检查</li>
+        <li>所有数据源优先选择<strong>无需密钥、CORS 可用</strong>的公开接口，前端直接调用</li>
+        <li>与 CDN 检测完全解耦：CDN 关心解析和归属，攻防关心服务暴露面和漏洞</li>
       </ul>
+    </div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔀 IP / 域名互查</div>
+      <ul class="qi">
+        <li><strong>输入 IP</strong>：跑 IP 全套 + 反向 DNS/同 IP 域名反查关联域名，对第一个域名跑 SSL/CDN/广告</li>
+        <li><strong>输入域名</strong>：跑域名全套 + 解析 A 记录拿到 IP，对前 3 个 IP 跑归属/端口/CVE/VPN 检测</li>
+        <li>社区情报页 IP 和域名都跑 OTX Pulse + 恶意样本 + 最新漏洞；IP 额外跑 Feodo C2</li>
+      </ul>
+    </div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">📢 广告检测 4 种方案</div>
+      <ul class="qi"><li>方案1 · DNS CNAME 特征</li><li>方案2 · 证书透明日志广告前缀子域名</li><li>方案3 · iframe 模拟用户访问（弹窗/广告干预/高度突变）</li><li>方案4 · 预检时分析 X-Frame-Options / CSP</li></ul>
     </div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">📊 评分规则</div>
       <ul class="qi"><li><strong>IP 质量分</strong>：基础 100 - VPN/代理/Tor 15 - C2 35 - 风险评分按档扣 - 高危端口每个 5（最多 20）- CVE 每个 5（最多 15）</li>
       <li><strong>SSL 评分</strong>：有效 60 + TLS1.3 20 或 1.2 10 + 剩余 &gt;30 天 10 + 强套件 10</li>
       <li><strong>域名质量分</strong>：基础 100 - PhishDestroy 25/15/5 - 广告评分按档扣 - SSL &lt;60 扣 25 / 60-79 扣 10 - 未备案 10 - OTX Pulse 每个 5（最多 20）</li></ul></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔐 隐私</div><p style="font-size:.76rem;color:#475569">纯前端运行，不收集、不上传任何查询记录。微步 apikey 仅在你的浏览器中用于直接请求微步 API。</p></div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔐 隐私</div><p style="font-size:.76rem;color:#475569">纯前端运行，不收集、不上传任何查询记录。</p></div>
   </section>
 </main>
 
 <script>
-/* ============================================================
-   ⚠️ 在这里填入你的微步在线 apikey
-   ============================================================ */
-const THREATBOOK_KEY = "YOUR_THREATBOOK_API_KEY";
-const TB_BASE = "https://api.threatbook.cn/v3";
-
 /* ============================================================
    常量
    ============================================================ */
@@ -260,14 +259,14 @@ const AD_NETWORKS=[
   {p:/adnxs\.com|rubiconproject\.com|pubmatic\.com|openx\.net/i,n:'海外 DSP'}
 ];
 const AD_PREFIX_RE=/^(ad|ads|advert|adv|banner|sponsor|promo|click|track|pixel|beacon|stat|analytics)\./i;
-const PORTS={21:'FTP',22:'SSH',23:'Telnet',80:'HTTP',443:'HTTPS',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',6379:'Redis',27017:'MongoDB'};
-const RISKY=[21,23,135,139,445,1433,3306,3389,6379,27017];
+const PORTS={21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',80:'HTTP',110:'POP3',135:'RPC',139:'NetBIOS',143:'IMAP',443:'HTTPS',445:'SMB',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',5900:'VNC',6379:'Redis',8080:'HTTP-Alt',8443:'HTTPS-Alt',9200:'Elasticsearch',27017:'MongoDB'};
+const RISKY=[21,23,135,139,445,1433,3306,3389,5432,6379,27017];
 const LIM={
   'dns.google':100,'api.domainee.dev':2100,'api.contrastcyber.com':3000,'otx.alienvault.com':900,
   'api.destroy.tools':700,'feodotracker.abuse.ch':3000,'tcp.lc':500,'whois.tcp.lc':6500,
   'checkip.me':700,'myip.helpmek.com':500,'api.hackertarget.com':2000,'internetdb.shodan.io':1000,
   'ipwho.is':200,'atlas.ipinfo.app':200,'crt.sh':2500,'rdap.org':500,'api.globalping.io':600,'cve.circl.lu':500,
-  'api.threatbook.cn':1100
+  'urlhaus-api.abuse.ch':1000,'web.archive.org':800
 };
 
 /* ============================================================
@@ -436,57 +435,108 @@ function empty(page,msg){const el=$('out-'+page);if(el)el.innerHTML=`<p class="e
 function sectionLabel(text,cls){return `<div class="ch" style="margin:.8rem 0 .3rem"><span class="ct" style="color:${cls==='related'?'#7c3aed':'#2563eb'}">${esc(text)}</span></div>`}
 
 /* ============================================================
-   微步在线 ThreatBook
+   安全攻防模块
    ============================================================ */
-async function mThreatBookIp(q){
-  if(!isIP(q))return{skip:true,reason:'微步 IP 信誉仅支持 IP'};
-  if(!THREATBOOK_KEY||THREATBOOK_KEY==='YOUR_THREATBOOK_API_KEY')
-    return{skip:true,reason:'未配置微步在线 apikey，请填入代码中的 THREATBOOK_KEY'};
-  const url=`${TB_BASE}/scene/ip_reputation?apikey=${encodeURIComponent(THREATBOOK_KEY)}&resource=${encodeURIComponent(q)}&lang=zh`;
-  const r=await sf(url,{},{timeout:12000,cacheTTL:1800000,retries:0});
-  if(!r.ok)return{error:{code:r.error.code,cn:'微步 IP 信誉查询失败：'+r.error.cn}};
-  const d=r.data;
-  if(d.response_code!==0)return{error:{code:'TB_'+d.response_code,cn:'微步返回：'+(d.verbose_msg||'未知错误')}};
-  const ipData=(d.data||{})[q]||d.data||{};
-  const malicious=ipData.is_malicious===true;
-  const confidence=ipData.confidence_level??ipData.confidence??'—';
-  const severity=ipData.severity??'—';
-  const judgments=(ipData.judgments||[]).join(', ')||'—';
-  const tags=(ipData.tags_classes||[]).map(t=>t.tags_type||t).join(', ')||'—';
-  if(malicious)return alertBox('danger',`微步在线：该 IP 被判定为恶意（置信度 ${confidence}）`,
-    `微步在线 IP 信誉判定为恶意。威胁类型：<strong>${esc(judgments)}</strong>。标签：${esc(tags)}。严重程度：${esc(String(severity))}。`,
-    `• 该 IP 可能参与扫描、漏洞利用、C2 或恶意软件分发<br>• 建议在 WAF / 防火墙 / IDS 中阻断入站流量<br>• 结合业务日志确认是否有内部资产与该 IP 通信`);
-  return alertBox('ok',`微步在线：未标记为恶意（置信度 ${confidence}）`,
-    `微步在线 IP 信誉未将该 IP 判定为恶意。威胁类型：${esc(judgments)}。标签：${esc(tags)}。`,
-    '可视为相对干净，但建议继续结合其他情报源综合判断。')+raw(d);
+async function mRecon(q){
+  const isIp=isIP(q),isDomQ=isDom(q);
+  if(!isIp&&!isDomQ)return;
+  empty('recon','正在执行安全攻防侦察…');
+  const tasks=[];
+  if(isIp){
+    tasks.push(
+      {t:'Shodan InternetDB · 端口 / CPE / CVE',fn:()=>reconInternetDB(q)},
+      {t:'反向 DNS · PTR',fn:()=>mReverseDns(q)},
+      {t:'同 IP 虚拟主机',fn:()=>mReverseIp(q)},
+      {t:'URLhaus · 恶意 IP 关联检查',fn:()=>reconUrlhaus(q,'ip')}
+    );
+  }
+  if(isDomQ){
+    tasks.push(
+      {t:'子域名枚举（crt.sh 证书透明）',fn:()=>reconSubdomains(q)},
+      {t:'Wayback CDX · 历史 URL 与子域名',fn:()=>reconWayback(q)},
+      {t:'安全头分析与 WAF 特征',fn:()=>reconHeaders(q)},
+      {t:'URLhaus · 恶意域名关联检查',fn:()=>reconUrlhaus(q,'domain')}
+    );
+  }
+  await runTasks('recon',tasks);
 }
 
-async function mThreatBookDomain(q){
-  if(!isDom(q))return{skip:true,reason:'微步域名分析仅支持域名'};
-  if(!THREATBOOK_KEY||THREATBOOK_KEY==='YOUR_THREATBOOK_API_KEY')
-    return{skip:true,reason:'未配置微步在线 apikey，请填入代码中的 THREATBOOK_KEY'};
-  const url=`${TB_BASE}/domain/query?apikey=${encodeURIComponent(THREATBOOK_KEY)}&resource=${encodeURIComponent(q)}&lang=zh`;
-  const r=await sf(url,{},{timeout:15000,cacheTTL:1800000,retries:0});
-  if(!r.ok)return{error:{code:r.error.code,cn:'微步域名分析失败：'+r.error.cn}};
+async function reconInternetDB(ip){
+  const r=await sf(`https://internetdb.shodan.io/${encodeURIComponent(ip)}`,{},{timeout:8000,cacheTTL:1800000,retries:0});
+  if(!r.ok){if(r.error.code==='CLI')return `<pre>Shodan InternetDB 暂无该 IP 的记录（未被扫描覆盖）。</pre>`;return {error:r.error}}
   const d=r.data;
-  if(d.response_code!==0)return{error:{code:'TB_'+d.response_code,cn:'微步返回：'+(d.verbose_msg||'未知错误')}};
-  const dd=(d.domains||{})[q]||{};
-  const judgments=(dd.judgments||[]).join(', ')||'—';
-  const intelligences=(dd.intelligences||[]).slice(0,3).map(i=>`${i.source||''}（置信度 ${i.confidence??'—'}）`).join('；')||'—';
-  const curIps=(dd.cur_ips||[]).map(i=>i.ip||i).slice(0,5).join(', ')||'—';
-  const whois=dd.cur_whois||{};
-  const registrar=whois.registrar||'—';
-  const icp=dd.icp||{};
-  const icpFiled=icp.filed===true;
+  if(!state.ipDb)state.ipDb=d;
+  const fmt=p=>PORTS[p]?`${p}(${PORTS[p]})`:String(p);
+  const riskyOpen=(d.ports||[]).filter(p=>RISKY.includes(p));
+  let riskHtml=riskyOpen.length
+    ? alertBox('warn',`发现 ${riskyOpen.length} 个高风险/敏感端口`,`开放：<strong>${riskyOpen.map(fmt).join(', ')}</strong>。红队常优先利用这些端口（弱口令、未授权、RCE）。`,`• 核实业务必要性，非必要关闭或限制来源 IP<br>• 确认服务版本和认证强度<br>• 检查默认口令/未授权访问`)
+    : alertBox('ok','未发现常规高风险端口','当前端口列表中未包含红队常关注的敏感端口。','仍建议逐一确认每个开放端口的业务必要性。');
+  const cveHtml=(d.vulns||[]).length
+    ? alertBox('warn',`Shodan 标记了 ${d.vulns.length} 个已知 CVE`,`启发式匹配：<strong>${d.vulns.slice(0,12).join(', ')}${d.vulns.length>12?'…':''}</strong>。`,`• 复制 CVE 到 NVD 确认受影响版本<br>• 优先处理 CVSS ≥ 7.0<br>• 确认是否有公开 PoC`)
+    : '';
   const lines=[
-    `<strong>综合威胁类型</strong>${esc(judgments)}`,
-    `<strong>情报来源</strong>${esc(intelligences)}`,
-    `<strong>当前解析 IP</strong>${esc(curIps)}`,
-    `<strong>Whois 注册商</strong>${esc(registrar)}`,
-    `<strong>ICP 备案</strong>${icpFiled?'✅ 已备案'+(icp.unit_name?`（${esc(icp.unit_name)}）`:''):'❌ 未备案或境外'}`,
-  ].join('\n');
-  const hasThreat=judgments!=='—'&&!/未知|clean|安全/i.test(judgments);
-  return `${hasThreat?alertBox('warn','微步在线：域名关联威胁情报',`综合判定威胁类型：<strong>${esc(judgments)}</strong>。情报来源：${esc(intelligences)}。`,'• 建议进一步核实域名用途<br>• 如该域名出现在出站流量中，排查内部主机是否失陷'):''}<pre>${lines}</pre>${raw(d)}`;
+    `<strong>开放端口</strong>${(d.ports||[]).map(fmt).join(', ')||'无'}`,
+    `<strong>主机名</strong>${(d.hostnames||[]).join(', ')||'—'}`,
+    `<strong>标签</strong>${(d.tags||[]).join(', ')||'—'}`,
+    `<strong>CPE 指纹</strong>${(d.cpes||[]).slice(0,10).join(', ')||'—'}`,
+    `<strong>已知 CVE</strong>${(d.vulns||[]).join(', ')||'无'}`,
+  ];
+  return `${riskHtml}${cveHtml}<pre>${lines.join('\n')}</pre>${raw(d)}`;
+}
+
+async function reconSubdomains(domain){
+  const r=await sf(`https://crt.sh/?q=%25.${encodeURIComponent(domain)}&output=json`,{},{timeout:20000,cacheTTL:3600000,retries:0});
+  if(!r.ok)return {error:{code:r.error.code,cn:'crt.sh 查询失败：'+r.error.cn}};
+  if(!Array.isArray(r.data))return `<pre>crt.sh 返回格式异常。</pre>`;
+  const subs=[...new Set(r.data.map(x=>x.name_value).join('\n').split('\n').filter(Boolean))];
+  if(!subs.length)return `<pre>未从证书透明日志中发现子域名。</pre>`;
+  return `<pre><strong>子域名数量</strong>${subs.length} 个
+<strong>子域名列表</strong>
+${subs.slice(0,40).map(s=>'  • '+esc(s)).join('\n')}
+${subs.length>40?`…（共 ${subs.length} 个，仅显示前 40）`:''}</pre>`;
+}
+
+async function reconWayback(domain){
+  const url=`https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(domain)}/*&output=json&fl=original,timestamp&collapse=urlkey&limit=200`;
+  const r=await sf(url,{},{timeout:20000,cacheTTL:7200000,retries:0});
+  if(!r.ok)return {error:{code:r.error.code,cn:'Wayback CDX 查询失败：'+r.error.cn}};
+  if(!Array.isArray(r.data)||r.data.length<=1)return `<pre>Wayback Machine 未收录该域名的历史 URL。</pre>`;
+  const urls=r.data.slice(1).map(row=>row[0]);
+  const uniqueUrls=[...new Set(urls)];
+  const subdomains=new Set();
+  uniqueUrls.forEach(u=>{try{const host=new URL(u).hostname;if(host.endsWith('.'+domain)||host===domain)subdomains.add(host)}catch(e){}});
+  const sensitiveKeywords=['admin','backup','.env','config','api','login','phpinfo','swagger','graphql','debug','test','old','db','sql'];
+  const sensitiveUrls=uniqueUrls.filter(u=>sensitiveKeywords.some(k=>u.toLowerCase().includes(k))).slice(0,15);
+  let html=`<pre><strong>历史 URL 总数</strong>${uniqueUrls.length} 个（采集上限 200 条）`;
+  if(subdomains.size)html+=`\n<strong>历史子域名</strong>共 ${subdomains.size} 个\n${[...subdomains].slice(0,20).map(s=>'  • '+esc(s)).join('\n')}`;
+  if(sensitiveUrls.length)html+=`\n<strong>疑似敏感/管理路径</strong>\n${sensitiveUrls.map(u=>'  • '+esc(u)).join('\n')}`;
+  html+='</pre>';
+  return html;
+}
+
+async function reconHeaders(domain){
+  const r=await sf(`https://${domain}`,{method:'HEAD',mode:'cors'},{timeout:8000,retries:0});
+  if(!r.ok||!r.data?.__headers)return `<pre>无法直接读取响应头（目标可能未开放 CORS）。\n<em>建议用浏览器开发者工具 Network 面板查看响应头，或使用 Wappalyzer 等扩展做技术栈指纹。</em></pre>`;
+  const h=r.data.__headers;
+  const wafSig=[
+    {k:'cf-ray',n:'Cloudflare'},{k:'x-sucuri-id',n:'Sucuri'},{k:'x-akamai-transformed',n:'Akamai'},
+    {k:'x-amz-cf-id',n:'CloudFront'},{k:'server',n:'（见 Server）'},{k:'x-powered-by',n:'（见 X-Powered-By）'}
+  ];
+  const detected=[];
+  wafSig.forEach(s=>{if(h[s.k])detected.push(`${s.n}（${s.k}: ${h[s.k]}）`)});
+  const interesting=['server','x-powered-by','x-aspnet-version','x-generator','x-drupal-cache','x-shopify-stage','cf-ray','x-vercel-id','x-sucuri-id','x-akamai-transformed','x-amz-cf-id'];
+  const lines=interesting.filter(k=>h[k]).map(k=>`<strong>${esc(k)}</strong>${esc(h[k])}`);
+  return `<pre>${detected.length?`<strong>WAF/CDN 特征</strong>⚠️ ${detected.join('、')}\n`:''}${lines.length?lines.join('\n'):'响应头中未发现明显的技术栈或 WAF 指纹。'}</pre>`;
+}
+
+async function reconUrlhaus(q,type){
+  const body=new FormData();body.append('host',q);
+  const r=await sf('https://urlhaus-api.abuse.ch/v1/host/',{method:'POST',body},{timeout:15000,cacheTTL:1800000,retries:0});
+  if(!r.ok)return {error:{code:r.error.code,cn:'URLhaus 查询失败：'+r.error.cn}};
+  const d=r.data;
+  if(d.query_status==='no_results')return alertBox('ok','URLhaus 未发现恶意 URL 关联',`该 ${type==='ip'?'IP':'域名'} 在 URLhaus 恶意 URL 分发库中无记录。`,'可视为相对干净。');
+  const urls=(d.urls||[]).slice(0,10).map(u=>`• ${u.url_status==='online'?'🔴 在线':'⚪ 离线'} ${esc(u.url)}`).join('\n');
+  return alertBox('danger',`URLhaus 发现 ${d.urls?.length||0} 条恶意 URL 关联`,`该 ${type==='ip'?'IP':'域名'} 出现在恶意 URL 分发活动中。关联 URL：\n${urls}`,`• 检查内部主机是否与该目标通信<br>• 如为自有资产，排查是否被植入恶意内容<br>• 将 IOC 导入安全设备进行阻断`);
 }
 
 /* ============================================================
@@ -864,7 +914,7 @@ async function mDns(q){
 }
 
 /* ============================================================
-   社区情报（含微步）
+   社区情报
    ============================================================ */
 async function mPhish(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
@@ -1022,7 +1072,7 @@ async function runQuery(){
   if(!ipOnly&&!domOnly){$('st').classList.add('show');$('st').innerHTML='请输入有效的 IP 或域名';$('qb').disabled=false;return}
 
   if(domOnly){
-    empty('unified','正在查询域名主目标…');empty('cert','正在执行 CDN / SSL / 广告检测…');empty('intel','正在查询社区情报（含微步在线）…');
+    empty('unified','正在查询域名主目标…');empty('cert','正在执行 CDN / SSL / 广告检测…');empty('recon','正在执行安全攻防侦察…');empty('intel','正在查询社区情报…');
     await runTasks('unified',[
       {t:'DNS A 记录',fn:()=>mDns(q)},
       {t:'Whois 注册信息',fn:()=>mWhois(q)},
@@ -1054,8 +1104,8 @@ async function runQuery(){
       {t:'CDN 检测',fn:()=>mCdn(q)},
       {t:'广告检测（4 种方案 + 图形化）',fn:()=>mAdDetect(q)}
     ]);
+    await mRecon(q);
     await runTasks('intel',[
-      {t:'🟢 微步在线 · 域名分析',fn:()=>mThreatBookDomain(q)},
       {t:'PhishDestroy 域名风险评分',fn:()=>mPhish(q)},
       {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
       {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
@@ -1063,7 +1113,7 @@ async function runQuery(){
     ]);
     renderProfile();switchTab('cert');
   } else {
-    empty('unified','正在查询 IP 主目标…');empty('cert','正在查询该 IP 关联域名检测…');empty('intel','正在查询社区情报（含微步在线）…');
+    empty('unified','正在查询 IP 主目标…');empty('cert','正在查询该 IP 关联域名检测…');empty('recon','正在执行安全攻防侦察…');empty('intel','正在查询社区情报…');
     await runTasks('unified',[
       {t:'IP 归属 / ASN / BGP 前缀',fn:()=>mIp(q)},
       {t:'InternetDB 端口 / 漏洞',fn:()=>mInternetDB(q)},
@@ -1095,8 +1145,8 @@ async function runQuery(){
     } else {
       empty('cert','该 IP 未反查到关联域名，无法执行 SSL / CDN / 广告检测。');
     }
+    await mRecon(q);
     await runTasks('intel',[
-      {t:'🟢 微步在线 · IP 信誉',fn:()=>mThreatBookIp(q)},
       {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
       {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
       {t:'Feodo Tracker C2 比对',fn:()=>mFeodo(q)},
