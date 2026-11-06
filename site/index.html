@@ -38,7 +38,6 @@ main{max-width:960px;margin:0 auto;padding:1rem 1rem 2.5rem}
 .tg-sk{background:#f1f5f9;color:var(--tx2)}
 .tg-wn{background:#fffbeb;color:#d97706}
 .tg-if{background:#f3e8ff;color:#7c3aed}
-.tg-tg{background:#e0e7ff;color:#3730a3}
 .cd pre{white-space:pre-wrap;word-break:break-word;font-size:.76rem;line-height:1.6;color:#334155;font-family:ui-monospace,SFMono-Regular,monospace}
 .cd pre strong{color:#0f172a;font-weight:600;display:inline-block;min-width:6.5em}
 .cd pre em{font-style:normal;color:#94a3b8;font-size:.7rem}
@@ -128,8 +127,6 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
 .ibt{flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
 .ibf{height:100%;border-radius:4px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1) .15s}
 .ibc{min-width:50px;text-align:right;color:var(--tx2);font-size:.64rem}
-
-/* 广告 */
 .ad-panel{margin-top:.4rem}
 .ad-score-card{display:flex;gap:1.1rem;align-items:center;flex-wrap:wrap;padding:.8rem;border-radius:10px;background:linear-gradient(135deg,#f8fafc,#eff6ff);margin-bottom:.6rem;border:1px solid var(--bd)}
 .ad-score-body{flex:1;min-width:200px}
@@ -187,35 +184,39 @@ details pre{margin-top:.3rem;font-size:.68rem;color:var(--tx2);max-height:320px;
   <section class="pg on" id="pg-unified"><div class="ph"><h2>统一溯源</h2><p>输入 IP 自动反查域名并跑域名检测；输入域名自动解析 IP 并跑 IP 检测</p></div><div id="out-unified"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
   <section class="pg" id="pg-cert"><div class="ph"><h2>证书 / CDN / 广告</h2><p>输入域名直接检测；输入 IP 会尝试从反向 DNS 找到域名后再检测</p></div><div id="out-cert"><p class="ep">输入域名或 IP 后点击查询</p></div></section>
   <section class="pg" id="pg-env"><div class="ph"><h2>网络环境</h2><p>当前出口、VPN / 代理 / Tor</p></div><button style="padding:.4rem .9rem;border:1px solid var(--bd);border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;cursor:pointer;margin-bottom:.8rem" onclick="forceEnv()">🔄 重新检测</button><div id="out-env"><p class="ep">正在检测…</p></div></section>
-  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>IP 和域名都跑全套威胁情报（OTX Pulse、恶意样本、Feodo C2、最新漏洞）</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
+  <section class="pg" id="pg-intel"><div class="ph"><h2>社区情报</h2><p>微步在线 IP 信誉 / 域名分析 · OTX · Feodo · 最新漏洞</p></div><div id="out-intel"><p class="ep">输入 IP 或域名后点击查询</p></div></section>
   <section class="pg" id="pg-profile"><div class="ph"><h2>整体画像</h2><p>综合 IP 和域名双维度数据评分</p></div><div id="out-profile"><p class="ep">输入 IP 或域名查询后生成</p></div></section>
   <section class="pg" id="pg-about"><div class="ph"><h2>关于</h2><p>核心说明</p></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔀 IP / 域名互查逻辑</div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔑 微步在线配置</div>
+      <p style="font-size:.76rem;color:#475569;line-height:1.8">
+        在代码中搜索 <code>THREATBOOK_KEY</code>，替换为你的 apikey。获取方式：登录 <code>x.threatbook.com</code> → 服务控制台 → 我的 API Key。<br>
+        免费额度（以实际账户为准）：IP 信誉约 20次/月 或 50次/天；域名分析额度以控制台显示为准。额度耗尽后该模块会降级，不影响其他模块。
+      </p>
+    </div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🕵️ 社区情报数据源</div>
       <ul class="qi">
-        <li><strong>输入 IP</strong>：跑 IP 全套（归属/ASN/BGP/端口/CVE/VPN/PTR/同 IP 域名），然后通过 PTR + 反向 IP 找到关联域名，自动对前 1 个域名跑 SSL/CDN/广告检测</li>
-        <li><strong>输入域名</strong>：跑域名全套（Whois/ICP/RDAP/DNS），然后解析 A 记录拿到 IP，自动对前 3 个 IP 跑归属/端口/CVE/VPN 检测</li>
-        <li>证书页对 IP 输入会先用反查到的域名跑检测；没有关联域名则明确提示"该 IP 无关联域名，无法检测 SSL/CDN/广告"</li>
-        <li>社区情报页 IP 和域名都跑 OTX Pulse + 恶意样本 + 最新漏洞；IP 额外跑 Feodo C2 比对</li>
+        <li><strong>微步在线 IP 信誉</strong>：<code>api.threatbook.cn/v3/scene/ip_reputation</code>，入站 IP 风险判定，字段 <code>is_malicious</code>、<code>confidence_level</code>、<code>severity</code>、<code>judgments</code>[reference:7][reference:8]</li>
+        <li><strong>微步在线域名分析</strong>：<code>api.threatbook.cn/v3/domain/query</code>，返回 <code>judgments</code>、<code>intelligences</code>、<code>cur_ips</code>、<code>cur_whois</code>、<code>icp</code> 等[reference:9]</li>
+        <li><strong>OTX Pulse</strong>：社区威胁简报，判断是否出现在公开攻击活动中</li>
+        <li><strong>Feodo Tracker</strong>：僵尸网络 C2 黑名单</li>
+        <li><strong>CIRCL CVE</strong>：最近一年新发布漏洞</li>
       </ul>
     </div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🌐 CDN 判定逻辑</div>
-      <ul class="qi"><li>域名只解析出 <strong>1 个 IP</strong>：直接展示 ASN、运营商、BGP 前缀、国家，<strong>不做 CDN 判定</strong></li>
-      <li>解析出 <strong>2 个及以上 IP</strong>：才做 CNAME + ASN 白名单匹配，统计运营商占比</li>
-      <li>ASN 双源查询：<code>ipwho.is</code> 主源 + <code>ipinfo.app</code> 备源，<strong>永不显示"未知 ASN"</strong></li></ul></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">📢 广告检测 4 种方案</div>
-      <ul class="qi"><li><strong>方案1 · DNS CNAME 特征</strong>：直接查 CNAME 链是否指向广告联盟域名</li>
-      <li><strong>方案2 · 证书透明日志</strong>：通过 crt.sh 查所有证书子域名，匹配广告联盟域名和广告前缀子域名</li>
-      <li><strong>方案3 · iframe 模拟用户访问</strong>：预检 → 加载 → 多阶段观察弹窗、广告干预、iframe 高度突变</li>
-      <li><strong>方案4 · HTTP 头分析</strong>：预检时同时分析 X-Frame-Options 和 CSP</li></ul></div>
     <div class="cd"><div class="ct" style="margin-bottom:.4rem">📊 评分规则</div>
       <ul class="qi"><li><strong>IP 质量分</strong>：基础 100 - VPN/代理/Tor 15 - C2 35 - 风险评分按档扣 - 高危端口每个 5（最多 20）- CVE 每个 5（最多 15）</li>
       <li><strong>SSL 评分</strong>：有效 60 + TLS1.3 20 或 1.2 10 + 剩余 &gt;30 天 10 + 强套件 10</li>
-      <li><strong>域名质量分</strong>：基础 100 - PhishDestroy 25/15/5 - 广告评分按档扣（&lt;60 扣 15 / 60-79 扣 8）- SSL &lt;60 扣 25 / 60-79 扣 10 - 未备案 10 - OTX Pulse 每个 5（最多 20）</li></ul></div>
-    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔐 隐私</div><p style="font-size:.76rem;color:#475569">纯前端运行，不收集、不上传任何查询记录。</p></div>
+      <li><strong>域名质量分</strong>：基础 100 - PhishDestroy 25/15/5 - 广告评分按档扣 - SSL &lt;60 扣 25 / 60-79 扣 10 - 未备案 10 - OTX Pulse 每个 5（最多 20）</li></ul></div>
+    <div class="cd"><div class="ct" style="margin-bottom:.4rem">🔐 隐私</div><p style="font-size:.76rem;color:#475569">纯前端运行，不收集、不上传任何查询记录。微步 apikey 仅在你的浏览器中用于直接请求微步 API。</p></div>
   </section>
 </main>
 
 <script>
+/* ============================================================
+   ⚠️ 在这里填入你的微步在线 apikey
+   ============================================================ */
+const THREATBOOK_KEY = "YOUR_THREATBOOK_API_KEY";
+const TB_BASE = "https://api.threatbook.cn/v3";
+
 /* ============================================================
    常量
    ============================================================ */
@@ -256,7 +257,7 @@ const AD_NETWORKS=[
   {p:/tanx\.com|alimama\.com/i,n:'阿里妈妈 / 淘宝联盟'},
   {p:/e\.qq\.com|gdt\.qq\.com/i,n:'腾讯广点通'},
   {p:/union\.360\.cn|ads\.360\.cn/i,n:'360 联盟'},
-  {p:/adnxs\.com|rubiconproject\.com|pubmatic\.com|openx\.net/i,n:'海外 DSP (AppNexus/Rubicon/PubMatic/OpenX)'}
+  {p:/adnxs\.com|rubiconproject\.com|pubmatic\.com|openx\.net/i,n:'海外 DSP'}
 ];
 const AD_PREFIX_RE=/^(ad|ads|advert|adv|banner|sponsor|promo|click|track|pixel|beacon|stat|analytics)\./i;
 const PORTS={21:'FTP',22:'SSH',23:'Telnet',80:'HTTP',443:'HTTPS',1433:'MSSQL',3306:'MySQL',3389:'RDP',5432:'PostgreSQL',6379:'Redis',27017:'MongoDB'};
@@ -265,7 +266,8 @@ const LIM={
   'dns.google':100,'api.domainee.dev':2100,'api.contrastcyber.com':3000,'otx.alienvault.com':900,
   'api.destroy.tools':700,'feodotracker.abuse.ch':3000,'tcp.lc':500,'whois.tcp.lc':6500,
   'checkip.me':700,'myip.helpmek.com':500,'api.hackertarget.com':2000,'internetdb.shodan.io':1000,
-  'ipwho.is':200,'atlas.ipinfo.app':200,'crt.sh':2500,'rdap.org':500,'api.globalping.io':600,'cve.circl.lu':500
+  'ipwho.is':200,'atlas.ipinfo.app':200,'crt.sh':2500,'rdap.org':500,'api.globalping.io':600,'cve.circl.lu':500,
+  'api.threatbook.cn':1100
 };
 
 /* ============================================================
@@ -277,7 +279,7 @@ const tag=(t,c)=>`<span class="tg tg-${c}">${t}</span>`;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const isIP=q=>/^[\d.]+$/.test(q)||q.includes(':');
 const isDom=q=>/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(q);
-const raw=o=>`<details><summary>原始数据</summary><pre>${esc(JSON.stringify(o,null,2).slice(0,1500))}</pre></details>`;
+const raw=o=>`<details><summary>原始数据</summary><pre>${esc(JSON.stringify(o,null,2).slice(0,2000))}</pre></details>`;
 const state={};
 
 /* ============================================================
@@ -313,7 +315,6 @@ async function sf(url,opt={},o={}){
    ============================================================ */
 function scoreColor(s){return s>=80?{c:'#10b981',l:'优秀',cls:'g'}:s>=60?{c:'#3b82f6',l:'良好',cls:'b'}:s>=40?{c:'#f59e0b',l:'一般',cls:'y'}:{c:'#ef4444',l:'较差',cls:'r'}}
 function scoreBadge(s){const x=scoreColor(s);return `<span class="sb ${x.cls}">质量 ${s} · ${x.l}</span>`}
-
 function calcIpScore(){
   let s=100;const is=[];
   if(state.checkip){const c=state.checkip;
@@ -328,7 +329,6 @@ function calcIpScore(){
   if(vs.length){const d=Math.min(15,vs.length*5);s-=d;is.push({p:-d,t:`漏洞 ${vs.length} 个`})}
   return{s:Math.max(0,s),is}
 }
-
 function calcSslScore(d){
   let s=0;const is=[];const valid=d.authorized!==false&&d.expired!==true;
   if(valid){s+=60;is.push({p:60,t:'证书有效'})}else is.push({p:0,t:'证书无效'});
@@ -339,7 +339,6 @@ function calcSslScore(d){
   if(c.includes('GCM')||c.includes('CHACHA20')){s+=10;is.push({p:10,t:'强加密套件'})}
   return{s:Math.min(100,s),is}
 }
-
 function calcDomainScore(){
   let s=100;const is=[];
   if(state.phishdestroy){const p=state.phishdestroy.score??state.phishdestroy.risk_score;
@@ -348,10 +347,8 @@ function calcDomainScore(){
       else if(n>=50){s-=15;is.push({p:-15,t:`PhishDestroy ${n} 可疑`})}
       else if(n>=30){s-=5;is.push({p:-5,t:`PhishDestroy ${n} 关注`})}}}
   if(state.otxPulseCount>0){const d=Math.min(20,state.otxPulseCount*5);s-=d;is.push({p:-d,t:`OTX ${state.otxPulseCount} Pulse`})}
-  if(state.adScore!=null){
-    if(state.adScore<60){s-=15;is.push({p:-15,t:`广告检测 ${state.adScore}/100（广告较多）`})}
-    else if(state.adScore<80){s-=8;is.push({p:-8,t:`广告检测 ${state.adScore}/100（轻微广告）`})}
-  }
+  if(state.adScore!=null){if(state.adScore<60){s-=15;is.push({p:-15,t:`广告检测 ${state.adScore}/100`})}
+    else if(state.adScore<80){s-=8;is.push({p:-8,t:`广告检测 ${state.adScore}/100`})}}
   if(state.sslScore!=null){if(state.sslScore<60){s-=25;is.push({p:-25,t:`SSL ${state.sslScore} 差`})}
     else if(state.sslScore<80){s-=10;is.push({p:-10,t:`SSL ${state.sslScore} 一般`})}}
   if(state.icp&&state.icp.filed!==true){s-=10;is.push({p:-10,t:'未 ICP 备案'})}
@@ -368,23 +365,22 @@ function classify(asn,isp){
   if(k&&GL_ISP_MAP[k])return{n:GL_ISP_MAP[k].n,c:GL_ISP_MAP[k].c,cat:'gl_isp',lv:'海外骨干 (Global Backbone)'};
   if(k&&CLOUD_MAP[k])return{n:CLOUD_MAP[k].n,c:CLOUD_MAP[k].c,cat:'cloud',lv:'海外云厂商 (Global Cloud)'};
   const s=String(isp||'').toLowerCase();
-  if(/china telecom|chinanet|中国电信/.test(s))return{n:'中国电信 (China Telecom)',c:'#0066cc',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
-  if(/china unicom|中国联通/.test(s))return{n:'中国联通 (China Unicom)',c:'#e60012',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
-  if(/china mobile|中国移动/.test(s))return{n:'中国移动 (China Mobile)',c:'#009944',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
-  if(/cernet|教育网/.test(s))return{n:'中国教育网 (CERNET)',c:'#6b21a8',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
-  if(/cstnet|科技网/.test(s))return{n:'中国科技网 (CSTNET)',c:'#7c3aed',cat:'cn_isp',lv:'国内运营商 (CN ISP)'};
-  if(/alibaba|aliyun|阿里/.test(s))return{n:'阿里云 (Aliyun)',c:'#ff6a00',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
-  if(/tencent|腾讯/.test(s))return{n:'腾讯云 (Tencent Cloud)',c:'#00a4ff',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
-  if(/baidu|百度/.test(s))return{n:'百度 (Baidu)',c:'#2932e1',cat:'cn_isp',lv:'国内云厂商 (CN Cloud)'};
+  if(/china telecom|chinanet|中国电信/.test(s))return{n:'中国电信 (China Telecom)',c:'#0066cc',cat:'cn_isp',lv:'国内运营商'};
+  if(/china unicom|中国联通/.test(s))return{n:'中国联通 (China Unicom)',c:'#e60012',cat:'cn_isp',lv:'国内运营商'};
+  if(/china mobile|中国移动/.test(s))return{n:'中国移动 (China Mobile)',c:'#009944',cat:'cn_isp',lv:'国内运营商'};
+  if(/cernet|教育网/.test(s))return{n:'中国教育网 (CERNET)',c:'#6b21a8',cat:'cn_isp',lv:'国内运营商'};
+  if(/cstnet|科技网/.test(s))return{n:'中国科技网 (CSTNET)',c:'#7c3aed',cat:'cn_isp',lv:'国内运营商'};
+  if(/alibaba|aliyun|阿里/.test(s))return{n:'阿里云 (Aliyun)',c:'#ff6a00',cat:'cn_isp',lv:'国内云厂商'};
+  if(/tencent|腾讯/.test(s))return{n:'腾讯云 (Tencent Cloud)',c:'#00a4ff',cat:'cn_isp',lv:'国内云厂商'};
+  if(/baidu|百度/.test(s))return{n:'百度 (Baidu)',c:'#2932e1',cat:'cn_isp',lv:'国内云厂商'};
   if(/comcast|at&t|verizon|deutsche telekom|orange|bt |vodafone|kddi|softbank|ntt/.test(s))
-    return{n:isp,c:'#64748b',cat:'gl_isp',lv:'海外宽带/移动 (Global ISP)'};
+    return{n:isp,c:'#64748b',cat:'gl_isp',lv:'海外宽带/移动'};
   if(/amazon|aws|google cloud|azure|digitalocean|linode|ovh|hetzner|vultr/.test(s))
-    return{n:isp,c:'#475569',cat:'cloud',lv:'海外云厂商 (Global Cloud)'};
-  if(k)return{n:`未归类 AS${k} (Unclassified AS${k})${isp?` · ${isp}`:''}`,c:'#94a3b8',cat:'other',lv:'未归类 (Unclassified)'};
-  if(isp)return{n:isp,c:'#94a3b8',cat:'other',lv:'未归类 (Unclassified)'};
-  return{n:'保留/查询受限 (Reserved/Restricted)',c:'#94a3b8',cat:'other',lv:'保留 (Reserved)'};
+    return{n:isp,c:'#475569',cat:'cloud',lv:'海外云厂商'};
+  if(k)return{n:`未归类 AS${k} (Unclassified AS${k})${isp?` · ${isp}`:''}`,c:'#94a3b8',cat:'other',lv:'未归类'};
+  if(isp)return{n:isp,c:'#94a3b8',cat:'other',lv:'未归类'};
+  return{n:'保留/查询受限',c:'#94a3b8',cat:'other',lv:'保留'};
 }
-
 async function lookupIp(ip){
   if(/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/.test(ip))
     return{asn:null,isp:'',country:'—',cidr:'',cls:classify(null,''),reserved:true};
@@ -404,10 +400,9 @@ async function lookupIp(ip){
 }
 
 /* ============================================================
-   渲染 + 动画
+   渲染
    ============================================================ */
 function alertBox(lv,t,w,s){const ic={danger:'❗',warn:'⚠️',info:'ℹ️',ok:'✅'};return `<div class="ab ${lv}"><div class="ab-t">${ic[lv]||''} ${esc(t)}</div>${w?`<div class="ab-s"><strong>这意味着什么：</strong>${w}</div>`:''}${s?`<div class="ab-s"><strong>你应该怎么做：</strong>${s}</div>`:''}</div>`}
-
 function anim(card){
   const f=card.querySelector('.stf');if(f)setTimeout(()=>f.style.width=f.dataset.p+'%',80);
   const n=card.querySelector('.stn');if(n){n.style.left=n.dataset.p+'%';setTimeout(()=>n.style.opacity='1',80)}
@@ -421,7 +416,6 @@ function anim(card){
   card.querySelectorAll('.ibr').forEach((el,i)=>{setTimeout(()=>el.classList.add('show'),350+i*90);
     const b=el.querySelector('.ibf');if(b)setTimeout(()=>b.style.width=b.dataset.w+'%',450+i*90)});
 }
-
 async function renderTask(container,task){
   const card=document.createElement('div');card.className='cd';
   card.innerHTML=`<div class="ch"><span class="ct">${esc(task.t)}</span>${tag('查询中…','ld')}</div>`;
@@ -437,13 +431,63 @@ async function renderTask(container,task){
   }catch(e){const c=cerr(e);h().innerHTML=`<span class="ct">${esc(task.t)}</span>${tag('降级','wn')}`;
     card.insertAdjacentHTML('beforeend',`<div class="ab warn"><div class="ab-t">⚠️ ${esc(c.cn)}</div><div class="ab-s">错误代码 ${esc(c.code)}</div></div>`)}
 }
-
-async function runTasks(page,tasks){
-  const c=$('out-'+page);if(!c)return;c.innerHTML='';
-  await Promise.allSettled(tasks.map(t=>renderTask(c,t)));
-}
+async function runTasks(page,tasks){const c=$('out-'+page);if(!c)return;c.innerHTML='';await Promise.allSettled(tasks.map(t=>renderTask(c,t)))}
 function empty(page,msg){const el=$('out-'+page);if(el)el.innerHTML=`<p class="ep">${esc(msg)}</p>`}
-function sectionLabel(text,cls){return `<div class="ch" style="margin:.8rem 0 .3rem"><span class="ct" style="color:${cls==='related'?'#7c3aed':cls==='primary'?'#2563eb':'#0f172a'}">${esc(text)}</span></div>`}
+function sectionLabel(text,cls){return `<div class="ch" style="margin:.8rem 0 .3rem"><span class="ct" style="color:${cls==='related'?'#7c3aed':'#2563eb'}">${esc(text)}</span></div>`}
+
+/* ============================================================
+   微步在线 ThreatBook
+   ============================================================ */
+async function mThreatBookIp(q){
+  if(!isIP(q))return{skip:true,reason:'微步 IP 信誉仅支持 IP'};
+  if(!THREATBOOK_KEY||THREATBOOK_KEY==='YOUR_THREATBOOK_API_KEY')
+    return{skip:true,reason:'未配置微步在线 apikey，请填入代码中的 THREATBOOK_KEY'};
+  const url=`${TB_BASE}/scene/ip_reputation?apikey=${encodeURIComponent(THREATBOOK_KEY)}&resource=${encodeURIComponent(q)}&lang=zh`;
+  const r=await sf(url,{},{timeout:12000,cacheTTL:1800000,retries:0});
+  if(!r.ok)return{error:{code:r.error.code,cn:'微步 IP 信誉查询失败：'+r.error.cn}};
+  const d=r.data;
+  if(d.response_code!==0)return{error:{code:'TB_'+d.response_code,cn:'微步返回：'+(d.verbose_msg||'未知错误')}};
+  const ipData=(d.data||{})[q]||d.data||{};
+  const malicious=ipData.is_malicious===true;
+  const confidence=ipData.confidence_level??ipData.confidence??'—';
+  const severity=ipData.severity??'—';
+  const judgments=(ipData.judgments||[]).join(', ')||'—';
+  const tags=(ipData.tags_classes||[]).map(t=>t.tags_type||t).join(', ')||'—';
+  if(malicious)return alertBox('danger',`微步在线：该 IP 被判定为恶意（置信度 ${confidence}）`,
+    `微步在线 IP 信誉判定为恶意。威胁类型：<strong>${esc(judgments)}</strong>。标签：${esc(tags)}。严重程度：${esc(String(severity))}。`,
+    `• 该 IP 可能参与扫描、漏洞利用、C2 或恶意软件分发<br>• 建议在 WAF / 防火墙 / IDS 中阻断入站流量<br>• 结合业务日志确认是否有内部资产与该 IP 通信`);
+  return alertBox('ok',`微步在线：未标记为恶意（置信度 ${confidence}）`,
+    `微步在线 IP 信誉未将该 IP 判定为恶意。威胁类型：${esc(judgments)}。标签：${esc(tags)}。`,
+    '可视为相对干净，但建议继续结合其他情报源综合判断。')+raw(d);
+}
+
+async function mThreatBookDomain(q){
+  if(!isDom(q))return{skip:true,reason:'微步域名分析仅支持域名'};
+  if(!THREATBOOK_KEY||THREATBOOK_KEY==='YOUR_THREATBOOK_API_KEY')
+    return{skip:true,reason:'未配置微步在线 apikey，请填入代码中的 THREATBOOK_KEY'};
+  const url=`${TB_BASE}/domain/query?apikey=${encodeURIComponent(THREATBOOK_KEY)}&resource=${encodeURIComponent(q)}&lang=zh`;
+  const r=await sf(url,{},{timeout:15000,cacheTTL:1800000,retries:0});
+  if(!r.ok)return{error:{code:r.error.code,cn:'微步域名分析失败：'+r.error.cn}};
+  const d=r.data;
+  if(d.response_code!==0)return{error:{code:'TB_'+d.response_code,cn:'微步返回：'+(d.verbose_msg||'未知错误')}};
+  const dd=(d.domains||{})[q]||{};
+  const judgments=(dd.judgments||[]).join(', ')||'—';
+  const intelligences=(dd.intelligences||[]).slice(0,3).map(i=>`${i.source||''}（置信度 ${i.confidence??'—'}）`).join('；')||'—';
+  const curIps=(dd.cur_ips||[]).map(i=>i.ip||i).slice(0,5).join(', ')||'—';
+  const whois=dd.cur_whois||{};
+  const registrar=whois.registrar||'—';
+  const icp=dd.icp||{};
+  const icpFiled=icp.filed===true;
+  const lines=[
+    `<strong>综合威胁类型</strong>${esc(judgments)}`,
+    `<strong>情报来源</strong>${esc(intelligences)}`,
+    `<strong>当前解析 IP</strong>${esc(curIps)}`,
+    `<strong>Whois 注册商</strong>${esc(registrar)}`,
+    `<strong>ICP 备案</strong>${icpFiled?'✅ 已备案'+(icp.unit_name?`（${esc(icp.unit_name)}）`:''):'❌ 未备案或境外'}`,
+  ].join('\n');
+  const hasThreat=judgments!=='—'&&!/未知|clean|安全/i.test(judgments);
+  return `${hasThreat?alertBox('warn','微步在线：域名关联威胁情报',`综合判定威胁类型：<strong>${esc(judgments)}</strong>。情报来源：${esc(intelligences)}。`,'• 建议进一步核实域名用途<br>• 如该域名出现在出站流量中，排查内部主机是否失陷'):''}<pre>${lines}</pre>${raw(d)}`;
+}
 
 /* ============================================================
    SSL
@@ -489,7 +533,6 @@ function renderSsl(d){
     <div class="sst">🔑 加密套件</div><div class="cnm">${esc(cn||'—')}</div><div class="ctg">${ct}</div>
     <div class="snt">套件 = 密钥交换 + 批量加密 + 消息认证。GCM/CHACHA20 为 AEAD；CBC/SHA1 为旧式。</div>`;
 }
-
 async function mSsl(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const r=await sf(`https://api.domainee.dev/v1/tools/ssl-check?host=${encodeURIComponent(q)}`,{},{timeout:12000,cacheTTL:600000,retries:0});
@@ -501,7 +544,6 @@ async function mSsl(q){
   state.sslCipher=d.cipher?.name;state.sslInvalid=d.expired||!d.authorized;
   return renderSsl(d)+raw(d);
 }
-
 async function mSslCross(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const r=await sf(`https://api.contrastcyber.com/v1/ssl_check?domain=${encodeURIComponent(q)}`,{},{timeout:10000,cacheTTL:600000,retries:0});
@@ -531,7 +573,6 @@ async function ping(q){
     return{ips}}
   return{error:{code:'TO',cn:'Globalping 超时'},ips:[]}
 }
-
 async function mCdn(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const[a,c,p]=await Promise.all([
@@ -554,7 +595,7 @@ async function mCdn(q){
     if(r.country&&r.country!=='—')lines.push(`国家/地区：${esc(r.country)}`);
     if(r.asn)lines.push(`ASN：<strong>AS${esc(r.asn)}</strong>`);
     if(r.cidr)lines.push(`BGP 前缀：${esc(r.cidr)}`);
-    lines.push(`运营商：<strong style="color:${cls.c}">${esc(cls.n)}</strong> <span style="color:#94a3b8">（${esc(cls.lv)}）</span>`);
+    lines.push(`运营商：<strong style="color:${cls.c}">${esc(cls.n)}</strong>（${esc(cls.lv)}）`);
     if(r.isp&&r.isp!==cls.n)lines.push(`ISP 原名：${esc(r.isp)}`);
     return `<div class="cvc s">📍 域名仅解析出 <strong>1 个 IP</strong>（${esc(r.ip)}），通常意味着<strong>直连单一服务器</strong>，不做 CDN 特征判定。</div>
       <div style="font-size:.7rem;font-weight:700;color:#475569;margin:.5rem 0 .25rem">📡 该 IP 完整归属</div>
@@ -604,9 +645,8 @@ async function adByDns(q){
   const str=chain.join(' ').toLowerCase();
   const hits=[];
   for(const s of AD_NETWORKS)if(s.p.test(str))hits.push(s.n);
-  return{hits,detail:chain.length?`CNAME 链：${chain.join(' → ')}`:'无 CNAME 记录（域名直接解析到 A 记录）'};
+  return{hits,detail:chain.length?`CNAME 链：${chain.join(' → ')}`:'无 CNAME 记录'};
 }
-
 async function adByCrt(q){
   const r=await sf(`https://crt.sh/?q=%25.${encodeURIComponent(q)}&output=json`,{},{timeout:15000,cacheTTL:1800000,retries:0});
   if(!r.ok)return{hits:[],adSubs:[],error:r.error,detail:'crt.sh 查询失败：'+r.error.cn};
@@ -618,7 +658,6 @@ async function adByCrt(q){
   const adSubs=subs.filter(s=>AD_PREFIX_RE.test(s));
   return{hits,adSubs,totalSubs:subs.length,detail:`证书透明日志共 ${subs.length} 个子域名${adSubs.length?`，其中 ${adSubs.length} 个含广告前缀`:''}`};
 }
-
 function calcAdScore(dnsRes,crtRes){
   let s=100;const signals=[];
   const uniqueHits=[...new Set([...dnsRes.hits,...crtRes.hits])];
@@ -626,7 +665,6 @@ function calcAdScore(dnsRes,crtRes){
   if(crtRes.adSubs?.length){const d=Math.min(20,crtRes.adSubs.length*5);s-=d;signals.push(`发现 ${crtRes.adSubs.length} 个广告前缀子域名（-${d}）`)}
   return{score:Math.max(0,s),signals,uniqueHits};
 }
-
 function renderAdPanel(q,dnsRes,crtRes,scoreResult){
   const{score,signals,uniqueHits}=scoreResult;
   const col=scoreColor(score);
@@ -638,10 +676,7 @@ function renderAdPanel(q,dnsRes,crtRes,scoreResult){
     let body=`<div class="ad-sch-detail">${esc(res.detail||'')}</div>`;
     if(res.hits?.length)body+=`<div class="ad-sch-hits">命中广告联盟：${res.hits.map(h=>`<span class="ad-badge">${esc(h)}</span>`).join('')}</div>`;
     if(res.adSubs?.length)body+=`<div class="ad-sch-hits">广告前缀子域名：${res.adSubs.slice(0,6).map(s=>`<span class="ad-badge ad-badge-sub">${esc(s)}</span>`).join('')}${res.adSubs.length>6?` 等 ${res.adSubs.length} 个`:''}</div>`;
-    return `<div class="ad-sch">
-      <div class="ad-sch-head"><span class="ad-sch-num">${num}</span><span class="ad-sch-icon">${hit?'🔴':err?'⚫':'⚪'}</span><span class="ad-sch-title">${icon} ${title}</span><span class="tg tg-${sCls}">${status}</span></div>
-      ${body}
-    </div>`;
+    return `<div class="ad-sch"><div class="ad-sch-head"><span class="ad-sch-num">${num}</span><span class="ad-sch-icon">${hit?'🔴':err?'⚫':'⚪'}</span><span class="ad-sch-title">${icon} ${title}</span><span class="tg tg-${sCls}">${status}</span></div>${body}</div>`;
   };
   const verdictCls=score>=80?'ok':score>=60?'info':score>=40?'warn':'danger';
   const verdictText=score>=80?'该站点广告特征较弱，可能是内容型或轻广告站点'
@@ -649,49 +684,36 @@ function renderAdPanel(q,dnsRes,crtRes,scoreResult){
     :score>=40?'该站点广告特征明显，可能含多个广告位'
     :'该站点广告特征强烈，可能是重广告或内容农场站点';
   return `<div class="ad-panel">
-    <div class="ad-score-card">
-      <div class="sc" style="--s:${score};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${score}</div><div class="sc-l">${col.l}</div></div></div>
+    <div class="ad-score-card"><div class="sc" style="--s:${score};--c:${col.c}"><div class="sc-in"><div class="sc-n" style="color:${col.c}">${score}</div><div class="sc-l">${col.l}</div></div></div>
       <div class="ad-score-body"><h3>广告检测综合评分（0-100，越高越干净）</h3><p class="ad-score-sub">基于 DNS CNAME + 证书透明日志 + iframe 模拟</p>
         ${signals.length?`<ul class="qi">${signals.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:'<ul class="qi"><li class="ok">未发现明显广告信号</li></ul>'}
       </div>
     </div>
     <div class="ad-sch-list">${schemeHTML('📡','方案1 · DNS CNAME 特征',dnsRes,1)}${schemeHTML('📜','方案2 · 证书透明日志',crtRes,2)}</div>
-    <div class="ad-iframe-card">
-      <div class="ad-sch-head"><span class="ad-sch-num">3</span><span class="ad-sch-icon">🎬</span><span class="ad-sch-title">方案3 · iframe 模拟用户访问</span><span class="tg tg-if">交互</span></div>
-      <div class="ad-iframe-body" id="adIframeBody"></div>
-    </div>
-    <div class="ab ${verdictCls} ad-verdict">
-      <div class="ab-t">📊 综合结论</div>
-      <div class="ab-s">${esc(verdictText)}</div>
+    <div class="ad-iframe-card"><div class="ad-sch-head"><span class="ad-sch-num">3</span><span class="ad-sch-icon">🎬</span><span class="ad-sch-title">方案3 · iframe 模拟用户访问</span><span class="tg tg-if">交互</span></div><div class="ad-iframe-body" id="adIframeBody"></div></div>
+    <div class="ab ${verdictCls} ad-verdict"><div class="ab-t">📊 综合结论</div><div class="ab-s">${esc(verdictText)}</div>
       ${uniqueHits.length?`<div class="ab-s"><strong>命中广告联盟：</strong>${uniqueHits.map(h=>`<span class="ad-badge">${esc(h)}</span>`).join(' ')}</div>`:''}
-    </div>
-  </div>`;
+    </div></div>`;
 }
-
 async function mAdDetect(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const[dnsRes,crtRes]=await Promise.all([adByDns(q),adByCrt(q)]);
   const scoreResult=calcAdScore(dnsRes,crtRes);
-  state.adHits=scoreResult.uniqueHits;
-  state.adScore=scoreResult.score;
+  state.adHits=scoreResult.uniqueHits;state.adScore=scoreResult.score;
   const container=document.createElement('div');
   container.innerHTML=renderAdPanel(q,dnsRes,crtRes,scoreResult);
   bindIframeAd(container,q);
   return container;
 }
-
 function bindIframeAd(container,q){
-  const body=container.querySelector('#adIframeBody');
-  if(!body)return;
-  body.innerHTML=`
-    <div class="at" id="adDur"></div>
+  const body=container.querySelector('#adIframeBody');if(!body)return;
+  body.innerHTML=`<div class="at" id="adDur"></div>
     <div class="aar"><button id="adStart" style="margin-top:0">▶ 开始模拟用户访问</button><button id="adStop" style="margin-top:0;display:none;color:#dc2626;border-color:#fca5a5;background:#fef2f2">⏹ 停止</button></div>
     <div class="aph"><span data-p="1">① 0-3s 快速弹窗</span><span data-p="2">② 3-10s 延迟加载</span><span data-p="3">③ 10s+ 滚动触发</span></div>
     <div class="apr"><div class="apf" id="adPf"></div></div>
     <div style="font-size:.74rem;color:#94a3b8;margin-top:.35rem;min-height:1.1em" id="adStatus"></div>
     <iframe id="adFr" style="width:100%;height:380px;border:1px solid #e2e8f0;border-radius:8px;margin-top:.5rem;display:none;background:#fff" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" referrerpolicy="no-referrer"></iframe>
-    <div style="font-size:.78rem;margin-top:.5rem;line-height:1.6" id="adResult"></div>
-  `;
+    <div style="font-size:.78rem;margin-top:.5rem;line-height:1.6" id="adResult"></div>`;
   const dur=body.querySelector('#adDur'),stBtn=body.querySelector('#adStart'),stopBtn=body.querySelector('#adStop');
   const phEls=[...body.querySelectorAll('.aph span')],prog=body.querySelector('.apr'),pf=body.querySelector('#adPf');
   const as=body.querySelector('#adStatus'),fr=body.querySelector('#adFr'),ar=body.querySelector('#adResult');
@@ -705,17 +727,9 @@ function bindIframeAd(container,q){
   function cl(){ts.forEach(t=>{try{t()}catch(e){}});iv.forEach(i=>clearInterval(i));window.open=oo}
   function ph(n){phEls.forEach((el,i)=>{el.classList.remove('a','d');if(i+1<n)el.classList.add('d');else if(i+1===n)el.classList.add('a')})}
   function fin(man){
-    cl();fr.style.display='none';prog.style.display='none';stopBtn.style.display='none';
-    phEls.forEach(el=>el.classList.remove('a','d'));
-    if(man){
-      const el=((Date.now()-st)/1000).toFixed(1);
-      ar.innerHTML=alertBox('info',`已手动停止（观察 ${el} 秒）`,`弹窗 ${pu} 次 / 广告干预 ${ai} 次 / iframe 高度突变 ${state.iframeResized?'是':'否'}`,'如需完整评估请重新运行完整时长。');
-      state.userAdHit=pu>0||ai>0||state.iframeResized;
-      stBtn.textContent='▶ 重新检测';stBtn.disabled=false;return;
-    }
-    const sig=[];
-    if(pu>0)sig.push(`弹窗 ${pu} 次`);if(ai>0)sig.push(`广告干预 ${ai} 次`);if(state.iframeResized)sig.push('iframe 高度突变');
-    if(state.adHits?.length)sig.push(`DNS 关联广告联盟：${state.adHits.join('、')}`);
+    cl();fr.style.display='none';prog.style.display='none';stopBtn.style.display='none';phEls.forEach(el=>el.classList.remove('a','d'));
+    if(man){const el=((Date.now()-st)/1000).toFixed(1);ar.innerHTML=alertBox('info',`已手动停止（观察 ${el} 秒）`,`弹窗 ${pu} 次 / 广告干预 ${ai} 次 / iframe 高度突变 ${state.iframeResized?'是':'否'}`,'如需完整评估请重新运行完整时长。');state.userAdHit=pu>0||ai>0||state.iframeResized;stBtn.textContent='▶ 重新检测';stBtn.disabled=false;return}
+    const sig=[];if(pu>0)sig.push(`弹窗 ${pu} 次`);if(ai>0)sig.push(`广告干预 ${ai} 次`);if(state.iframeResized)sig.push('iframe 高度突变');if(state.adHits?.length)sig.push(`DNS 关联广告联盟：${state.adHits.join('、')}`);
     const el=((Date.now()-st)/1000).toFixed(1);
     if(sig.length){ar.innerHTML=alertBox('warn',`用户视角检测到广告行为（观察 ${el} 秒）`,`命中：${sig.join('；')}。`,'建议开启广告拦截插件或对目标站点做更深入审查。');state.userAdHit=true}
     else{ar.innerHTML=alertBox('ok',`未检测到明显广告行为（观察 ${el} 秒）`,'未捕获到弹窗、广告干预或 iframe 高度突变。','如怀疑有隐藏广告，可尝试延长至 20 秒重测。');state.userAdHit=false}
@@ -723,32 +737,18 @@ function bindIframeAd(container,q){
   }
   stopBtn.onclick=()=>{ab=true;fin(true)};
   stBtn.onclick=async()=>{
-    ab=false;pu=0;ai=0;il=false;state.iframeResized=false;state.userAdHit=false;
-    cl();ar.innerHTML='';fr.src='about:blank';pf.style.width='0%';phEls.forEach(el=>el.classList.remove('a','d'));
+    ab=false;pu=0;ai=0;il=false;state.iframeResized=false;state.userAdHit=false;cl();ar.innerHTML='';fr.src='about:blank';pf.style.width='0%';phEls.forEach(el=>el.classList.remove('a','d'));
     stBtn.disabled=true;stBtn.textContent='⏳ 预检中…';stopBtn.style.display='inline-block';as.textContent='正在检测目标站点是否允许 iframe 嵌入…';
     const r=await sf(`https://${q}`,{method:'HEAD',mode:'cors'},{timeout:6000,retries:0});
     let pre={allowed:true};
-    if(r.ok){const h=r.data?.__headers;
-      if(h){const xfo=h['x-frame-options'],csp=h['content-security-policy']||'';
-        if(xfo&&/deny|sameorigin/i.test(xfo))pre={allowed:false,reason:`X-Frame-Options: ${xfo}`};
-        else if(/frame-ancestors\s+'none'/i.test(csp)||/frame-ancestors\s+'self'/i.test(csp))pre={allowed:false,reason:'CSP frame-ancestors 限制'};
-      }
-    }
-    if(!pre.allowed){
-      state.frameBlocked=true;state.frameBlockReason=pre.reason;
-      ar.innerHTML=alertBox('warn','该站点禁止 iframe 嵌入',`目标站点通过 ${pre.reason} 主动拒绝被嵌入。`,'无法通过 iframe 模拟用户访问检测广告。可在新标签页打开手动观察。')
-        +`<a href="https://${esc(q)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:.4rem;padding:.35rem .8rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;text-decoration:none">↗ 在新标签页打开</a>`;
-      as.textContent='';stopBtn.style.display='none';stBtn.textContent='▶ 重新尝试';stBtn.disabled=false;return;
-    }
-    state.frameBlocked=false;state.frameBlockReason=null;st=Date.now();prog.style.display='block';ph(1);
-    as.textContent='预检通过，正在加载目标站点…';
+    if(r.ok){const h=r.data?.__headers;if(h){const xfo=h['x-frame-options'],csp=h['content-security-policy']||'';if(xfo&&/deny|sameorigin/i.test(xfo))pre={allowed:false,reason:`X-Frame-Options: ${xfo}`};else if(/frame-ancestors\s+'none'/i.test(csp)||/frame-ancestors\s+'self'/i.test(csp))pre={allowed:false,reason:'CSP frame-ancestors 限制'}}}
+    if(!pre.allowed){state.frameBlocked=true;state.frameBlockReason=pre.reason;ar.innerHTML=alertBox('warn','该站点禁止 iframe 嵌入',`目标站点通过 ${pre.reason} 主动拒绝被嵌入。`,'无法通过 iframe 模拟用户访问检测广告。可在新标签页打开手动观察。')+`<a href="https://${esc(q)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:.4rem;padding:.35rem .8rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.76rem;text-decoration:none">↗ 在新标签页打开</a>`;as.textContent='';stopBtn.style.display='none';stBtn.textContent='▶ 重新尝试';stBtn.disabled=false;return}
+    state.frameBlocked=false;state.frameBlockReason=null;st=Date.now();prog.style.display='block';ph(1);as.textContent='预检通过，正在加载目标站点…';
     fr.style.display='block';window.open=function(...a){pu++;return oo.apply(this,a)};
     fr.onload=()=>{il=true;lh=fr.clientHeight;const t=setInterval(()=>{if(ab)return;try{const h=fr.clientHeight;if(Math.abs(h-lh)>60){state.iframeResized=true;lh=h}}catch(e){}},1000);iv.push(t)};
-    fr.src=`https://${q}`;
-    const tot=cd,sts=Date.now();
+    fr.src=`https://${q}`;const tot=cd,sts=Date.now();
     ts.push(setTimeout(()=>{if(!ab){ph(2);as.textContent='观察中（第 2 阶段）：延迟加载广告…'}},3000));
-    ts.push(setTimeout(()=>{if(ab)return;ph(3);as.textContent='观察中（第 3 阶段）：模拟滚动，检测懒加载广告…';
-      try{if(fr.contentWindow&&fr.contentDocument){const sc=()=>{try{fr.contentWindow.scrollBy(0,300)}catch(e){}};sc();ts.push(setTimeout(sc,800));ts.push(setTimeout(sc,1600))}}catch(e){}},10000));
+    ts.push(setTimeout(()=>{if(ab)return;ph(3);as.textContent='观察中（第 3 阶段）：模拟滚动，检测懒加载广告…';try{if(fr.contentWindow&&fr.contentDocument){const sc=()=>{try{fr.contentWindow.scrollBy(0,300)}catch(e){}};sc();ts.push(setTimeout(sc,800));ts.push(setTimeout(sc,1600))}}catch(e){}},10000));
     const pt=setInterval(()=>{if(ab)return;pf.style.width=Math.min(100,((Date.now()-sts)/tot)*100)+'%'},200);iv.push(pt);
     ts.push(setTimeout(()=>{if(!ab)fin(false)},tot));
   };
@@ -765,11 +765,10 @@ async function mIp(q){
   if(info.country&&info.country!=='—')lines.push(`<strong>国家/地区</strong>${esc(info.country)}`);
   if(info.asn)lines.push(`<strong>ASN</strong>AS${esc(info.asn)}`);
   if(info.cidr)lines.push(`<strong>BGP 前缀</strong>${esc(info.cidr)}`);
-  lines.push(`<strong>运营商</strong><span style="color:${info.cls.c};font-weight:600">${esc(info.cls.n)}</span> <em>（${esc(info.cls.lv)}）</em>`);
+  lines.push(`<strong>运营商</strong><span style="color:${info.cls.c};font-weight:600">${esc(info.cls.n)}</span>（${esc(info.cls.lv)}）`);
   if(info.isp&&info.isp!==info.cls.n)lines.push(`<strong>ISP 原名</strong>${esc(info.isp)}`);
   return `${scoreBadge(sc.s)}<pre>${lines.join('\n')}</pre>`;
 }
-
 async function mInternetDb(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
   const r=await sf(`https://internetdb.shodan.io/${encodeURIComponent(q)}`,{},{timeout:8000,cacheTTL:900000});
@@ -781,18 +780,15 @@ async function mInternetDb(q){
 <strong>标签</strong>${esc((d.tags||[]).join(', ')||'—')}
 <strong>已知漏洞</strong>${esc((d.vulns||[]).join(', ')||'—')}</pre>${raw(d)}`;
 }
-
 async function mReverseDns(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
   const r=await sf(`https://myip.helpmek.com/api/v1/reverse-dns?ip=${encodeURIComponent(q)}`,{},{timeout:6000,cacheTTL:1800000});
   if(!r.ok)return{error:r.error};
   const ptr=r.data.hostname||r.data.ptr||r.data.result||'';
   if(!state.ptr)state.ptr=ptr;
-  if(ptr&&!state.relatedDomains)state.relatedDomains=[];
-  if(ptr&&isDom(ptr)&&!state.relatedDomains.includes(ptr))state.relatedDomains.push(ptr);
+  if(ptr&&isDom(ptr)){if(!state.relatedDomains)state.relatedDomains=[];if(!state.relatedDomains.includes(ptr))state.relatedDomains.push(ptr)}
   return `<pre><strong>PTR</strong>${esc(ptr||'—')}</pre>${raw(r.data)}`;
 }
-
 async function mReverseIp(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
   const r=await sf(`https://api.hackertarget.com/reverseiplookup/?q=${encodeURIComponent(q)}`,{},{timeout:8000,cacheTTL:1800000});
@@ -804,7 +800,6 @@ async function mReverseIp(q){
   domains.forEach(d=>{if(!state.relatedDomains.includes(d))state.relatedDomains.push(d)});
   return `<pre><strong>同 IP 域名</strong>\n${esc(txt||'未发现')}</pre>`;
 }
-
 async function mCheckIp(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
   const r=await sf(`https://checkip.me/${encodeURIComponent(q)}`,{},{timeout:8000,cacheTTL:900000});
@@ -816,20 +811,17 @@ async function mCheckIp(q){
 <strong>托管</strong>${d.hosting?'是':'否'}
 <strong>风险</strong>${esc(String(d.risk??'—'))} / 100</pre>${raw(d)}`;
 }
-
 async function mWhois(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const r=await sf(`https://whois.tcp.lc/v1/whois/${encodeURIComponent(q)}`,{},{timeout:10000,cacheTTL:1800000});
   if(!r.ok)return{error:r.error};
-  const d=r.data;const dt=d.dates||{};
-  state.whois=d;
+  const d=r.data;const dt=d.dates||{};state.whois=d;
   return `<pre><strong>是否注册</strong>${d.isRegistered?'是':'否'}
 <strong>注册商</strong>${esc(d.registrar?.name??'—')}
 <strong>创建时间</strong>${esc(dt.created?.slice(0,10)??'—')}
 <strong>到期时间</strong>${esc(dt.expires?.slice(0,10)??'—')}
 <strong>DNS</strong>${esc((d.nameservers||[]).map(n=>n.name).join(', ')||'—')}</pre>${raw(d)}`;
 }
-
 async function mIcp(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const r=await sf(`https://tcp.lc/api/v2/icp/query?domain=${encodeURIComponent(q)}`,{},{timeout:10000,cacheTTL:1800000});
@@ -846,7 +838,6 @@ async function mIcp(q){
 <strong>主体性质</strong>${esc(rec.natureName??'—')}
 <strong>审核时间</strong>${esc(rec.updatedAt??'—')}</pre>${raw(d)}`;
 }
-
 async function mRdap(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const r=await sf(`https://rdap.org/domain/${encodeURIComponent(q)}`,{},{timeout:10000,cacheTTL:1800000});
@@ -855,7 +846,6 @@ async function mRdap(q){
   const ev=(d.events||[]).map(e=>`${e.eventAction}: ${e.eventDate?.slice(0,10)??''}`).join('\n');
   return `<pre><strong>关键日期</strong>\n${esc(ev||'—')}</pre>${raw(d)}`;
 }
-
 async function mDns(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
   const[a,c]=await Promise.all([
@@ -874,7 +864,7 @@ async function mDns(q){
 }
 
 /* ============================================================
-   社区情报
+   社区情报（含微步）
    ============================================================ */
 async function mPhish(q){
   if(!isDom(q))return{skip:true,reason:'仅支持域名'};
@@ -882,11 +872,10 @@ async function mPhish(q){
   if(!r.ok)return{error:r.error};
   const d=r.data;state.phishdestroy=d;
   const score=d.score??d.risk_score??'—',kw=(d.matched_keywords||d.keywords||[]).join(', ')||'无',n=Number(score);
-  if(n>=70)return alertBox('danger',`高风险恶意域名（评分 ${score}/100）`,`PhishDestroy 判定该域名具有高风险。可能原因：与已知钓鱼网站高度相似、注册信息异常、托管环境与恶意活动关联。匹配关键词：<strong>${esc(kw)}</strong>。`,`• 不要访问，不要输入账号密码<br>• 如果访问过，立即修改相关密码<br>• 可向 PhishDestroy 或 VirusTotal 提交举报`);
-  if(n>=30)return alertBox('warn',`可疑域名（评分 ${score}/100）`,`被标记为可疑，行为与已知钓鱼/恶意模式有部分重叠。关键词：<strong>${esc(kw)}</strong>。`,`• 谨慎访问，避免输入敏感信息<br>• 结合 SSL / ICP 综合判断`);
+  if(n>=70)return alertBox('danger',`高风险恶意域名（评分 ${score}/100）`,`PhishDestroy 判定该域名具有高风险。匹配关键词：<strong>${esc(kw)}</strong>。`,`• 不要访问，不要输入账号密码<br>• 如果访问过，立即修改相关密码<br>• 可向 VirusTotal 提交举报`);
+  if(n>=30)return alertBox('warn',`可疑域名（评分 ${score}/100）`,`被标记为可疑。关键词：<strong>${esc(kw)}</strong>。`,`• 谨慎访问，避免输入敏感信息<br>• 结合 SSL / ICP 综合判断`);
   return alertBox('ok',`未发现明显风险（评分 ${score}/100）`,'该域名未被标记为恶意或可疑。','可以正常访问，但建议保持基本网络安全习惯。');
 }
-
 async function mOtxPulse(q){
   const type=isIP(q)?'IPv4':'domain';
   const r=await sf(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/general`,{},{timeout:10000,cacheTTL:900000});
@@ -894,30 +883,27 @@ async function mOtxPulse(q){
   const pi=r.data.pulse_info||{},c=pi.count||0;
   if(!state.otxPulseCount)state.otxPulseCount=c;
   const ps=(pi.pulses||[]).slice(0,4).map(p=>`• <strong>${esc(p.name)}</strong>${(p.tags||[]).length?`（${esc((p.tags||[]).slice(0,3).join(', '))}）`:''}`).join('<br>');
-  if(c>0)return alertBox('warn',`关联 ${c} 份威胁情报（OTX Pulse）`,`OTX 社区有 ${c} 份报告把 ${esc(q)} 列为关联 IOC。可能原因：被用于实际攻击（C2、载荷分发、钓鱼）、出现在安全研究报告中、或与已知攻击组织存在基础设施重叠。<br>${ps?`<br><strong>近期简报：</strong><br>${ps}`:''}`,`• 如非你的资产，可在防火墙/IDS/DNS 安全网关注入阻止规则<br>• 如是你的资产，建议排查异常进程、外连记录、Webshell<br>• 打开 OTX Pulse 详情页可看具体攻击上下文<br>• OTX 是社区情报，存在误报可能，建议结合 VirusTotal 等多源验证`);
-  return alertBox('ok','未在 OTX 威胁简报中发现关联记录','该目标当前没有被任何公开威胁简报列为关联 IOC。','公开情报中未见明显恶意关联，可视为相对干净。');
+  if(c>0)return alertBox('warn',`关联 ${c} 份威胁情报（OTX Pulse）`,`OTX 社区有 ${c} 份报告把 ${esc(q)} 列为关联 IOC。<br>${ps?`<br><strong>近期简报：</strong><br>${ps}`:''}`,`• 如非你的资产，可在防火墙/IDS 中注入阻止规则<br>• 如是你的资产，建议排查异常进程、外连记录<br>• OTX 是社区情报，存在误报可能，建议结合 VirusTotal 等多源验证`);
+  return alertBox('ok','未在 OTX 威胁简报中发现关联记录','该目标当前没有被任何公开威胁简报列为关联 IOC。','公开情报中未见明显恶意关联。');
 }
-
 async function mOtxMalware(q){
   const type=isIP(q)?'IPv4':'domain';
   const r=await sf(`https://otx.alienvault.com/api/v1/indicators/${type}/${encodeURIComponent(q)}/malware`,{},{timeout:10000,cacheTTL:900000});
   if(!r.ok)return{error:r.error};
   const ss=(r.data.data||[]).slice(0,6);
-  if(!ss.length)return alertBox('ok','未在 OTX 中发现关联恶意样本','该目标当前没有关联任何公开的恶意样本哈希。','公开情报中未见样本关联，可视为相对干净。');
+  if(!ss.length)return alertBox('ok','未在 OTX 中发现关联恶意样本','该目标当前没有关联任何公开的恶意样本哈希。','公开情报中未见样本关联。');
   const lines=ss.map(s=>{const fs=(s.detections||[]).map(x=>x.detection?.family).filter(Boolean);return `• ${esc(s.hash?.slice(0,16)??'—')}…${fs.length?`（<strong>${esc(fs.join(', '))}</strong>）`:''}`}).join('<br>');
-  return alertBox('danger',`关联 ${ss.length} 个恶意样本`,`OTX 将该目标与以下恶意样本哈希关联。通常说明该域名/IP 曾托管恶意载荷、被用作回连地址，或出现在沙箱分析报告中。<br>${lines}`,`• 下载样本哈希，上传到 VirusTotal 或沙箱做进一步分析<br>• 如该目标在业务环境中出现，建议立即隔离相关主机<br>• 检查日志中是否有设备与该目标通信<br>• 将相关 IOC 导入 SIEM/EDR 进行全网回溯`);
+  return alertBox('danger',`关联 ${ss.length} 个恶意样本`,`OTX 将该目标与以下恶意样本哈希关联。<br>${lines}`,`• 下载样本哈希，上传到 VirusTotal 或沙箱做进一步分析<br>• 如该目标在业务环境中出现，建议立即隔离相关主机<br>• 将相关 IOC 导入 SIEM/EDR 进行全网回溯`);
 }
-
 async function mFeodo(q){
   if(!isIP(q))return{skip:true,reason:'仅支持 IP'};
   const r=await sf('https://feodotracker.abuse.ch/downloads/ipblocklist.json',{},{timeout:20000,cacheTTL:1800000,retries:0});
   if(!r.ok)return{error:r.error};
   const list=r.data;if(!Array.isArray(list))return{error:{code:'DATA',cn:'Feodo 返回格式异常'}};
   const hit=list.find(x=>x.ip_address===q);state.feodoHit=!!hit;
-  if(hit)return alertBox('danger','该 IP 被识别为僵尸网络 C2 服务器',`该 IP 出现在 Feodo Tracker 僵尸网络 C2 黑名单中，恶意家族：<strong>${esc(hit.malware??'—')}</strong>。C2 服务器是指挥被感染设备的“大脑”。可能原因：被攻击者控制用于下发指令、被 Emotet/Dridex/QakBot 等家族用作回连地址、或已被入侵作为跳板。`,`• 阻止所有来自/前往该 IP 的通信<br>• 如这是你的服务器，立即排查异常进程、网络连接、计划任务<br>• 检查日志中是否有内部设备尝试连接该 IP（自 ${esc(hit.first_seen??'未知')} 起已被标记）<br>• 将 IOC 导入 SIEM/EDR 做全网回溯排查`);
-  return alertBox('ok','未在 Feodo C2 黑名单中发现','该 IP 未被 Feodo Tracker 列为僵尸网络 C2 服务器。','可视为相对干净，但建议继续结合其他情报源综合判断。');
+  if(hit)return alertBox('danger','该 IP 被识别为僵尸网络 C2 服务器',`该 IP 出现在 Feodo Tracker C2 黑名单中，恶意家族：<strong>${esc(hit.malware??'—')}</strong>。`,`• 阻止所有来自/前往该 IP 的通信<br>• 如这是你的服务器，立即排查异常进程、网络连接<br>• 将 IOC 导入 SIEM/EDR 做全网回溯排查`);
+  return alertBox('ok','未在 Feodo C2 黑名单中发现','该 IP 未被 Feodo Tracker 列为 C2 服务器。','可视为相对干净。');
 }
-
 async function mVulnLatest(){
   const r=await sf('https://cve.circl.lu/api/last/20',{},{timeout:10000,cacheTTL:600000,retries:0});
   if(!r.ok)return{error:r.error};
@@ -927,15 +913,14 @@ async function mVulnLatest(){
   const rows=fresh.slice(0,6).map(v=>{
     const id=v.id||v.cve||'—',sum=(v.summary||v.details||'').slice(0,140),pub=(v.published||'').slice(0,10);
     return `<div style="padding:.5rem 0;border-bottom:1px solid #e2e8f0"><strong style="color:#0f172a">${esc(id)}</strong><span style="font-size:.7rem;color:#94a3b8;float:right">${esc(pub)}</span><div style="font-size:.74rem;color:#475569;margin-top:.2rem;line-height:1.5">${esc(sum)}${sum.length>=140?'…':''}</div></div>`}).join('');
-  return `<div style="font-size:.72rem;color:#64748b;margin-bottom:.4rem">CIRCL 最新 20 条记录中，有 <strong>${fresh.length}</strong> 条在近一年内发布。</div>${rows}<div style="font-size:.7rem;color:#94a3b8;margin-top:.4rem"><em>建议复制 CVE 编号到 NVD 查看修复版本与官方公告。</em></div>`;
+  return `<div style="font-size:.72rem;color:#64748b;margin-bottom:.4rem">CIRCL 最新 20 条记录中，有 <strong>${fresh.length}</strong> 条在近一年内发布。</div>${rows}`;
 }
 
 /* ============================================================
    整体画像
    ============================================================ */
 function renderProfile(){
-  const q=state.query;
-  const isIpPrimary=isIP(q);
+  const q=state.query,isIpPrimary=isIP(q);
   const primaryScore=isIpPrimary?calcIpScore():calcDomainScore();
   const col=scoreColor(primaryScore.s);
   const issues=primaryScore.is.length?primaryScore.is.map(i=>`<li>${esc(i.t)}（${i.p}）</li>`).join(''):'<li class="ok">未发现明显扣分项</li>';
@@ -946,7 +931,6 @@ function renderProfile(){
     <div class="cd"><div class="ch"><span class="ct">画像说明</span>${tag('已生成','ok')}</div><pre id="pt">${esc(detail)}</pre><button style="margin-top:.5rem;padding:.4rem .9rem;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:.75rem;cursor:pointer;font-weight:500" onclick="cp(this)">📋 复制说明</button></div>`;
 }
 function cp(b){const el=$('pt');if(!el)return;navigator.clipboard.writeText(el.textContent).then(()=>{const o=b.textContent;b.textContent='✅ 已复制';setTimeout(()=>b.textContent=o,1500)}).catch(()=>{b.textContent='❌ 复制失败';setTimeout(()=>b.textContent='📋 复制说明',1500)})}
-
 function buildProfileText(){
   const q=state.query,isIpPrimary=isIP(q),L=[];
   L.push(`主目标：${q}（${isIpPrimary?'IP 地址':'域名'}）`);L.push('');
@@ -956,14 +940,10 @@ function buildProfileText(){
     if(state.ipDb?.ports?.length)L.push(`【开放端口】${state.ipDb.ports.join(', ')}`);
     if(state.ipDb?.vulns?.length)L.push(`【已知漏洞】${state.ipDb.vulns.join(', ')}`);
     if(state.ptr)L.push(`【PTR】${state.ptr}`);
-    if(state.relatedDomains?.length){
-      L.push(`【关联域名】共 ${state.relatedDomains.length} 个：`);
-      state.relatedDomains.slice(0,5).forEach(d=>L.push(`  • ${d}`));
-    }
+    if(state.relatedDomains?.length){L.push(`【关联域名】共 ${state.relatedDomains.length} 个：`);state.relatedDomains.slice(0,5).forEach(d=>L.push(`  • ${d}`))}
     if(state.sslScore!=null)L.push(`【关联域名 SSL】评分 ${state.sslScore}/100`);
     if(state.cdnHits?.length)L.push(`【关联域名 CDN】${state.cdnHits.join('、')}`);
-    L.push('');
-    L.push(`【画像结论】该 IP 归属 ${t.isp||'未知'}${state.relatedDomains?.length?`，关联 ${state.relatedDomains.length} 个域名`:''}。`);
+    L.push('');L.push(`【画像结论】该 IP 归属 ${t.isp||'未知'}${state.relatedDomains?.length?`，关联 ${state.relatedDomains.length} 个域名`:''}。`);
   }else{
     const t=state.icp;
     if(t?.filed===true)L.push(`【ICP 备案】已备案（${t.records?.[0]?.unitName||'—'}）`);
@@ -972,12 +952,8 @@ function buildProfileText(){
     if(state.sslScore!=null)L.push(`【SSL 安全】评分 ${state.sslScore}/100 · 协议 ${state.sslProtocol||'—'} · 剩余 ${state.sslDaysLeft??'—'} 天`);
     if(state.adScore!=null)L.push(`【广告检测】评分 ${state.adScore}/100${state.adHits?.length?' · 命中联盟：'+state.adHits.join('、'):''}`);
     if(state.cdnHits?.length)L.push(`【CDN 信号】${state.cdnHits.join('、')}`);
-    if(state.relatedIps?.length){
-      L.push(`【解析 IP】共 ${state.relatedIps.length} 个：`);
-      state.relatedIps.slice(0,5).forEach(ip=>L.push(`  • ${ip}`));
-    }
-    L.push('');
-    L.push(`【画像结论】${inferDomain(t)}。`);
+    if(state.relatedIps?.length){L.push(`【解析 IP】共 ${state.relatedIps.length} 个：`);state.relatedIps.slice(0,5).forEach(ip=>L.push(`  • ${ip}`))}
+    L.push('');L.push(`【画像结论】${inferDomain(t)}。`);
   }
   L.push('');L.push(`（生成时间：${new Date().toLocaleString('zh-CN')}）`);
   return L.join('\n');
@@ -1010,18 +986,16 @@ async function runEnv(force=false){
   ]);
 }
 function forceEnv(){envDone=false;runEnv(true)}
-
 async function pWebRTC(){
   return new Promise(res=>{
     const ips=new Set(),pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
     pc.createDataChannel('');pc.onicecandidate=e=>{if(!e.candidate)return;const m=e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);if(m)ips.add(m[0])};
     pc.createOffer().then(o=>pc.setLocalDescription(o));
     setTimeout(()=>{pc.close();const l=[...ips];
-      if(l.length)res(alertBox('warn',`WebRTC 暴露了 ${l.length} 个本地地址`,`检测到：${l.join(', ')}。WebRTC 可能绕过代理直接暴露真实网络地址。`,'如需隐藏真实 IP，请在浏览器设置中禁用 WebRTC 或使用支持屏蔽的代理。'));
+      if(l.length)res(alertBox('warn',`WebRTC 暴露了 ${l.length} 个本地地址`,`检测到：${l.join(', ')}。`,'如需隐藏真实 IP，请在浏览器设置中禁用 WebRTC 或使用支持屏蔽的代理。'));
       else res(alertBox('ok','WebRTC 未暴露额外地址','浏览器已阻止 WebRTC 获取本地/内网 IP。','当前 WebRTC 状态安全。'))},3000);
   });
 }
-
 async function pFingerprint(){
   const gl=document.createElement('canvas').getContext('webgl')||document.createElement('canvas').getContext('experimental-webgl');
   let w='—';if(gl){const d=gl.getExtension('WEBGL_debug_renderer_info');if(d)w=gl.getParameter(d.UNMASKED_RENDERER_WEBGL)}
@@ -1029,20 +1003,15 @@ async function pFingerprint(){
   let h=0;for(let i=0;i<parts.length;i++){h=((h<<5)-h)+parts.charCodeAt(i);h|=0}
   const fp=Math.abs(h).toString(16),key='fp_'+location.hostname,last=localStorage.getItem(key);localStorage.setItem(key,fp);
   const ch=last&&last!==fp;
-  return `<pre><strong>指纹 ID</strong>${esc(fp)}
-<strong>WebGL</strong>${esc(w)}
-<strong>CPU</strong>${esc(navigator.hardwareConcurrency??'—')}
-<strong>时区</strong>${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}
-<strong>上次</strong>${last?esc(last):'首次'}</pre>${ch?alertBox('warn','浏览器指纹已变化','与上次访问相比指纹 ID 不同。可能原因：更换浏览器/设备、更新版本、清除缓存、修改显示设置。','如需稳定指纹，建议保持浏览器配置不变。'):alertBox('ok','浏览器指纹未变化','与上次访问保持一致。','')}`;
+  return `<pre><strong>指纹 ID</strong>${esc(fp)}\n<strong>WebGL</strong>${esc(w)}\n<strong>CPU</strong>${esc(navigator.hardwareConcurrency??'—')}\n<strong>时区</strong>${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}\n<strong>上次</strong>${last?esc(last):'首次'}</pre>${ch?alertBox('warn','浏览器指纹已变化','与上次访问相比指纹 ID 不同。','如需稳定指纹，建议保持浏览器配置不变。'):alertBox('ok','浏览器指纹未变化','与上次访问保持一致。','')}`;
 }
-
 async function pTimeLang(){
   const tz=Intl.DateTimeFormat().resolvedOptions().timeZone,lg=navigator.language;
   return `<pre><strong>时区</strong>${esc(tz)}\n<strong>语言</strong>${esc(lg)}\n<strong>前缀</strong>${esc(tz.split('/')[0]||'—')}</pre>`;
 }
 
 /* ============================================================
-   主查询（IP 和域名都能查，自动互查）
+   主查询
    ============================================================ */
 async function runQuery(){
   const q=$('qi').value.trim();if(!q)return;
@@ -1050,75 +1019,51 @@ async function runQuery(){
   for(const k of Object.keys(state))delete state[k];state.query=q;
   const ipOnly=isIP(q),domOnly=isDom(q);
   $('st').classList.remove('show');
-
-  if(!ipOnly&&!domOnly){
-    $('st').classList.add('show');$('st').innerHTML='请输入有效的 IP 或域名（示例：<strong>8.8.8.8</strong> 或 <strong>example.com</strong>）';
-    $('qb').disabled=false;return;
-  }
+  if(!ipOnly&&!domOnly){$('st').classList.add('show');$('st').innerHTML='请输入有效的 IP 或域名';$('qb').disabled=false;return}
 
   if(domOnly){
-    // 域名查询：跑域名全套 + 对前几个 IP 跑 IP 全套
-    empty('unified','正在查询域名主目标…');empty('cert','正在执行 CDN / SSL / 广告检测…');empty('intel','正在查询社区情报…');
-
-    // 并行：域名基础信息 + 解析 IP
+    empty('unified','正在查询域名主目标…');empty('cert','正在执行 CDN / SSL / 广告检测…');empty('intel','正在查询社区情报（含微步在线）…');
     await runTasks('unified',[
       {t:'DNS A 记录',fn:()=>mDns(q)},
       {t:'Whois 注册信息',fn:()=>mWhois(q)},
       {t:'ICP 备案',fn:()=>mIcp(q)},
       {t:'RDAP 补充',fn:()=>mRdap(q)}
     ]);
-
-    // 关联 IP 检测（mDns 已把 IP 存到 state.relatedIps）
     const relatedIps=(state.relatedIps||[]).slice(0,3);
     if(relatedIps.length){
       const container=$('out-unified');
       container.insertAdjacentHTML('beforeend',sectionLabel(`📍 关联 IP 检测（前 ${relatedIps.length} 个）`,'related'));
       for(const ip of relatedIps){
         await renderTask(container,{t:`${ip} · 归属 / ASN / 端口 / VPN`,fn:async()=>{
-          const info=await lookupIp(ip);
-          const lines=[];
+          const info=await lookupIp(ip);const lines=[];
           if(info.country&&info.country!=='—')lines.push(`<strong>国家</strong>${esc(info.country)}`);
           if(info.asn)lines.push(`<strong>ASN</strong>AS${esc(info.asn)}`);
           if(info.cidr)lines.push(`<strong>BGP</strong>${esc(info.cidr)}`);
           lines.push(`<strong>运营商</strong><span style="color:${info.cls.c};font-weight:600">${esc(info.cls.n)}</span>（${esc(info.cls.lv)}）`);
-          // 端口
           const r=await sf(`https://internetdb.shodan.io/${encodeURIComponent(ip)}`,{},{timeout:8000,cacheTTL:900000});
-          if(r.ok){const d=r.data;if(!state.ipDb)state.ipDb=d;
-            const ps=(d.ports||[]).map(p=>PORTS[p]?`${p}(${PORTS[p]})`:String(p)).join(', ')||'—';
-            lines.push(`<strong>开放端口</strong>${esc(ps)}`);
-            if(d.vulns?.length)lines.push(`<strong>漏洞</strong>${esc(d.vulns.slice(0,8).join(', '))}`);
-          }
-          // VPN
+          if(r.ok){const d=r.data;const ps=(d.ports||[]).map(p=>PORTS[p]?`${p}(${PORTS[p]})`:String(p)).join(', ')||'—';lines.push(`<strong>开放端口</strong>${esc(ps)}`);if(d.vulns?.length)lines.push(`<strong>漏洞</strong>${esc(d.vulns.slice(0,8).join(', '))}`)}
           const rc=await sf(`https://checkip.me/${encodeURIComponent(ip)}`,{},{timeout:8000,cacheTTL:900000});
-          if(rc.ok){const d=rc.data;if(!state.checkip&&ip===relatedIps[0])state.checkip=d;
-            lines.push(`<strong>VPN/代理</strong>${d.vpn?'VPN ':''}${d.proxy?'代理 ':''}${d.tor?'Tor ':''}${!(d.vpn||d.proxy||d.tor)?'无' :''}`.trim());
-          }
+          if(rc.ok){const d=rc.data;lines.push(`<strong>VPN/代理</strong>${d.vpn?'VPN ':''}${d.proxy?'代理 ':''}${d.tor?'Tor ':''}${!(d.vpn||d.proxy||d.tor)?'无':''}`.trim())}
           return `<pre>${lines.join('\n')}</pre>`;
         }});
       }
     }
-
-    // 证书/广告检测
     await runTasks('cert',[
       {t:'SSL 主检测（Domainee）',fn:()=>mSsl(q)},
       {t:'SSL 交叉验证（ContrastAPI）',fn:()=>mSslCross(q)},
       {t:'CDN 检测',fn:()=>mCdn(q)},
       {t:'广告检测（4 种方案 + 图形化）',fn:()=>mAdDetect(q)}
     ]);
-
-    // 社区情报
     await runTasks('intel',[
+      {t:'🟢 微步在线 · 域名分析',fn:()=>mThreatBookDomain(q)},
       {t:'PhishDestroy 域名风险评分',fn:()=>mPhish(q)},
       {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
       {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
       {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
     ]);
-
     renderProfile();switchTab('cert');
   } else {
-    // IP 查询：跑 IP 全套 + 尝试对反查到的域名跑 SSL/CDN/广告
-    empty('unified','正在查询 IP 主目标…');empty('cert','正在查询该 IP 关联域名检测…');empty('intel','正在查询社区情报…');
-
+    empty('unified','正在查询 IP 主目标…');empty('cert','正在查询该 IP 关联域名检测…');empty('intel','正在查询社区情报（含微步在线）…');
     await runTasks('unified',[
       {t:'IP 归属 / ASN / BGP 前缀',fn:()=>mIp(q)},
       {t:'InternetDB 端口 / 漏洞',fn:()=>mInternetDB(q)},
@@ -1126,8 +1071,6 @@ async function runQuery(){
       {t:'同 IP 域名',fn:()=>mReverseIp(q)},
       {t:'VPN / 代理 / Tor',fn:()=>mCheckIp(q)}
     ]);
-
-    // 关联域名检测
     const relatedDomains=(state.relatedDomains||[]).filter(d=>d!==q).slice(0,1);
     if(relatedDomains.length){
       const container=$('out-unified');
@@ -1140,12 +1083,10 @@ async function runQuery(){
         ]);
         const lines=[];
         if(who.ok){const d=who.data;if(d.registrar?.name)lines.push(`<strong>注册商</strong>${esc(d.registrar.name)}`);if(d.dates?.created)lines.push(`<strong>创建时间</strong>${esc(d.dates.created.slice(0,10))}`)}
-        if(icp.ok&&icp.data?.data){if(icp.data.data.filed===true){const rec=(icp.data.data.records||[])[0]||{};lines.push(`<strong>ICP 备案</strong>已备案（${esc(rec.unitName||'—')}）`)}else lines.push(`<strong>ICP 备案</strong>❌ 未备案（境外或未合规站点）`)}
+        if(icp.ok&&icp.data?.data){if(icp.data.data.filed===true){const rec=(icp.data.data.records||[])[0]||{};lines.push(`<strong>ICP 备案</strong>已备案（${esc(rec.unitName||'—')}）`)}else lines.push(`<strong>ICP 备案</strong>❌ 未备案`)}
         if(!lines.length)lines.push('暂无关联域名信息');
         return `<pre>${lines.join('\n')}</pre>`;
       }});
-
-      // 对关联域名跑证书/广告检测
       await runTasks('cert',[
         {t:`SSL 检测（${dq}）`,fn:()=>mSsl(dq)},
         {t:`CDN 检测（${dq}）`,fn:()=>mCdn(dq)},
@@ -1154,15 +1095,13 @@ async function runQuery(){
     } else {
       empty('cert','该 IP 未反查到关联域名，无法执行 SSL / CDN / 广告检测。');
     }
-
-    // 社区情报（IP 和域名都跑 OTX + 恶意样本，IP 额外跑 Feodo）
     await runTasks('intel',[
+      {t:'🟢 微步在线 · IP 信誉',fn:()=>mThreatBookIp(q)},
       {t:'OTX 关联威胁 Pulse',fn:()=>mOtxPulse(q)},
       {t:'OTX 关联恶意样本',fn:()=>mOtxMalware(q)},
       {t:'Feodo Tracker C2 比对',fn:()=>mFeodo(q)},
       {t:'最新漏洞（CIRCL 近一年）',fn:()=>mVulnLatest()}
     ]);
-
     renderProfile();switchTab('unified');
   }
   $('qb').disabled=false;
@@ -1174,10 +1113,7 @@ function switchTab(n){
   window.scrollTo({top:0,behavior:'smooth'});
   if(n==='env')runEnv();
 }
-
-document.getElementById('tabs').addEventListener('click',e=>{
-  const b=e.target.closest('.tab');if(!b)return;switchTab(b.dataset.tab);
-});
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;switchTab(b.dataset.tab)});
 document.getElementById('qi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('qb').disabled)runQuery()});
 </script>
 </body>
